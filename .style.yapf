@@ -1,0 +1,11 @@
+# from https://github.com/readthedocs/common/blob/main/style.yapf
+
+[style]
+BASED_ON_STYLE=google
+spaces_before_comment = 4
+split_before_logical_operator = True
+ALIGN_CLOSING_BRACKET_WITH_VISUAL_INDENT = True
+COLUMN_LIMIT=120
+CONTINUATION_ALIGN_STYLE=SPACE
+SPLIT_ALL_COMMA_SEPARATED_VALUES=True
+BLANK_LINE_BEFORE_NESTED_CLASS_OR_DEF=True
