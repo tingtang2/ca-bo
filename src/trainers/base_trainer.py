@@ -36,7 +36,7 @@ class BaseTrainer(ABC):
             setattr(self, key, item)
 
     @abstractmethod
-    def train_epoch(self):
+    def data_acquisition_iteration(self):
         pass
 
     @abstractmethod

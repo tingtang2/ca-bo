@@ -1,8 +1,8 @@
 import argparse
 import logging
+import random
 import sys
 from datetime import date
-import random
 
 import torch
 from torch import nn
