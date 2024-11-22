@@ -26,9 +26,9 @@ def main() -> int:
                         type=str,
                         help='cpu or gpu ID to use')
     parser.add_argument('--batch_size',
-                        default=50000,
+                        default=20,
                         type=int,
-                        help='mini-batch size used to train model')
+                        help='acquisition batch siz')
     parser.add_argument('--dropout_prob',
                         default=0.3,
                         type=float,
@@ -50,10 +50,10 @@ def main() -> int:
                         default=1e-3,
                         type=float,
                         help='learning rate for optimizer')
-    parser.add_argument('--hidden_size',
-                        default=512,
+    parser.add_argument('--max_oracle_calls',
+                        default=20_000,
                         type=int,
-                        help='dimensionality of hidden layers')
+                        help='max number of function evals/oracle calls')
     parser.add_argument('--trainer_type', help='type of experiment to run')
 
     args = parser.parse_args()
