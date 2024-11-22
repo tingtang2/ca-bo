@@ -1,8 +1,13 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import torch
+from botorch.acquisition import qExpectedImprovement
+from botorch.optim import optimize_acqf
+
+from tasks.hartmannn import Hartmann6D
+from tasks.task import Task
 
 
 class BaseTrainer(ABC):
@@ -15,6 +20,7 @@ class BaseTrainer(ABC):
                  batch_size: int,
                  dropout_prob: float,
                  learning_rate: float,
+                 max_oracle_calls: int,
                  save_plots: bool = True,
                  seed: int = 11202022,
                  **kwargs) -> None:
@@ -30,6 +36,10 @@ class BaseTrainer(ABC):
         self.batch_size = batch_size
         self.dropout_prob = dropout_prob
         self.learning_rate = learning_rate
+
+        # BO specific
+        self.task: Task = None
+        self.max_oracle_calls = max_oracle_calls
 
         # extra configs in form of kwargs
         for key, item in kwargs.items():
@@ -48,8 +58,46 @@ class BaseTrainer(ABC):
         pass
 
     @abstractmethod
-    def create_dataloaders(self):
+    def initialize_data(self):
         pass
 
     def save_model(self, name: str):
         torch.save(self.model.state_dict(), f'{self.save_dir}models/{name}.pt')
+
+
+class HartmannTrainer(BaseTrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.task = Hartmann6D()
+        self.num_initial_points = 100
+
+    def initialize_data(self) -> Tuple[torch.tensor, torch.tensor]:
+        init_train_x = torch.rand(self.num_initial_points, self.task.dim) * (
+            self.task.upper_bound -
+            self.task.lower_bound) + self.task.lower_bound
+        init_train_y = self.task.function_eval(init_train_x.to(self.device))
+
+        return init_train_x, init_train_y
+
+
+class EITrainer(BaseTrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.num_restarts = 10
+        self.raw_samples = 256
+
+    def data_acquisition_iteration(self, model, Y: torch.Tensor):
+        ei = qExpectedImprovement(model, Y.max().to(self.device))
+        X_next, _ = optimize_acqf(
+            ei,
+            bounds=torch.stack([self.task.lower_bound,
+                                self.task.upper_bound]).to(self.device),
+            q=self.batch_size,
+            num_restarts=self.num_restarts,
+            raw_samples=self.raw_samples,
+        )
+        return X_next
