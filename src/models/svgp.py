@@ -27,6 +27,7 @@ class SVGPModel(ApproximateGP):
         self.covar_module = gpytorch.kernels.ScaleKernel(
             gpytorch.kernels.RBFKernel())
         self.likelihood = likelihood
+        self.num_outputs = 1
 
     def forward(self, x):
         mean_x = self.mean_module(x)

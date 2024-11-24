@@ -9,8 +9,12 @@ from torch import nn
 from torch.optim import Adam, AdamW
 
 from trainers.exact_gp_trainer import HartmannEIExactGPTrainer
+from trainers.svgp_trainer import HartmannEISVGPTrainer
 
-arg_trainer_map = {'hartmann_ei_exact_gp': HartmannEIExactGPTrainer}
+arg_trainer_map = {
+    'hartmann_ei_exact_gp': HartmannEIExactGPTrainer,
+    'hartmann_ei_svgp': HartmannEISVGPTrainer
+}
 arg_optimizer_map = {'adamW': AdamW, 'adam': Adam}
 
 
@@ -19,7 +23,7 @@ def main() -> int:
         description='Run computation aware GP based BO')
 
     parser.add_argument('--epochs',
-                        default=50,
+                        default=100,
                         type=int,
                         help='number of epochs to train model')
     parser.add_argument('--device',
