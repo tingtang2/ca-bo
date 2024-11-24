@@ -1,6 +1,7 @@
 import torch
 from botorch.acquisition import qExpectedImprovement
 from botorch.optim import optimize_acqf
+
 from trainers.base_trainer import BaseTrainer
 
 

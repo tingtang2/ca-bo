@@ -1,8 +1,9 @@
-from trainers.base_trainer import BaseTrainer
-import torch
 from typing import Tuple
 
+import torch
+
 from tasks.hartmannn import Hartmann6D
+from trainers.base_trainer import BaseTrainer
 
 
 class HartmannTrainer(BaseTrainer):
