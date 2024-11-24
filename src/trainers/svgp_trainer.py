@@ -3,14 +3,13 @@ import logging
 import torch
 from gpytorch.likelihoods import GaussianLikelihood
 from gpytorch.mlls import VariationalELBO
+from torch.utils.data import DataLoader, TensorDataset
+from tqdm import trange
 
 from models.svgp import SVGPModel
 from trainers.acquisition_fn_trainers import EITrainer
 from trainers.base_trainer import BaseTrainer
 from trainers.data_trainers import HartmannTrainer
-
-from tqdm import trange
-from torch.utils.data import TensorDataset, DataLoader
 
 
 class SVGPTrainer(BaseTrainer):
@@ -19,11 +18,15 @@ class SVGPTrainer(BaseTrainer):
         super().__init__(**kwargs)
 
         self.num_inducing_points = 100
-        self.grad_clip = 2.0
+        # self.grad_clip = 2.0
+        self.grad_clip = 1.0
+
         self.early_stopping_threshold = 10
         self.train_batch_size = 32
 
     def run_experiment(self, iteration: int):
+        # get all attribute information
+        logging.info(self.__dict__)
         train_x, train_y = self.initialize_data()
 
         # get inducing points
@@ -33,18 +36,18 @@ class SVGPTrainer(BaseTrainer):
         self.model = SVGPModel(inducing_points=inducing_points,
                                likelihood=GaussianLikelihood().to(
                                    self.device)).to(self.device)
-        print(self.learning_rate)
         self.optimizer = self.optimizer_type(
             [{
                 'params': self.model.parameters(),
                 # 'params': self.model.likelihood.parameters()
             }],
             lr=self.learning_rate)
-        self.mll = VariationalELBO(self.model.likelihood,
-                                   self.model,
-                                   num_data=train_y.size(0))
 
-        while self.task.num_calls < self.max_oracle_calls:
+        reward = []
+        for i in trange(self.max_oracle_calls):
+            mll = VariationalELBO(self.model.likelihood,
+                                  self.model,
+                                  num_data=train_x.size(0))
             if self.norm_data:
                 # get normalized train y
                 train_y_mean = train_y.mean()
@@ -56,7 +59,7 @@ class SVGPTrainer(BaseTrainer):
             train_loader = self.generate_dataloaders(train_x=train_x,
                                                      train_y=train_y)
 
-            self.train_model(train_loader)
+            final_loss = self.train_model(train_loader, mll)
 
             x_next = self.data_acquisition_iteration(self.model, train_y)
 
@@ -69,15 +72,20 @@ class SVGPTrainer(BaseTrainer):
             train_y = torch.cat((train_y, y_next), dim=-2)
 
             logging.info(
-                f'Num oracle calls: {self.task.num_calls}, best reward: {train_y.max().item():.3f}'
+                f'Num oracle calls: {self.task.num_calls - 1}, best reward: {train_y.max().item():.3f}, final svgp loss: {final_loss:.3f}'
             )
+            reward.append(train_y.max().item())
 
-    def train_model(self, train_loader: DataLoader):
+        self.save_metrics(metrics=reward,
+                          iter=iteration,
+                          name=self.trainer_type)
+
+    def train_model(self, train_loader: DataLoader, mll):
         self.model.train()
         best_loss = 1e+5
         early_stopping_counter = 0
         for i in range(self.epochs):
-            loss = self.train_epoch(train_loader)
+            loss = self.train_epoch(train_loader, mll)
             # logging.info(f'epoch: {i} training loss: {loss:.3f}')
 
             if loss < best_loss:
@@ -88,15 +96,17 @@ class SVGPTrainer(BaseTrainer):
                 early_stopping_counter += 1
 
             if early_stopping_counter == self.early_stopping_threshold:
-                break
+                return loss
 
-    def train_epoch(self, train_loader: DataLoader):
+        return loss
+
+    def train_epoch(self, train_loader: DataLoader, mll):
         running_loss = 0.0
         for i, (x, y) in enumerate(train_loader):
             self.optimizer.zero_grad()
 
             output = self.model(x.to(self.device))
-            loss = -self.mll(output, y.to(self.device))
+            loss = -mll(output, y.to(self.device))
             loss = loss.sum()
 
             loss.backward()

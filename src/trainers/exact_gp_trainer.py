@@ -5,6 +5,7 @@ import torch
 from botorch.fit import fit_gpytorch_model
 from botorch.models import SingleTaskGP
 from gpytorch.mlls import ExactMarginalLogLikelihood
+from tqdm import trange
 
 from trainers.acquisition_fn_trainers import EITrainer
 from trainers.base_trainer import BaseTrainer
@@ -14,9 +15,12 @@ from trainers.data_trainers import HartmannTrainer
 class ExactGPTrainer(BaseTrainer):
 
     def run_experiment(self, iteration: int):
+        logging.info(self.__dict__)
         train_x, train_y = self.initialize_data()
 
-        while self.task.num_calls < self.max_oracle_calls:
+        reward = []
+
+        for i in trange(self.max_oracle_calls):
             if self.norm_data:
                 # get normalized train y
                 train_y_mean = train_y.mean()
@@ -50,8 +54,13 @@ class ExactGPTrainer(BaseTrainer):
             train_y = torch.cat((train_y, y_next), dim=-2)
 
             logging.info(
-                f'Num oracle calls: {self.task.num_calls}, best reward: {train_y.max().item():.3f}'
+                f'Num oracle calls: {self.task.num_calls - 1}, best reward: {train_y.max().item():.3f}'
             )
+            reward.append(train_y.max().item())
+
+        self.save_metrics(metrics=reward,
+                          iter=iteration,
+                          name=self.trainer_type)
 
     def eval(self):
         pass

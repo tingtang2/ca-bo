@@ -1,6 +1,8 @@
+import json
 from abc import ABC, abstractmethod
+from datetime import datetime
 from pathlib import Path
-from typing import Union
+from typing import List, Union
 
 import torch
 
@@ -62,3 +64,8 @@ class BaseTrainer(ABC):
 
     def save_model(self, name: str):
         torch.save(self.model.state_dict(), f'{self.save_dir}models/{name}.pt')
+
+    def save_metrics(self, metrics: List[float], iter: int, name: str):
+        save_name = f'{name}_iteration_{iter}-{datetime.now().strftime("%m/%d/%Y_%H:%M:%S")}.json'
+        with open(Path(Path.home(), self.save_dir, save_name), 'w') as f:
+            json.dump(metrics, f)
