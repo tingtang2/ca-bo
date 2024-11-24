@@ -2,3 +2,4 @@ git+https://github.com/cornellius-gp/linear_operator.git@sparsity
 git+https://github.com/cornellius-gp/gpytorch.git@computation-aware-gps-v2
 pykeops
 botorch
+wandb

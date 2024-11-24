@@ -23,6 +23,7 @@ class BaseTrainer(ABC):
                  save_plots: bool = True,
                  seed: int = 11202022,
                  norm_data: bool = False,
+                 tracker=None,
                  **kwargs) -> None:
         super().__init__()
 
@@ -41,6 +42,9 @@ class BaseTrainer(ABC):
         self.task: Task = None
         self.max_oracle_calls = max_oracle_calls
         self.norm_data = norm_data
+
+        # wandb tracking
+        self.tracker = tracker
 
         # extra configs in form of kwargs
         for key, item in kwargs.items():

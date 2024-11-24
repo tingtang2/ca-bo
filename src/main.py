@@ -11,6 +11,10 @@ from torch.optim import Adam, AdamW
 from trainers.exact_gp_trainer import HartmannEIExactGPTrainer
 from trainers.svgp_trainer import HartmannEISVGPTrainer
 
+import wandb
+import os
+from datetime import datetime
+
 arg_trainer_map = {
     'hartmann_ei_exact_gp': HartmannEIExactGPTrainer,
     'hartmann_ei_svgp': HartmannEISVGPTrainer
@@ -66,9 +70,22 @@ def main() -> int:
     parser.add_argument('--norm_data',
                         action='store_true',
                         help='normalize ys')
+    parser.add_argument('--turn_off_wandb',
+                        action='store_true',
+                        help='skip wandb logging')
 
     args = parser.parse_args()
     configs = args.__dict__
+    configs['date'] = datetime.now().strftime("%m/%d/%Y_%H:%M:%S")
+
+    # wandb tracking
+    if configs['turn_off_wandb']:
+        tracker = None
+    else:
+        tracker = wandb.init(project='Computation-Aware-BO',
+                             group=configs["trainer_type"],
+                             config=configs)
+        os.environ["WANDB_RUN_GROUP"] = "experiment-" + configs["trainer_type"]
 
     # for repeatability
     torch.manual_seed(configs['seed'])
@@ -91,6 +108,7 @@ def main() -> int:
     trainer = trainer_type(
         optimizer_type=arg_optimizer_map[configs['optimizer']],
         criterion=nn.CrossEntropyLoss(reduction='sum'),
+        tracker=tracker,
         **configs)
 
     # perform experiment n times
