@@ -30,7 +30,7 @@ def main() -> int:
     parser.add_argument('--batch_size',
                         default=1,
                         type=int,
-                        help='acquisition batch siz')
+                        help='acquisition batch size')
     parser.add_argument('--dropout_prob',
                         default=0.3,
                         type=float,
@@ -53,12 +53,15 @@ def main() -> int:
                         type=float,
                         help='learning rate for optimizer')
     parser.add_argument('--max_oracle_calls',
-                        default=20_000,
+                        default=2000,
                         type=int,
                         help='max number of function evals/oracle calls')
     parser.add_argument('--trainer_type',
                         default='hartmann_ei_exact_gp',
                         help='type of experiment to run')
+    parser.add_argument('--norm_data',
+                        action='store_true',
+                        help='normalize ys')
 
     args = parser.parse_args()
     configs = args.__dict__
@@ -66,6 +69,9 @@ def main() -> int:
     # for repeatability
     torch.manual_seed(configs['seed'])
     random.seed(configs['seed'])
+
+    # need this precision for GP fitting
+    torch.set_default_dtype(torch.float64)
 
     # set up logging
     filename = f'{configs["trainer_type"]}-{date.today()}'

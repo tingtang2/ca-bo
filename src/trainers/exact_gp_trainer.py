@@ -6,7 +6,9 @@ from botorch.fit import fit_gpytorch_model
 from botorch.models import SingleTaskGP
 from gpytorch.mlls import ExactMarginalLogLikelihood
 
-from trainers.base_trainer import BaseTrainer, EITrainer, HartmannTrainer
+from trainers.base_trainer import BaseTrainer
+from trainers.data_trainers import HartmannTrainer
+from trainers.acquisition_fn_trainers import EITrainer
 
 
 class ExactGPTrainer(BaseTrainer):
