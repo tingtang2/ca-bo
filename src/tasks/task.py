@@ -1,9 +1,12 @@
 from abc import ABC, abstractmethod
 
+import torch
+
 
 class Task(ABC):
 
-    def __init__(self, dim: int, lower_bound: int, upper_bound: int):
+    def __init__(self, dim: int, lower_bound: torch.Tensor,
+                 upper_bound: torch.Tensor):
         super().__init__()
 
         # number of times oracle has been called

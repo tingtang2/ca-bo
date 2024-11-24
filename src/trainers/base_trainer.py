@@ -23,6 +23,7 @@ class BaseTrainer(ABC):
                  max_oracle_calls: int,
                  save_plots: bool = True,
                  seed: int = 11202022,
+                 norm_data: bool = False,
                  **kwargs) -> None:
         super().__init__()
 
@@ -40,6 +41,7 @@ class BaseTrainer(ABC):
         # BO specific
         self.task: Task = None
         self.max_oracle_calls = max_oracle_calls
+        self.norm_data = norm_data
 
         # extra configs in form of kwargs
         for key, item in kwargs.items():
@@ -54,7 +56,7 @@ class BaseTrainer(ABC):
         pass
 
     @abstractmethod
-    def run_experiment(self):
+    def run_experiment(self, iteration: int):
         pass
 
     @abstractmethod
@@ -70,15 +72,17 @@ class HartmannTrainer(BaseTrainer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.task = Hartmann6D()
+        self.task = Hartmann6D(device=self.device)
         self.num_initial_points = 100
 
     def initialize_data(self) -> Tuple[torch.tensor, torch.tensor]:
-        init_train_x = torch.rand(self.num_initial_points, self.task.dim) * (
-            self.task.upper_bound -
-            self.task.lower_bound) + self.task.lower_bound
+        init_train_x = torch.rand((self.num_initial_points, self.task.dim)).to(
+            self.device) * (self.task.upper_bound -
+                            self.task.lower_bound) + self.task.lower_bound
         init_train_y = self.task.function_eval(init_train_x.to(self.device))
 
+        # x dim and y dim need to be the same for botorch
+        init_train_y = init_train_y.unsqueeze(1)
         return init_train_x, init_train_y
 
 
@@ -98,6 +102,5 @@ class EITrainer(BaseTrainer):
                                 self.task.upper_bound]).to(self.device),
             q=self.batch_size,
             num_restarts=self.num_restarts,
-            raw_samples=self.raw_samples,
-        )
+            raw_samples=self.raw_samples)
         return X_next

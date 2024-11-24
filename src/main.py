@@ -8,7 +8,9 @@ import torch
 from torch import nn
 from torch.optim import Adam, AdamW
 
-arg_trainer_map = {'': ''}
+from trainers.exact_gp_trainer import HartmannEIExactGPTrainer
+
+arg_trainer_map = {'hartmann_ei_exact_gp': HartmannEIExactGPTrainer}
 arg_optimizer_map = {'adamW': AdamW, 'adam': Adam}
 
 
@@ -26,7 +28,7 @@ def main() -> int:
                         type=str,
                         help='cpu or gpu ID to use')
     parser.add_argument('--batch_size',
-                        default=20,
+                        default=1,
                         type=int,
                         help='acquisition batch siz')
     parser.add_argument('--dropout_prob',
@@ -54,7 +56,9 @@ def main() -> int:
                         default=20_000,
                         type=int,
                         help='max number of function evals/oracle calls')
-    parser.add_argument('--trainer_type', help='type of experiment to run')
+    parser.add_argument('--trainer_type',
+                        default='hartmann_ei_exact_gp',
+                        help='type of experiment to run')
 
     args = parser.parse_args()
     configs = args.__dict__
