@@ -1,19 +1,18 @@
 import argparse
 import logging
+import os
 import random
 import sys
-from datetime import date
+from datetime import date, datetime
 
 import torch
 from torch import nn
 from torch.optim import Adam, AdamW
 
+import wandb
+from trainers.base_trainer import BaseTrainer
 from trainers.exact_gp_trainer import HartmannEIExactGPTrainer
 from trainers.svgp_trainer import HartmannEISVGPTrainer
-
-import wandb
-import os
-from datetime import datetime
 
 arg_trainer_map = {
     'hartmann_ei_exact_gp': HartmannEIExactGPTrainer,
@@ -73,10 +72,11 @@ def main() -> int:
     parser.add_argument('--turn_off_wandb',
                         action='store_true',
                         help='skip wandb logging')
+    parser.add_argument('--notes', default='', help='note on experiment run')
 
     args = parser.parse_args()
     configs = args.__dict__
-    configs['date'] = datetime.now().strftime("%m/%d/%Y_%H:%M:%S")
+    configs['date'] = datetime.now().strftime("%m_%d_%Y_%H:%M:%S")
 
     # wandb tracking
     if configs['turn_off_wandb']:
@@ -84,7 +84,8 @@ def main() -> int:
     else:
         tracker = wandb.init(project='Computation-Aware-BO',
                              group=configs["trainer_type"],
-                             config=configs)
+                             config=configs,
+                             notes=configs['notes'])
         os.environ["WANDB_RUN_GROUP"] = "experiment-" + configs["trainer_type"]
 
     # for repeatability
@@ -105,7 +106,7 @@ def main() -> int:
 
     # get trainer
     trainer_type = arg_trainer_map[configs['trainer_type']]
-    trainer = trainer_type(
+    trainer: BaseTrainer = trainer_type(
         optimizer_type=arg_optimizer_map[configs['optimizer']],
         criterion=nn.CrossEntropyLoss(reduction='sum'),
         tracker=tracker,
@@ -114,6 +115,16 @@ def main() -> int:
     # perform experiment n times
     for iter in range(configs['num_repeats']):
         trainer.run_experiment(iter)
+        trainer.tracker.finish()
+
+        # reinitialize tracker for each new run
+        if iter != configs['num_repeats'] - 1:
+            tracker = wandb.init(project='Computation-Aware-BO',
+                                 group=configs["trainer_type"],
+                                 config=configs,
+                                 notes=configs['notes'])
+            trainer.init_new_run(tracker)
+            trainer.task.num_calls = 0
 
     return 0
 

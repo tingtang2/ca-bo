@@ -70,6 +70,9 @@ class BaseTrainer(ABC):
         torch.save(self.model.state_dict(), f'{self.save_dir}models/{name}.pt')
 
     def save_metrics(self, metrics: List[float], iter: int, name: str):
-        save_name = f'{name}_iteration_{iter}-{datetime.now().strftime("%m/%d/%Y_%H:%M:%S")}.json'
+        save_name = f'{name}_iteration_{iter}-{datetime.now().strftime("%m_%d_%Y_%H:%M:%S")}.json'
         with open(Path(Path.home(), self.save_dir, save_name), 'w') as f:
             json.dump(metrics, f)
+
+    def init_new_run(self, tracker):
+        self.tracker = tracker

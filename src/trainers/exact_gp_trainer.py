@@ -11,20 +11,17 @@ from trainers.acquisition_fn_trainers import EITrainer
 from trainers.base_trainer import BaseTrainer
 from trainers.data_trainers import HartmannTrainer
 
-import wandb
-
 
 class ExactGPTrainer(BaseTrainer):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-        if not self.turn_off_wandb:
-            self.tracker.watch(self.model,
-                               criterion=self.criterion,
-                               log='all',
-                               log_freq=20,
-                               log_graph=True)
+        # if not self.turn_off_wandb:
+        #     self.tracker.watch(self.model,
+        #                        criterion=self.criterion,
+        #                        log='all',
+        #                        log_freq=20,
+        #                        log_graph=True)
 
     def run_experiment(self, iteration: int):
         logging.info(self.__dict__)

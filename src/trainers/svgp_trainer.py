@@ -59,7 +59,7 @@ class SVGPTrainer(BaseTrainer):
             train_loader = self.generate_dataloaders(train_x=train_x,
                                                      train_y=train_y)
 
-            final_loss = self.train_model(train_loader, mll)
+            final_loss, epochs_trained = self.train_model(train_loader, mll)
 
             x_next = self.data_acquisition_iteration(self.model, train_y)
 
@@ -72,7 +72,7 @@ class SVGPTrainer(BaseTrainer):
             train_y = torch.cat((train_y, y_next), dim=-2)
 
             logging.info(
-                f'Num oracle calls: {self.task.num_calls - 1}, best reward: {train_y.max().item():.3f}, final svgp loss: {final_loss:.3f}'
+                f'Num oracle calls: {self.task.num_calls - 1}, best reward: {train_y.max().item():.3f}, final svgp loss: {final_loss:.3f}, epochs trained: {epochs_trained}'
             )
             reward.append(train_y.max().item())
 
@@ -96,9 +96,9 @@ class SVGPTrainer(BaseTrainer):
                 early_stopping_counter += 1
 
             if early_stopping_counter == self.early_stopping_threshold:
-                return loss
+                return loss, i + 1
 
-        return loss
+        return loss, i + 1
 
     def train_epoch(self, train_loader: DataLoader, mll):
         running_loss = 0.0

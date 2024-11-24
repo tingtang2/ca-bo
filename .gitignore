@@ -162,8 +162,12 @@ cython_debug/
 #.idea/
 
 run.sh
+exact_gp_run.sh
 
 job_submit.sh
 
 # slurm logs
 *.out
+
+# wandb
+wandb/
