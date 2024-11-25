@@ -43,7 +43,6 @@ class SVGPTrainer(BaseTrainer):
                 # 'params': self.model.likelihood.parameters()
             }],
             lr=self.learning_rate)
-        self.init_training_complete = False
 
         reward = []
         for i in trange(self.max_oracle_calls - self.num_initial_points):

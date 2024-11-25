@@ -13,10 +13,12 @@ import wandb
 from trainers.base_trainer import BaseTrainer
 from trainers.exact_gp_trainer import HartmannEIExactGPTrainer
 from trainers.svgp_trainer import HartmannEISVGPTrainer
+from trainers.ca_gp_trainer import HartmannEICaGPTrainer
 
 arg_trainer_map = {
     'hartmann_ei_exact_gp': HartmannEIExactGPTrainer,
-    'hartmann_ei_svgp': HartmannEISVGPTrainer
+    'hartmann_ei_svgp': HartmannEISVGPTrainer,
+    'hartmann_ei_ca_gp': HartmannEICaGPTrainer
 }
 arg_optimizer_map = {'adamW': AdamW, 'adam': Adam}
 
@@ -115,18 +117,18 @@ def main() -> int:
     # perform experiment n times
     for iter in range(configs['num_repeats']):
         trainer.run_experiment(iter)
+        trainer.task.num_calls = 0
         if configs['turn_off_wandb']:
             continue
-        trainer.tracker.finish()
 
         # reinitialize tracker for each new run
         if iter != configs['num_repeats'] - 1:
+            trainer.tracker.finish()
             tracker = wandb.init(project='Computation-Aware-BO',
                                  group=configs["trainer_type"],
                                  config=configs,
                                  notes=configs['notes'])
             trainer.init_new_run(tracker)
-            trainer.task.num_calls = 0
 
     return 0
 

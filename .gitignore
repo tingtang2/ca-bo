@@ -172,3 +172,5 @@ job_submit.sh
 
 # wandb
 wandb/
+
+ca_gp_run.sh
