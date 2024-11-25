@@ -31,7 +31,7 @@ class SVGPTrainer(BaseTrainer):
         train_x, train_y = self.initialize_data()
 
         # get inducing points
-        inducing_points = train_x[0:self.num_inducing_points, :]
+        inducing_points = train_x[:self.num_inducing_points]
 
         # init model
         self.model = SVGPModel(inducing_points=inducing_points,
@@ -46,7 +46,7 @@ class SVGPTrainer(BaseTrainer):
         self.init_training_complete = False
 
         reward = []
-        for i in trange(self.max_oracle_calls):
+        for i in trange(self.max_oracle_calls - self.num_initial_points):
             if self.norm_data:
                 # get normalized train y
                 train_y_mean = train_y.mean()
@@ -56,20 +56,13 @@ class SVGPTrainer(BaseTrainer):
                 train_y = (train_y - train_y_mean) / train_y_std
 
             # only update on recently acquired points
-            if not self.init_training_complete:
+            if i > 0:
+                update_x = train_x[-self.update_train_size:]
+                # y needs to only have 1 dimension when training in gpytorch
+                update_y = train_y.squeeze()[-self.update_train_size:]
+            else:
                 update_x = train_x
                 update_y = train_y.squeeze()
-                self.init_training_complete = True
-            else:
-                update_x = train_x[-self.update_train_size:]
-                update_y = train_y.squeeze()[-self.update_train_size:]
-
-            # if i > 0:
-            #     update_x = train_x[-self.update_train_size:]
-            #     update_y = train_y[-self.update_train_size:]
-            # else:
-            #     update_x = train_x
-            #     update_y = train_y
 
             mll = VariationalELBO(self.model.likelihood,
                                   self.model,
@@ -86,7 +79,6 @@ class SVGPTrainer(BaseTrainer):
 
             # Evaluate candidates
             y_next = self.task(x_next)
-            # y_next = y_next.unsqueeze(-1)
 
             # Update data
             train_x = torch.cat((train_x, x_next), dim=-2)
@@ -128,7 +120,6 @@ class SVGPTrainer(BaseTrainer):
 
             output = self.model(x.to(self.device))
             loss = -mll(output, y.to(self.device))
-            # loss = loss.sum()
 
             loss.backward()
             if self.grad_clip is not None:

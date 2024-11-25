@@ -20,6 +20,4 @@ class HartmannTrainer(BaseTrainer):
             self.device) * (self.task.ub - self.task.lb) + self.task.lb
         init_train_y = self.task(init_train_x.to(self.device))
 
-        # x dim and y dim need to be the same for botorch
-        # init_train_y = init_train_y.unsqueeze(1)
         return init_train_x, init_train_y
