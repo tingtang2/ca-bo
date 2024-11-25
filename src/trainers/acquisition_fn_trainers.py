@@ -18,8 +18,8 @@ class EITrainer(BaseTrainer):
         x_center = copy.deepcopy(X[Y.argmax(), :])
         weights = torch.ones_like(x_center)
 
-        lb = self.task.lower_bound * weights
-        ub = self.task.upper_bound * weights
+        lb = self.task.lb * weights
+        ub = self.task.ub * weights
 
         ei = qExpectedImprovement(model, Y.max().to(self.device))
         X_next, _ = optimize_acqf(ei,
