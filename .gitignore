@@ -163,6 +163,7 @@ cython_debug/
 
 run.sh
 exact_gp_run.sh
+svgp_run.sh
 
 job_submit.sh
 

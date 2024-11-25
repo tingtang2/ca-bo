@@ -26,7 +26,7 @@ def main() -> int:
         description='Run computation aware GP based BO')
 
     parser.add_argument('--epochs',
-                        default=100,
+                        default=30,
                         type=int,
                         help='number of epochs to train model')
     parser.add_argument('--device',
@@ -115,6 +115,8 @@ def main() -> int:
     # perform experiment n times
     for iter in range(configs['num_repeats']):
         trainer.run_experiment(iter)
+        if configs['turn_off_wandb']:
+            continue
         trainer.tracker.finish()
 
         # reinitialize tracker for each new run

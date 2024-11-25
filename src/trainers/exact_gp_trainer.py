@@ -52,7 +52,7 @@ class ExactGPTrainer(BaseTrainer):
             # fit model to data
             fit_gpytorch_model(exact_gp_mll)
 
-            x_next = self.data_acquisition_iteration(model, train_y)
+            x_next = self.data_acquisition_iteration(model, train_y, train_x)
 
             # Evaluate candidates
             y_next = self.task.function_eval(x_next)

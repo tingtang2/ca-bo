@@ -71,7 +71,8 @@ class BaseTrainer(ABC):
 
     def save_metrics(self, metrics: List[float], iter: int, name: str):
         save_name = f'{name}_iteration_{iter}-{datetime.now().strftime("%m_%d_%Y_%H:%M:%S")}.json'
-        with open(Path(Path.home(), self.save_dir, save_name), 'w') as f:
+        with open(Path(Path.home(), self.save_dir, 'metrics/', save_name),
+                  'w') as f:
             json.dump(metrics, f)
 
     def init_new_run(self, tracker):

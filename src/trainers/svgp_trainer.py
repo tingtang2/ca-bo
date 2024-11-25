@@ -18,11 +18,12 @@ class SVGPTrainer(BaseTrainer):
         super().__init__(**kwargs)
 
         self.num_inducing_points = 100
-        # self.grad_clip = 2.0
-        self.grad_clip = 1.0
+        self.grad_clip = 2.0
 
-        self.early_stopping_threshold = 10
+        self.early_stopping_threshold = 3
         self.train_batch_size = 32
+
+        self.update_train_size = 100
 
     def run_experiment(self, iteration: int):
         # get all attribute information
@@ -56,12 +57,22 @@ class SVGPTrainer(BaseTrainer):
                     train_y_std = 1
                 train_y = (train_y - train_y_mean) / train_y_std
 
-            train_loader = self.generate_dataloaders(train_x=train_x,
-                                                     train_y=train_y)
+            # only update on recently acquired points
+            if i > 0:
+                update_x = train_x[-self.update_train_size:]
+                update_y = train_y[-self.update_train_size:]
+            else:
+                update_x = train_x
+                update_y = train_y
+
+            train_loader = self.generate_dataloaders(train_x=update_x,
+                                                     train_y=update_y)
 
             final_loss, epochs_trained = self.train_model(train_loader, mll)
+            self.model.eval()
 
-            x_next = self.data_acquisition_iteration(self.model, train_y)
+            x_next = self.data_acquisition_iteration(self.model, train_y,
+                                                     train_x)
 
             # Evaluate candidates
             y_next = self.task.function_eval(x_next)
