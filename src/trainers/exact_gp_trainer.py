@@ -29,7 +29,7 @@ class ExactGPTrainer(BaseTrainer):
 
         reward = []
 
-        for i in trange(self.max_oracle_calls):
+        for i in trange(self.max_oracle_calls - self.num_initial_points):
             if self.norm_data:
                 # get normalized train y
                 train_y_mean = train_y.mean()
