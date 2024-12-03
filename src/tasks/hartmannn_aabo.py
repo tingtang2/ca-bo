@@ -1,8 +1,11 @@
-import sys 
+import sys
+
 sys.path.append("../")
 import torch
-from tasks.objective import Objective
 from botorch.test_functions import Hartmann
+
+from tasks.objective import Objective
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 

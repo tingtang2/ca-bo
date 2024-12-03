@@ -11,9 +11,9 @@ from torch.optim import Adam, AdamW
 
 import wandb
 from trainers.base_trainer import BaseTrainer
+from trainers.ca_gp_trainer import HartmannEICaGPTrainer
 from trainers.exact_gp_trainer import HartmannEIExactGPTrainer
 from trainers.svgp_trainer import HartmannEISVGPTrainer
-from trainers.ca_gp_trainer import HartmannEICaGPTrainer
 
 arg_trainer_map = {
     'hartmann_ei_exact_gp': HartmannEIExactGPTrainer,
