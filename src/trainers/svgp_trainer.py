@@ -1,8 +1,10 @@
+import copy
 import logging
 
 import torch
 from gpytorch.likelihoods import GaussianLikelihood
 from gpytorch.mlls import VariationalELBO
+from torch.autograd import Variable
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import trange
 
@@ -10,13 +12,9 @@ from models.svgp import SVGPModel
 from trainers.acquisition_fn_trainers import EITrainer
 from trainers.base_trainer import BaseTrainer
 from trainers.data_trainers import HartmannTrainer
+from trainers.utils.expected_log_utility import get_expected_log_utility_ei
 from trainers.utils.moss_et_al_inducing_pts_init import \
     GreedyImprovementReduction
-
-import copy
-from torch.autograd import Variable
-
-from trainers.utils.expected_log_utility import get_expected_log_utility_ei
 
 
 class SVGPTrainer(BaseTrainer):

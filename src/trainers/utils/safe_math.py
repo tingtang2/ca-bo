@@ -1,7 +1,7 @@
+from typing import Union
+
 import torch
 from torch import Tensor
-
-from typing import Union
 
 TAU = 1.0  # default temperature parameter for smooth approximations to non-linearities
 from torch.nn.functional import softplus

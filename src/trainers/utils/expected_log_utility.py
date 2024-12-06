@@ -1,5 +1,6 @@
 import torch
 from gpytorch.utils.quadrature import GaussHermiteQuadrature1D
+
 from trainers.utils.safe_math import log_softplus
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

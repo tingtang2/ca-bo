@@ -9,11 +9,14 @@ from trainers.base_trainer import BaseTrainer
 
 class EITrainer(BaseTrainer):
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 raw_samples: int = 256,
+                 num_restarts: int = 10,
+                 **kwargs):
         super().__init__(**kwargs)
 
-        self.num_restarts = 10
-        self.raw_samples = 256
+        self.num_restarts = num_restarts
+        self.raw_samples = raw_samples
 
     def data_acquisition_iteration(self, model, Y: torch.Tensor, X):
         x_center = copy.deepcopy(X[Y.argmax(), :])

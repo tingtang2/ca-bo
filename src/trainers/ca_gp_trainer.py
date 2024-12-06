@@ -37,6 +37,7 @@ class CaGPTrainer(BaseTrainer):
                           projection_dim=6,
                           likelihood=GaussianLikelihood().to(self.device)).to(
                               self.device)
+
         self.optimizer = self.optimizer_type(
             [{
                 'params': self.model.parameters(),
@@ -114,7 +115,7 @@ class CaGPTrainer(BaseTrainer):
             self.optimizer.zero_grad()
 
             output = self.model(x.to(self.device))
-            loss = -mll(output, y.to(self.device))
+            loss = -mll(output, y.double().to(self.device))
 
             loss.backward()
             if self.grad_clip is not None:
