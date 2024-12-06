@@ -31,17 +31,6 @@ class CaGPTrainer(BaseTrainer):
         train_x, train_y = self.initialize_data()
 
         # init model
-        # TODO: Fix args here
-        self.model = CaGP(train_inputs=train_x,
-                          train_targets=train_y.squeeze(),
-                          projection_dim=6,
-                          likelihood=GaussianLikelihood().to(self.device)).to(
-                              self.device)
-
-        self.optimizer = self.optimizer_type(
-            [{
-                'params': self.model.parameters(),
-            }], lr=self.learning_rate)
 
         reward = []
         for i in trange(self.max_oracle_calls - self.num_initial_points):
@@ -53,19 +42,33 @@ class CaGPTrainer(BaseTrainer):
                     train_y_std = 1
                 train_y = (train_y - train_y_mean) / train_y_std
 
-            # only update on recently acquired points
-            if i > 0:
-                update_x = train_x[-self.update_train_size:]
-                # y needs to only have 1 dimension when training in gpytorch
-                update_y = train_y.squeeze()[-self.update_train_size:]
-            else:
-                update_x = train_x
-                update_y = train_y.squeeze()
+            # # only update on recently acquired points
+            # if i > 0:
+            #     update_x = train_x[-self.update_train_size:]
+            #     # y needs to only have 1 dimension when training in gpytorch
+            #     update_y = train_y.squeeze()[-self.update_train_size:]
+            # else:
+            #     update_x = train_x
+            #     update_y = train_y.squeeze()
+
+            # TODO: Fix args here
+            self.model = CaGP(train_inputs=train_x,
+                              train_targets=train_y.squeeze(),
+                              projection_dim=6,
+                              likelihood=GaussianLikelihood().to(
+                                  self.device)).to(self.device)
+
+            self.optimizer = self.optimizer_type(
+                [{
+                    'params': self.model.parameters(),
+                }], lr=self.learning_rate)
 
             mll = ComputationAwareELBO(self.model.likelihood, self.model)
 
-            train_loader = self.generate_dataloaders(train_x=update_x,
-                                                     train_y=update_y)
+            # train_loader = self.generate_dataloaders(train_x=update_x,
+            #                                          train_y=update_y)
+            train_loader = self.generate_dataloaders(train_x=train_x,
+                                                     train_y=train_y.squeeze())
 
             final_loss, epochs_trained = self.train_model(train_loader, mll)
             self.model.eval()
@@ -130,7 +133,9 @@ class CaGPTrainer(BaseTrainer):
 
     def generate_dataloaders(self, train_x, train_y):
         train_dataset = TensorDataset(train_x, train_y)
-        train_loader = DataLoader(train_dataset, batch_size=100, shuffle=False)
+        train_loader = DataLoader(train_dataset,
+                                  batch_size=train_x.shape[0],
+                                  shuffle=False)
         return train_loader
 
     def eval(self):

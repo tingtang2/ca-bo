@@ -9,10 +9,7 @@ from trainers.base_trainer import BaseTrainer
 
 class EITrainer(BaseTrainer):
 
-    def __init__(self,
-                 raw_samples: int = 256,
-                 num_restarts: int = 10,
-                 **kwargs):
+    def __init__(self, raw_samples: int = 6, num_restarts: int = 6, **kwargs):
         super().__init__(**kwargs)
 
         self.num_restarts = num_restarts
