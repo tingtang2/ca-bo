@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from tqdm import trange
 
 from models.ca_gp import CaGP
-from trainers.acquisition_fn_trainers import EITrainer
+from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
 from trainers.base_trainer import BaseTrainer
 from trainers.data_trainers import HartmannTrainer
 
@@ -30,8 +30,6 @@ class CaGPTrainer(BaseTrainer):
         logging.info(self.__dict__)
         train_x, train_y = self.initialize_data()
 
-        # init model
-
         reward = []
         for i in trange(self.max_oracle_calls - self.num_initial_points):
             if self.norm_data:
@@ -42,19 +40,9 @@ class CaGPTrainer(BaseTrainer):
                     train_y_std = 1
                 train_y = (train_y - train_y_mean) / train_y_std
 
-            # # only update on recently acquired points
-            # if i > 0:
-            #     update_x = train_x[-self.update_train_size:]
-            #     # y needs to only have 1 dimension when training in gpytorch
-            #     update_y = train_y.squeeze()[-self.update_train_size:]
-            # else:
-            #     update_x = train_x
-            #     update_y = train_y.squeeze()
-
-            # TODO: Fix args here
             self.model = CaGP(train_inputs=train_x,
                               train_targets=train_y.squeeze(),
-                              projection_dim=6,
+                              projection_dim=train_x.size(0) // 2,
                               likelihood=GaussianLikelihood().to(
                                   self.device)).to(self.device)
 
@@ -65,16 +53,16 @@ class CaGPTrainer(BaseTrainer):
 
             mll = ComputationAwareELBO(self.model.likelihood, self.model)
 
-            # train_loader = self.generate_dataloaders(train_x=update_x,
-            #                                          train_y=update_y)
             train_loader = self.generate_dataloaders(train_x=train_x,
                                                      train_y=train_y.squeeze())
 
             final_loss, epochs_trained = self.train_model(train_loader, mll)
             self.model.eval()
 
-            x_next = self.data_acquisition_iteration(self.model, train_y,
-                                                     train_x)
+            x_next = self.data_acquisition_iteration(self.model,
+                                                     train_y,
+                                                     train_x,
+                                                     raw_samples=10)
 
             # Evaluate candidates
             y_next = self.task(x_next)
@@ -143,4 +131,8 @@ class CaGPTrainer(BaseTrainer):
 
 
 class HartmannEICaGPTrainer(CaGPTrainer, HartmannTrainer, EITrainer):
+    pass
+
+
+class HartmannLogEICaGPTrainer(CaGPTrainer, HartmannTrainer, LogEITrainer):
     pass

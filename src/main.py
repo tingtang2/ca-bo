@@ -11,14 +11,16 @@ from torch.optim import Adam, AdamW
 
 import wandb
 from trainers.base_trainer import BaseTrainer
-from trainers.ca_gp_trainer import HartmannEICaGPTrainer
+from trainers.ca_gp_trainer import (HartmannEICaGPTrainer,
+                                    HartmannLogEICaGPTrainer)
 from trainers.exact_gp_trainer import HartmannEIExactGPTrainer
 from trainers.svgp_trainer import HartmannEISVGPTrainer
 
 arg_trainer_map = {
     'hartmann_ei_exact_gp': HartmannEIExactGPTrainer,
     'hartmann_ei_svgp': HartmannEISVGPTrainer,
-    'hartmann_ei_ca_gp': HartmannEICaGPTrainer
+    'hartmann_ei_ca_gp': HartmannEICaGPTrainer,
+    'hartmann_log_ei_ca_gp': HartmannLogEICaGPTrainer
 }
 arg_optimizer_map = {'adamW': AdamW, 'adam': Adam}
 

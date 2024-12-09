@@ -4,8 +4,6 @@ from botorch.posteriors.gpytorch import GPyTorchPosterior
 from gpytorch import likelihoods
 from gpytorch.models.computation_aware_gp import ComputationAwareGP
 
-# from botorch.models.gpytorch import BatchedMultiOutputGPyTorchModel
-
 
 class CaGP(ComputationAwareGP):
 

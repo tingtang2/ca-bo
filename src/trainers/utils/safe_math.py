@@ -1,10 +1,14 @@
+import math
 from typing import Union
 
 import torch
 from torch import Tensor
 
 TAU = 1.0  # default temperature parameter for smooth approximations to non-linearities
+_log2 = math.log(2)
 from torch.nn.functional import softplus
+
+from trainers.utils.constants import get_constants_like
 
 
 def log_softplus(x: Tensor, tau: Union[float, Tensor] = TAU) -> Tensor:
@@ -28,4 +32,17 @@ def log_softplus(x: Tensor, tau: Union[float, Tensor] = TAU) -> Tensor:
         softplus(x.masked_fill(~mask, lower), beta=(1 / tau),
                  threshold=upper).log(),
         x / tau + tau.log(),
+    )
+
+
+def log1mexp(x: Tensor) -> Tensor:
+    """Numerically accurate evaluation of log(1 - exp(x)) for x < 0.
+    See [Maechler2012accurate]_ for details.
+    """
+    log2 = get_constants_like(values=_log2, ref=x)
+    is_small = -log2 < x  # x < 0
+    return torch.where(
+        is_small,
+        (-x.expm1()).log(),
+        (-x.exp()).log1p(),
     )
