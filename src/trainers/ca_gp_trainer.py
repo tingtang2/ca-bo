@@ -71,6 +71,20 @@ class CaGPTrainer(BaseTrainer):
             train_x = torch.cat((train_x, x_next), dim=-2)
             train_y = torch.cat((train_y, y_next), dim=-2)
 
+            if not self.turn_off_wandb:
+                self.tracker.log({
+                    'Num oracle calls':
+                    self.task.num_calls - 1,
+                    'best reward':
+                    train_y.max().item(),
+                    'final svgp loss':
+                    final_loss,
+                    'epochs trained':
+                    epochs_trained,
+                    'noise param':
+                    self.model.likelihood.noise.item()
+                })
+
             logging.info(
                 f'Num oracle calls: {self.task.num_calls - 1}, best reward: {train_y.max().item():.3f}, final cagp loss: {final_loss:.3f}, epochs trained: {epochs_trained}'
             )
