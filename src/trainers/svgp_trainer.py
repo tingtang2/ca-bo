@@ -47,8 +47,8 @@ class SVGPRetrainTrainer(BaseTrainer):
             # reinit model
             self.model = SVGPModel(
                 inducing_points=train_x[-(train_x.size(0) // 2):],
-                likelihood=GaussianLikelihood().to(self.device)).to(
-                    self.device)
+                likelihood=GaussianLikelihood().to(self.device),
+                kernel_type=self.kernel_type).to(self.device)
 
             self.optimizer = self.optimizer_type(
                 [{
@@ -181,8 +181,8 @@ class SVGPTrainer(BaseTrainer):
 
         # init model
         self.model = SVGPModel(inducing_points=inducing_points,
-                               likelihood=GaussianLikelihood().to(
-                                   self.device)).to(self.device)
+                               likelihood=GaussianLikelihood().to(self.device),
+                               kernel_type=self.kernel_type).to(self.device)
 
         self.optimizer = self.optimizer_type(
             [{
@@ -350,14 +350,15 @@ class SVGPEULBOTrainer(SVGPTrainer):
 
         # init model
         self.model = SVGPModel(inducing_points=inducing_points,
-                               likelihood=GaussianLikelihood().to(
-                                   self.device)).to(self.device)
+                               likelihood=GaussianLikelihood().to(self.device),
+                               kernel_type=self.kernel_type).to(self.device)
         if self.inducing_pt_init_w_moss23:
             optimal_inducing_points = self.get_optimal_inducing_points(
-                prev_inducing_points=inducing_points, )
-            self.model = SVGPModel(inducing_points=optimal_inducing_points,
-                                   likelihood=GaussianLikelihood().to(
-                                       self.device)).to(self.device)
+                prev_inducing_points=inducing_points)
+            self.model = SVGPModel(
+                inducing_points=optimal_inducing_points,
+                likelihood=GaussianLikelihood().to(self.device),
+                kernel_type=self.kernel_type).to(self.device)
 
         self.optimizer = self.optimizer_type(
             [{

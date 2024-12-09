@@ -28,6 +28,12 @@ class ExactGPTrainer(BaseTrainer):
         train_x, train_y = self.initialize_data()
 
         reward = []
+        if self.kernel_type == 'rbf':
+            base_kernel = gpytorch.kernels.RBFKernel()
+        elif self.kernel_type == 'matern_3_2':
+            base_kernel = gpytorch.kernels.MaternKernel(1.5)
+        else:
+            base_kernel = gpytorch.kernels.MaternKernel(2.5)
 
         for i in trange(self.max_oracle_calls - self.num_initial_points):
             if self.norm_data:
@@ -42,8 +48,7 @@ class ExactGPTrainer(BaseTrainer):
             model = SingleTaskGP(
                 train_x,
                 train_y,
-                covar_module=gpytorch.kernels.ScaleKernel(
-                    gpytorch.kernels.RBFKernel()),
+                covar_module=gpytorch.kernels.ScaleKernel(base_kernel),
                 likelihood=gpytorch.likelihoods.GaussianLikelihood().to(
                     self.device),
             ).to(self.device)

@@ -9,10 +9,17 @@ class CaGP(ComputationAwareGP):
 
     def __init__(self, train_inputs: torch.Tensor, train_targets: torch.Tensor,
                  likelihood: "likelihoods.GaussianLikelihood",
-                 projection_dim: int):
+                 projection_dim: int, kernel_type: str):
+
+        if kernel_type == 'rbf':
+            base_kernel = gpytorch.kernels.RBFKernel()
+        elif kernel_type == 'matern_3_2':
+            base_kernel = gpytorch.kernels.MaternKernel(1.5)
+        else:
+            base_kernel = gpytorch.kernels.MaternKernel(2.5)
+
         mean_module = gpytorch.means.ConstantMean()
-        covar_module = gpytorch.kernels.ScaleKernel(
-            gpytorch.kernels.MaternKernel(nu=1.5))
+        covar_module = gpytorch.kernels.ScaleKernel(base_kernel)
 
         super(CaGP, self).__init__(train_inputs=train_inputs,
                                    train_targets=train_targets,

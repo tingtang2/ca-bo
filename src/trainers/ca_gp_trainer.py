@@ -43,8 +43,8 @@ class CaGPTrainer(BaseTrainer):
             self.model = CaGP(train_inputs=train_x,
                               train_targets=train_y.squeeze(),
                               projection_dim=train_x.size(0) // 2,
-                              likelihood=GaussianLikelihood().to(
-                                  self.device)).to(self.device)
+                              likelihood=GaussianLikelihood().to(self.device),
+                              kernel_type=self.kernel_type).to(self.device)
 
             self.optimizer = self.optimizer_type(
                 [{

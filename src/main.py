@@ -72,6 +72,9 @@ def main() -> int:
     parser.add_argument('--trainer_type',
                         default='hartmann_ei_exact_gp',
                         help='type of experiment to run')
+    parser.add_argument('--kernel_type',
+                        default='matern_5_2',
+                        help='type of experiment to run')
     parser.add_argument('--norm_data',
                         action='store_true',
                         help='normalize ys')
