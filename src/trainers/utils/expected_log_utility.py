@@ -3,7 +3,6 @@ from gpytorch.utils.quadrature import GaussHermiteQuadrature1D
 
 from trainers.utils.safe_math import log_softplus
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 softplus_func = torch.nn.Softplus()
 
 
@@ -11,6 +10,7 @@ def get_expected_log_utility_ei(
     model,
     best_f,
     x_next,  # (q,d)
+    device,
     use_botorch_stable_log_softplus=False,
 ):
     output = model(x_next)

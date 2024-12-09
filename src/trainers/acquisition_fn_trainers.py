@@ -19,7 +19,7 @@ class EITrainer(BaseTrainer):
                                    X,
                                    num_restarts: int = 10,
                                    raw_samples: int = 256):
-        x_center = copy.deepcopy(X[Y.argmax(), :])
+        x_center = copy.deepcopy(X[Y.argmax(), :].detach())
         weights = torch.ones_like(x_center)
 
         lb = self.task.lb * weights
