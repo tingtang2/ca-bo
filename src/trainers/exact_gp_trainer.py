@@ -55,8 +55,7 @@ class ExactGPTrainer(BaseTrainer):
             x_next = self.data_acquisition_iteration(model, train_y, train_x)
 
             # Evaluate candidates
-            y_next = self.task.function_eval(x_next)
-            y_next = y_next.unsqueeze(-1)
+            y_next = self.task(x_next)
 
             # Update data
             train_x = torch.cat((train_x, x_next), dim=-2)
