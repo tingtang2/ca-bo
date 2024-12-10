@@ -423,6 +423,7 @@ class SVGPEULBOTrainer(SVGPTrainer):
                         copy.deepcopy(model_state_before_update))
             if not success:
                 assert 0, f"\nFailed to complete EULBO model update due to the following error:\n{error_message}"
+            self.model.eval()
 
             # Evaluate candidates
             y_next = self.task(x_next)
@@ -498,9 +499,9 @@ class SVGPEULBOTrainer(SVGPTrainer):
                 early_stopping_counter += 1
 
             if early_stopping_counter == self.early_stopping_threshold:
-                return x_next, loss, i + 1
+                return x_next.detach(), loss, i + 1
 
-        return x_next, loss, i + 1
+        return x_next.detach(), loss, i + 1
 
     def eulbo_train_epoch(self, loader, mll, x_next, currently_training_model,
                           train_y):
@@ -521,6 +522,7 @@ class SVGPEULBOTrainer(SVGPTrainer):
                 device=self.device)
             loss = nelbo - expected_log_utility_x_next
             loss.backward()
+
             if self.grad_clip is not None:
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(),
                                                max_norm=self.grad_clip)
@@ -532,6 +534,7 @@ class SVGPEULBOTrainer(SVGPTrainer):
                     self.x_next_optimizer.step()
             else:
                 self.joint_optimizer.step()
+
             with torch.no_grad():
                 x_next[:, :] = x_next.clamp(self.task.lb, self.task.ub)
                 total_loss += loss.item()
@@ -540,21 +543,8 @@ class SVGPEULBOTrainer(SVGPTrainer):
 
     def train_model(self, train_loader: DataLoader, mll):
         self.model.train()
-        best_loss = 1e+5
-        early_stopping_counter = 0
         for i in range(self.epochs):
             loss = self.train_epoch(train_loader, mll)
-
-            if loss < best_loss:
-                # self.save_model(f'{self.name}_{iter}')
-                early_stopping_counter = 0
-                best_loss = loss
-            else:
-                early_stopping_counter += 1
-
-            if early_stopping_counter == self.early_stopping_threshold:
-                return loss, i + 1
-
         return loss, i + 1
 
     def train_epoch(self, train_loader: DataLoader, mll):

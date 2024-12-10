@@ -27,4 +27,4 @@ def get_expected_log_utility_ei(
     ghq = ghq.to(device)
     expected_log_utility = ghq(log_utility, output)
 
-    return expected_log_utility
+    return expected_log_utility.mean()
