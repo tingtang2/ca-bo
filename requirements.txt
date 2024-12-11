@@ -3,3 +3,6 @@ git+https://github.com/cornellius-gp/gpytorch.git@computation-aware-gps-v2
 pykeops
 botorch
 wandb
+multiprocess
+gym
+box2d

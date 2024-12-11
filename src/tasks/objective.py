@@ -14,14 +14,14 @@ class Objective:
         self,
         dim,
         num_calls=0,
-        dtype=torch.float32,
+        dtype=torch.float64,
         lb=None,
         ub=None,
     ):
         # track total number of times the oracle has been called
         self.num_calls = num_calls
-        # search space dim 
-        self.dim = dim 
+        # search space dim
+        self.dim = dim
         # absolute upper and lower bounds on search space
         self.lb = lb
         self.ub = ub
@@ -44,8 +44,6 @@ class Objective:
             ys.append(self.f(x))
         return torch.tensor(ys).to(dtype=self.dtype).unsqueeze(-1)
 
-
-
     def f(self, x):
         """Function f defines function f(x) we want to optimize. This method should also increment self.num_calls by one.
 
@@ -57,5 +55,4 @@ class Objective:
 
         """
         raise NotImplementedError(
-            "Must implement f() specific to desired optimization task"
-        )
+            "Must implement f() specific to desired optimization task")
