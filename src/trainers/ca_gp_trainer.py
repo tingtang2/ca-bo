@@ -74,18 +74,9 @@ class CaGPTrainer(BaseTrainer):
             train_y = torch.cat((train_y, y_next), dim=-2)
 
             if not self.turn_off_wandb:
-                self.tracker.log({
-                    'Num oracle calls':
-                    self.task.num_calls - 1,
-                    'best reward':
-                    train_y.max().item(),
-                    'final svgp loss':
-                    final_loss,
-                    'epochs trained':
-                    epochs_trained,
-                    'noise param':
-                    self.model.likelihood.noise.item()
-                })
+                self.log_wandb_metrics(train_y=train_y,
+                                       final_loss=final_loss,
+                                       epochs_trained=epochs_trained)
 
             logging.info(
                 f'Num oracle calls: {self.task.num_calls - 1}, best reward: {train_y.max().item():.3f}, final cagp loss: {final_loss:.3f}, epochs trained: {epochs_trained}'
@@ -234,18 +225,9 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
             train_y = torch.cat((train_y, y_next), dim=-2)
 
             if not self.turn_off_wandb:
-                self.tracker.log({
-                    'Num oracle calls':
-                    self.task.num_calls - 1,
-                    'best reward':
-                    train_y.max().item(),
-                    'final svgp loss':
-                    final_loss,
-                    'epochs trained':
-                    epochs_trained,
-                    'noise param':
-                    self.model.likelihood.noise.item()
-                })
+                self.log_wandb_metrics(train_y=train_y,
+                                       final_loss=final_loss,
+                                       epochs_trained=epochs_trained)
 
             logging.info(
                 f'Num oracle calls: {self.task.num_calls - 1}, best reward: {train_y.max().item():.3f}, final cagp loss: {final_loss:.3f}, epochs trained: {epochs_trained}'

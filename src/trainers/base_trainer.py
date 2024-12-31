@@ -77,3 +77,30 @@ class BaseTrainer(ABC):
 
     def init_new_run(self, tracker):
         self.tracker = tracker
+
+    def log_wandb_metrics(self,
+                          train_y: torch.Tensor,
+                          final_loss: float = -1,
+                          epochs_trained: int = -1):
+        if 'exact' in self.trainer_type:
+            self.tracker.log({
+                'Num oracle calls': self.task.num_calls - 1,
+                'best reward': train_y.max().item()
+            })
+        else:
+            self.tracker.log({
+                'Num oracle calls':
+                self.task.num_calls - 1,
+                'best reward':
+                train_y.max().item(),
+                'final svgp loss':
+                final_loss,
+                'epochs trained':
+                epochs_trained,
+                'noise param':
+                self.model.likelihood.noise.item(),
+                'lengthscale param':
+                self.model.covar_module.lengthscale.item(),
+                'outputscale param':
+                self.model.covar_module.outputscale.item()
+            })

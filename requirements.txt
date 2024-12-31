@@ -6,3 +6,4 @@ wandb
 multiprocess
 gym
 box2d
+pytest

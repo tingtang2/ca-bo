@@ -80,18 +80,9 @@ class SVGPRetrainTrainer(BaseTrainer):
             )
 
             if not self.turn_off_wandb:
-                self.tracker.log({
-                    'Num oracle calls':
-                    self.task.num_calls - 1,
-                    'best reward':
-                    train_y.max().item(),
-                    'final svgp loss':
-                    final_loss,
-                    'epochs trained':
-                    epochs_trained,
-                    'noise param':
-                    self.model.likelihood.noise.item()
-                })
+                self.log_wandb_metrics(train_y=train_y,
+                                       final_loss=final_loss,
+                                       epochs_trained=epochs_trained)
             reward.append(train_y.max().item())
 
         self.save_metrics(metrics=reward,
@@ -235,18 +226,10 @@ class SVGPTrainer(BaseTrainer):
             )
 
             if not self.turn_off_wandb:
-                self.tracker.log({
-                    'Num oracle calls':
-                    self.task.num_calls - 1,
-                    'best reward':
-                    train_y.max().item(),
-                    'final svgp loss':
-                    final_loss,
-                    'epochs trained':
-                    epochs_trained,
-                    'noise param':
-                    self.model.likelihood.noise.item()
-                })
+                self.log_wandb_metrics(train_y=train_y,
+                                       final_loss=final_loss,
+                                       epochs_trained=epochs_trained)
+
             reward.append(train_y.max().item())
 
         self.save_metrics(metrics=reward,
@@ -437,18 +420,9 @@ class SVGPEULBOTrainer(SVGPTrainer):
             )
 
             if not self.turn_off_wandb:
-                self.tracker.log({
-                    'Num oracle calls':
-                    self.task.num_calls - 1,
-                    'best reward':
-                    train_y.max().item(),
-                    'final svgp loss':
-                    final_loss,
-                    'epochs trained':
-                    epochs_trained,
-                    'noise param':
-                    self.model.likelihood.noise.item()
-                })
+                self.log_wandb_metrics(train_y=train_y,
+                                       final_loss=final_loss,
+                                       epochs_trained=epochs_trained)
             reward.append(train_y.max().item())
 
         self.save_metrics(metrics=reward,

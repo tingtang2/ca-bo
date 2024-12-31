@@ -42,12 +42,14 @@ class ExactGPTrainer(BaseTrainer):
                 train_y_std = train_y.std()
                 if train_y_std == 0:
                     train_y_std = 1
-                train_y = (train_y - train_y_mean) / train_y_std
+                model_train_y = (train_y - train_y_mean) / train_y_std
+            else:
+                model_train_y = train_y
 
             # Init exact gp model
             model = SingleTaskGP(
                 train_x,
-                train_y,
+                model_train_y,
                 covar_module=gpytorch.kernels.ScaleKernel(base_kernel),
                 likelihood=gpytorch.likelihoods.GaussianLikelihood().to(
                     self.device),
@@ -71,10 +73,8 @@ class ExactGPTrainer(BaseTrainer):
             )
 
             if not self.turn_off_wandb:
-                self.tracker.log({
-                    'Num oracle calls': self.task.num_calls - 1,
-                    'best reward': train_y.max().item()
-                })
+                self.log_wandb_metrics(train_y=train_y)
+
             reward.append(train_y.max().item())
 
         self.save_metrics(metrics=reward,
