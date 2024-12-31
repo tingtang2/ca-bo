@@ -157,7 +157,7 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
         self.early_stopping_threshold = 3
         self.train_batch_size = 32
 
-        self.update_train_size = 100
+        self.eulbo_epochs = 300
 
     def run_experiment(self, iteration: int):
         # get all attribute information

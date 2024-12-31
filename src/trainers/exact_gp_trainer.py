@@ -9,7 +9,7 @@ from tqdm import trange
 
 from trainers.acquisition_fn_trainers import EITrainer
 from trainers.base_trainer import BaseTrainer
-from trainers.data_trainers import HartmannTrainer
+from trainers.data_trainers import HartmannTrainer, LunarTrainer
 
 
 class ExactGPTrainer(BaseTrainer):
@@ -86,4 +86,8 @@ class ExactGPTrainer(BaseTrainer):
 
 
 class HartmannEIExactGPTrainer(ExactGPTrainer, HartmannTrainer, EITrainer):
+    pass
+
+
+class LunarEIExactGPTrainer(ExactGPTrainer, LunarTrainer, EITrainer):
     pass

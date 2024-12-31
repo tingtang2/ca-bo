@@ -14,7 +14,7 @@ from trainers.base_trainer import BaseTrainer
 from trainers.ca_gp_trainer import (HartmannEICaGPTrainer,
                                     HartmannLogEICaGPTrainer,
                                     HartmannEICaGPEULBOTrainer)
-from trainers.exact_gp_trainer import HartmannEIExactGPTrainer
+from trainers.exact_gp_trainer import HartmannEIExactGPTrainer, LunarEIExactGPTrainer
 from trainers.svgp_trainer import HartmannEISVGPTrainer, HartmannEISVGPRetrainTrainer, HartmannEISVGPEULBOTrainer
 
 arg_trainer_map = {
@@ -24,7 +24,8 @@ arg_trainer_map = {
     'hartmann_ei_svgp_retrain': HartmannEISVGPRetrainTrainer,
     'hartmann_ei_ca_gp': HartmannEICaGPTrainer,
     'hartmann_ei_ca_gp_eulbo': HartmannEICaGPEULBOTrainer,
-    'hartmann_log_ei_ca_gp': HartmannLogEICaGPTrainer
+    'hartmann_log_ei_ca_gp': HartmannLogEICaGPTrainer,
+    'lunar_ei_exact_gp': LunarEIExactGPTrainer
 }
 arg_optimizer_map = {'adamW': AdamW, 'adam': Adam}
 
