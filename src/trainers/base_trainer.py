@@ -78,29 +78,48 @@ class BaseTrainer(ABC):
     def init_new_run(self, tracker):
         self.tracker = tracker
 
+    def log_metrics_to_file(self):
+        pass
+
     def log_wandb_metrics(self,
                           train_y: torch.Tensor,
                           final_loss: float = -1,
-                          epochs_trained: int = -1):
+                          epochs_trained: int = -1,
+                          model=None):
+
         if 'exact' in self.trainer_type:
-            self.tracker.log({
-                'Num oracle calls': self.task.num_calls - 1,
-                'best reward': train_y.max().item()
-            })
+            passed_model = model
         else:
+            passed_model = self.model
+
+        raw_outputscale = passed_model.covar_module.raw_outputscale
+        constraint = passed_model.covar_module.raw_outputscale_constraint
+        outputscale = constraint.transform(raw_outputscale)
+
+        raw_lengthscale = passed_model.covar_module.base_kernel.raw_lengthscale
+        constraint = passed_model.covar_module.base_kernel.raw_lengthscale_constraint
+        lengthscale = constraint.transform(raw_lengthscale)
+
+        if 'exact' in self.trainer_type:
             self.tracker.log({
                 'Num oracle calls':
                 self.task.num_calls - 1,
                 'best reward':
                 train_y.max().item(),
-                'final svgp loss':
-                final_loss,
-                'epochs trained':
-                epochs_trained,
                 'noise param':
-                self.model.likelihood.noise.item(),
+                passed_model.likelihood.noise.item(),
                 'lengthscale param':
-                self.model.covar_module.lengthscale.item(),
+                lengthscale.item(),
                 'outputscale param':
-                self.model.covar_module.outputscale.item()
+                outputscale.item()
+            })
+        else:
+            self.tracker.log({
+                'Num oracle calls': self.task.num_calls - 1,
+                'best reward': train_y.max().item(),
+                'final svgp loss': final_loss,
+                'epochs trained': epochs_trained,
+                'noise param': self.model.likelihood.noise.item(),
+                'lengthscale param': lengthscale.item(),
+                'outputscale param': outputscale.item()
             })

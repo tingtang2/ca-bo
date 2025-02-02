@@ -78,8 +78,16 @@ class CaGPTrainer(BaseTrainer):
                                        final_loss=final_loss,
                                        epochs_trained=epochs_trained)
 
+            raw_outputscale = self.model.covar_module.raw_outputscale
+            constraint = self.model.covar_module.raw_outputscale_constraint
+            outputscale = constraint.transform(raw_outputscale)
+
+            raw_lengthscale = self.model.covar_module.base_kernel.raw_lengthscale
+            constraint = self.model.covar_module.base_kernel.raw_lengthscale_constraint
+            lengthscale = constraint.transform(raw_lengthscale)
+
             logging.info(
-                f'Num oracle calls: {self.task.num_calls - 1}, best reward: {train_y.max().item():.3f}, final cagp loss: {final_loss:.3f}, epochs trained: {epochs_trained}'
+                f'Num oracle calls: {self.task.num_calls - 1}, best reward: {train_y.max().item():.3f}, final cagp loss: {final_loss:.3f}, epochs trained: {epochs_trained}, length scale parameter: {lengthscale.item():.5f}, outputscale param: {outputscale.item():.5f}'
             )
             reward.append(train_y.max().item())
 

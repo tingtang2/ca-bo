@@ -73,7 +73,7 @@ class ExactGPTrainer(BaseTrainer):
             )
 
             if not self.turn_off_wandb:
-                self.log_wandb_metrics(train_y=train_y)
+                self.log_wandb_metrics(train_y=train_y, model=model)
 
             reward.append(train_y.max().item())
 
