@@ -25,7 +25,11 @@ class EITrainer(BaseTrainer):
         lb = self.task.lb * weights
         ub = self.task.ub * weights
 
-        ei = ExpectedImprovement(model, Y.max().to(self.device))
+        if self.use_analytic_acq_func:
+            ei = ExpectedImprovement(model, Y.max().to(self.device))
+        else:
+            ei = qExpectedImprovement(model, Y.max().to(self.device))
+
         X_next, _ = optimize_acqf(ei,
                                   bounds=torch.stack([lb, ub]).to(self.device),
                                   q=self.batch_size,

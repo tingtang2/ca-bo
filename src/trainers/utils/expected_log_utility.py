@@ -28,3 +28,7 @@ def get_expected_log_utility_ei(
     expected_log_utility = ghq(log_utility, output)
 
     return expected_log_utility.mean()
+
+
+def get_log_expected_utility_ei():
+    pass

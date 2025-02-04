@@ -5,17 +5,20 @@ import random
 import sys
 from datetime import date, datetime
 
+import numpy as np
 import torch
+import wandb
 from torch import nn
 from torch.optim import Adam, AdamW
-
-import wandb
 from trainers.base_trainer import BaseTrainer
-from trainers.ca_gp_trainer import (HartmannEICaGPTrainer,
-                                    HartmannLogEICaGPTrainer,
-                                    HartmannEICaGPEULBOTrainer)
-from trainers.exact_gp_trainer import HartmannEIExactGPTrainer, LunarEIExactGPTrainer
-from trainers.svgp_trainer import HartmannEISVGPTrainer, HartmannEISVGPRetrainTrainer, HartmannEISVGPEULBOTrainer
+from trainers.ca_gp_trainer import (HartmannEICaGPEULBOTrainer,
+                                    HartmannEICaGPTrainer,
+                                    HartmannLogEICaGPTrainer)
+from trainers.exact_gp_trainer import (HartmannEIExactGPTrainer,
+                                       LunarEIExactGPTrainer)
+from trainers.svgp_trainer import (HartmannEISVGPEULBOTrainer,
+                                   HartmannEISVGPRetrainTrainer,
+                                   HartmannEISVGPTrainer)
 
 arg_trainer_map = {
     'hartmann_ei_exact_gp': HartmannEIExactGPTrainer,
@@ -85,6 +88,9 @@ def main() -> int:
                         action='store_true',
                         help='skip wandb logging')
     parser.add_argument('--notes', default='', help='note on experiment run')
+    parser.add_argument('--use_analytic_acq_func',
+                        action='store_true',
+                        help='use analytic acquisition function instead of MC')
 
     args = parser.parse_args()
     configs = args.__dict__
@@ -103,6 +109,7 @@ def main() -> int:
     # for repeatability
     torch.manual_seed(configs['seed'])
     random.seed(configs['seed'])
+    np.random.seed(configs['seed'])
 
     # need this precision for GP fitting
     torch.set_default_dtype(torch.float64)
