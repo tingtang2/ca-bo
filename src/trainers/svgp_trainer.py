@@ -313,14 +313,14 @@ class SVGPEULBOTrainer(SVGPTrainer):
         self.num_inducing_points = 100
         self.grad_clip = 2.0
 
-        self.early_stopping_threshold = 3
+        self.early_stopping_threshold = self.epochs
+        self.early_stopping_threshold_eulbo = 3
         self.train_batch_size = 32
 
         self.update_train_size = 100
         self.inducing_pt_init_w_moss23 = True
 
         self.alternate_updates = True
-        self.eulbo_epochs = 30
         self.x_next_lr = 0.001
 
     def run_experiment(self, iteration: int):
@@ -472,7 +472,7 @@ class SVGPEULBOTrainer(SVGPTrainer):
             else:
                 early_stopping_counter += 1
 
-            if early_stopping_counter == self.early_stopping_threshold:
+            if early_stopping_counter == self.early_stopping_threshold_eulbo:
                 return x_next.detach(), loss, i + 1
 
         return x_next.detach(), loss, i + 1

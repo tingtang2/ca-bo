@@ -41,6 +41,10 @@ def main() -> int:
                         default=30,
                         type=int,
                         help='number of epochs to train model')
+    parser.add_argument('--eulbo_epochs',
+                        default=30,
+                        type=int,
+                        help='number of epochs to train model')
     parser.add_argument('--device',
                         '-d',
                         default='cpu',
