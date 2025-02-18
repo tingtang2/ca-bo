@@ -356,16 +356,18 @@ class SVGPEULBOTrainer(SVGPTrainer):
                 train_y_std = train_y.std()
                 if train_y_std == 0:
                     train_y_std = 1
-                train_y = (train_y - train_y_mean) / train_y_std
+                model_train_y = (train_y - train_y_mean) / train_y_std
+            else:
+                model_train_y = train_y
 
             # only update on recently acquired points
             if i > 0:
                 update_x = train_x[-self.update_train_size:]
                 # y needs to only have 1 dimension when training in gpytorch
-                update_y = train_y.squeeze()[-self.update_train_size:]
+                update_y = model_train_y.squeeze()[-self.update_train_size:]
             else:
                 update_x = train_x
-                update_y = train_y.squeeze()
+                update_y = model_train_y.squeeze()
 
             mll = VariationalELBO(self.model.likelihood,
                                   self.model,
@@ -377,7 +379,7 @@ class SVGPEULBOTrainer(SVGPTrainer):
             final_loss, epochs_trained = self.train_model(train_loader, mll)
             self.model.eval()
 
-            x_next = self.data_acquisition_iteration(self.model, train_y,
+            x_next = self.data_acquisition_iteration(self.model, model_train_y,
                                                      train_x)
 
             # above is warm start
@@ -392,7 +394,7 @@ class SVGPEULBOTrainer(SVGPTrainer):
                     x_next, final_loss, epochs_trained = self.eulbo_train_model(
                         mll=mll,
                         loader=train_loader,
-                        train_y=train_y,
+                        normed_best_train_y=model_train_y.max(),
                         init_x_next=x_next)
                     success = True
                 except Exception as e:
@@ -429,7 +431,7 @@ class SVGPEULBOTrainer(SVGPTrainer):
                           iter=iteration,
                           name=self.trainer_type)
 
-    def eulbo_train_model(self, loader, mll, train_y, init_x_next):
+    def eulbo_train_model(self, loader, mll, normed_best_train_y, init_x_next):
         self.model.train()
         init_x_next = copy.deepcopy(init_x_next)
         x_next = Variable(init_x_next, requires_grad=True)
@@ -462,7 +464,7 @@ class SVGPEULBOTrainer(SVGPTrainer):
                 mll,
                 x_next,
                 currently_training_model=currently_training_model,
-                train_y=train_y)
+                normed_best_train_y=normed_best_train_y)
 
             currently_training_model = not currently_training_model
             if loss < best_loss:
@@ -478,7 +480,7 @@ class SVGPEULBOTrainer(SVGPTrainer):
         return x_next.detach(), loss, i + 1
 
     def eulbo_train_epoch(self, loader, mll, x_next, currently_training_model,
-                          train_y):
+                          normed_best_train_y):
         total_loss = 0
         for i, (inputs, scores) in enumerate(loader):
             if self.alternate_updates:
@@ -491,7 +493,7 @@ class SVGPEULBOTrainer(SVGPTrainer):
 
             expected_log_utility_x_next = get_expected_log_utility_ei(
                 self.model,
-                best_f=train_y.max(),
+                best_f=normed_best_train_y,
                 x_next=x_next,
                 device=self.device)
             loss = nelbo - expected_log_utility_x_next
@@ -520,30 +522,6 @@ class SVGPEULBOTrainer(SVGPTrainer):
         for i in range(self.epochs):
             loss = self.train_epoch(train_loader, mll)
         return loss, i + 1
-
-    def train_epoch(self, train_loader: DataLoader, mll):
-        running_loss = 0.0
-        for i, (x, y) in enumerate(train_loader):
-            self.optimizer.zero_grad()
-
-            output = self.model(x.to(self.device))
-            loss = -mll(output, y.to(self.device))
-
-            loss.backward()
-            if self.grad_clip is not None:
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(),
-                                               max_norm=self.grad_clip)
-
-            self.optimizer.step()
-
-            running_loss += loss.item()
-
-        return running_loss
-
-    def generate_dataloaders(self, train_x, train_y):
-        train_dataset = TensorDataset(train_x, train_y)
-        train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-        return train_loader
 
     def eval(self):
         pass
