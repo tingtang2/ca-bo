@@ -4,6 +4,7 @@ import os
 import random
 import sys
 from datetime import date, datetime
+from set_seed import set_seed
 
 import numpy as np
 import torch
@@ -111,9 +112,7 @@ def main() -> int:
         os.environ["WANDB_RUN_GROUP"] = "experiment-" + configs["trainer_type"]
 
     # for repeatability
-    torch.manual_seed(configs['seed'])
-    random.seed(configs['seed'])
-    np.random.seed(configs['seed'])
+    set_seed(configs['seed'])
 
     # need this precision for GP fitting
     torch.set_default_dtype(torch.float64)

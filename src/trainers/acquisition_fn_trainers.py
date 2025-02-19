@@ -35,7 +35,7 @@ class EITrainer(BaseTrainer):
                                   q=self.batch_size,
                                   num_restarts=num_restarts,
                                   raw_samples=raw_samples)
-        return X_next
+        return X_next.detach().cpu()
 
 
 class LogEITrainer(BaseTrainer):

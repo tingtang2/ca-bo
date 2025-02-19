@@ -178,7 +178,6 @@ class SVGPTrainer(BaseTrainer):
         self.optimizer = self.optimizer_type(
             [{
                 'params': self.model.parameters(),
-                # 'params': self.model.likelihood.parameters()
             }],
             lr=self.learning_rate)
 
@@ -327,6 +326,10 @@ class SVGPEULBOTrainer(SVGPTrainer):
         # get all attribute information
         logging.info(self.__dict__)
         train_x, train_y = self.initialize_data()
+        self.train_y_mean = train_y.mean()
+        self.train_y_std = train_y.std()
+        if self.train_y_std == 0:
+            self.train_y_std = 1
 
         # get inducing points
         inducing_points = train_x[:self.num_inducing_points]
@@ -335,6 +338,7 @@ class SVGPEULBOTrainer(SVGPTrainer):
         self.model = SVGPModel(inducing_points=inducing_points,
                                likelihood=GaussianLikelihood().to(self.device),
                                kernel_type=self.kernel_type).to(self.device)
+        
         if self.inducing_pt_init_w_moss23:
             optimal_inducing_points = self.get_optimal_inducing_points(
                 prev_inducing_points=inducing_points)
@@ -352,11 +356,7 @@ class SVGPEULBOTrainer(SVGPTrainer):
         for i in trange(self.max_oracle_calls - self.num_initial_points):
             if self.norm_data:
                 # get normalized train y
-                train_y_mean = train_y.mean()
-                train_y_std = train_y.std()
-                if train_y_std == 0:
-                    train_y_std = 1
-                model_train_y = (train_y - train_y_mean) / train_y_std
+                model_train_y = (train_y - self.train_y_mean) / self.train_y_std
             else:
                 model_train_y = train_y
 
@@ -388,6 +388,10 @@ class SVGPEULBOTrainer(SVGPTrainer):
             n_failures = 0
             success = False
             model_state_before_update = copy.deepcopy(self.model.state_dict())
+            
+            mll = VariationalELBO(self.model.likelihood,
+                                  self.model,
+                                  num_data=update_x.size(0))
 
             while (n_failures < 8) and (not success):
                 try:
@@ -395,7 +399,7 @@ class SVGPEULBOTrainer(SVGPTrainer):
                         mll=mll,
                         loader=train_loader,
                         normed_best_train_y=model_train_y.max(),
-                        init_x_next=x_next)
+                        init_x_next=x_next.to(self.device))
                     success = True
                 except Exception as e:
                     # decrease lr to stabalize training
