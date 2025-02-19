@@ -96,6 +96,14 @@ def main() -> int:
     parser.add_argument('--use_analytic_acq_func',
                         action='store_true',
                         help='use analytic acquisition function instead of MC')
+    parser.add_argument('--early_stopping_threshold',
+                        default=3,
+                        type=int,
+                        help='patience for early stopping')
+    parser.add_argument('--proj_dim_ratio',
+                        default=0.5,
+                        type=int,
+                        help='ratio for ca gp projection dim')
 
     args = parser.parse_args()
     configs = args.__dict__

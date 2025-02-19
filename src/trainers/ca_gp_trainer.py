@@ -22,7 +22,6 @@ class CaGPTrainer(BaseTrainer):
         self.num_inducing_points = 100
         self.grad_clip = 2.0
 
-        self.early_stopping_threshold = 3
         self.train_batch_size = 32
 
         self.update_train_size = 100
@@ -44,7 +43,8 @@ class CaGPTrainer(BaseTrainer):
 
             self.model = CaGP(train_inputs=train_x,
                               train_targets=train_y.squeeze(),
-                              projection_dim=train_x.size(0) // 2,
+                              projection_dim=int(self.proj_dim_ratio *
+                                                 train_x.size(0)),
                               likelihood=GaussianLikelihood().to(self.device),
                               kernel_type=self.kernel_type).to(self.device)
 
@@ -64,7 +64,8 @@ class CaGPTrainer(BaseTrainer):
             x_next = self.data_acquisition_iteration(self.model,
                                                      train_y,
                                                      train_x,
-                                                     raw_samples=10)
+                                                     raw_samples=10).to(
+                                                         self.device)
 
             # Evaluate candidates
             y_next = self.task(x_next)
@@ -87,7 +88,7 @@ class CaGPTrainer(BaseTrainer):
             lengthscale = constraint.transform(raw_lengthscale)
 
             logging.info(
-                f'Num oracle calls: {self.task.num_calls - 1}, best reward: {train_y.max().item():.3f}, final cagp loss: {final_loss:.3f}, epochs trained: {epochs_trained}, length scale parameter: {lengthscale.item():.5f}, outputscale param: {outputscale.item():.5f}'
+                f'Num oracle calls: {self.task.num_calls - 1}, best reward: {train_y.max().item():.3f}, final cagp loss: {final_loss:.3f}, epochs trained: {epochs_trained}, length scale parameter: {lengthscale.item():.5f}, outputscale param: {outputscale.item():.5f}, noise param: {self.model.likelihood.noise.item():.5f}'
             )
             reward.append(train_y.max().item())
 
@@ -156,26 +157,25 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
         self.early_stopping_threshold = 3
         self.train_batch_size = 32
 
-        self.eulbo_epochs = 300
-
     def run_experiment(self, iteration: int):
         # get all attribute information
         logging.info(self.__dict__)
         train_x, train_y = self.initialize_data()
+        self.train_y_mean = train_y.mean()
+        self.train_y_std = train_y.std()
+        if self.train_y_std == 0:
+            self.train_y_std = 1
 
         reward = []
         for i in trange(self.max_oracle_calls - self.num_initial_points):
             if self.norm_data:
                 # get normalized train y
-                train_y_mean = train_y.mean()
-                train_y_std = train_y.std()
-                if train_y_std == 0:
-                    train_y_std = 1
-                train_y = (train_y - train_y_mean) / train_y_std
+                train_y = (train_y - self.train_y_mean) / self.train_y_std
 
             self.model = CaGP(train_inputs=train_x,
                               train_targets=train_y.squeeze(),
-                              projection_dim=train_x.size(0) // 2,
+                              projection_dim=int(self.proj_dim_ratio *
+                                                 train_x.size(0)),
                               likelihood=GaussianLikelihood().to(self.device),
                               kernel_type=self.kernel_type).to(self.device)
 
@@ -209,8 +209,8 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
                     x_next, final_loss, epochs_trained = self.eulbo_train_model(
                         mll=mll,
                         loader=train_loader,
-                        train_y=train_y,
-                        init_x_next=x_next)
+                        normed_best_train_y=train_y.max(),
+                        init_x_next=x_next.to(self.device))
                     success = True
                 except Exception as e:
                     # decrease lr to stabalize training
