@@ -102,7 +102,7 @@ def main() -> int:
                         help='patience for early stopping')
     parser.add_argument('--proj_dim_ratio',
                         default=0.5,
-                        type=int,
+                        type=float,
                         help='ratio for ca gp projection dim')
 
     args = parser.parse_args()

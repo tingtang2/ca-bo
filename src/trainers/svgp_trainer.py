@@ -178,8 +178,7 @@ class SVGPTrainer(BaseTrainer):
         self.optimizer = self.optimizer_type(
             [{
                 'params': self.model.parameters(),
-            }],
-            lr=self.learning_rate)
+            }], lr=self.learning_rate)
 
         reward = []
         for i in trange(self.max_oracle_calls - self.num_initial_points):
@@ -338,7 +337,7 @@ class SVGPEULBOTrainer(SVGPTrainer):
         self.model = SVGPModel(inducing_points=inducing_points,
                                likelihood=GaussianLikelihood().to(self.device),
                                kernel_type=self.kernel_type).to(self.device)
-        
+
         if self.inducing_pt_init_w_moss23:
             optimal_inducing_points = self.get_optimal_inducing_points(
                 prev_inducing_points=inducing_points)
@@ -356,7 +355,8 @@ class SVGPEULBOTrainer(SVGPTrainer):
         for i in trange(self.max_oracle_calls - self.num_initial_points):
             if self.norm_data:
                 # get normalized train y
-                model_train_y = (train_y - self.train_y_mean) / self.train_y_std
+                model_train_y = (train_y -
+                                 self.train_y_mean) / self.train_y_std
             else:
                 model_train_y = train_y
 
@@ -388,7 +388,7 @@ class SVGPEULBOTrainer(SVGPTrainer):
             n_failures = 0
             success = False
             model_state_before_update = copy.deepcopy(self.model.state_dict())
-            
+
             mll = VariationalELBO(self.model.likelihood,
                                   self.model,
                                   num_data=update_x.size(0))

@@ -10,6 +10,7 @@ from tqdm import trange
 from trainers.acquisition_fn_trainers import EITrainer
 from trainers.base_trainer import BaseTrainer
 from trainers.data_trainers import HartmannTrainer, LunarTrainer
+from gpytorch.metrics import mean_squared_error
 
 
 class ExactGPTrainer(BaseTrainer):
@@ -58,10 +59,13 @@ class ExactGPTrainer(BaseTrainer):
 
             # fit model to data
             fit_gpytorch_model(exact_gp_mll)
+            model.eval()
 
-            # TODO: change this to normed y
+            # get train rmse
+            train_rmse = self.eval(model, train_x, model_train_y)
+
             x_next = self.data_acquisition_iteration(model, model_train_y,
-                                                     train_x)
+                                                     train_x).to(self.device)
 
             # Evaluate candidates
             y_next = self.task(x_next)
@@ -70,12 +74,9 @@ class ExactGPTrainer(BaseTrainer):
             train_x = torch.cat((train_x, x_next), dim=-2)
             train_y = torch.cat((train_y, y_next), dim=-2)
 
-            logging.info(
-                f'Num oracle calls: {self.task.num_calls - 1}, best reward: {train_y.max().item():.3f}'
-            )
-
-            if not self.turn_off_wandb:
-                self.log_wandb_metrics(train_y=train_y, model=model)
+            self.log_wandb_metrics(train_y=train_y,
+                                   train_rmse=train_rmse,
+                                   model=model)
 
             reward.append(train_y.max().item())
 
@@ -83,8 +84,10 @@ class ExactGPTrainer(BaseTrainer):
                           iter=iteration,
                           name=self.trainer_type)
 
-    def eval(self):
-        pass
+    def eval(self, model, X, y):
+        preds = model(X)
+        return mean_squared_error(preds, y.to(self.device),
+                                  squared=False).mean().item()
 
 
 class HartmannEIExactGPTrainer(ExactGPTrainer, HartmannTrainer, EITrainer):

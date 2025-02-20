@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
 from typing import List, Union
+import logging
 
 import torch
 
@@ -78,13 +79,12 @@ class BaseTrainer(ABC):
     def init_new_run(self, tracker):
         self.tracker = tracker
 
-    def log_metrics_to_file(self):
-        pass
-
     def log_wandb_metrics(self,
                           train_y: torch.Tensor,
                           final_loss: float = -1,
                           epochs_trained: int = -1,
+                          train_rmse: float = -1.0,
+                          log_to_file: bool = True,
                           model=None):
 
         if 'exact' in self.trainer_type:
@@ -101,25 +101,29 @@ class BaseTrainer(ABC):
         lengthscale = constraint.transform(raw_lengthscale)
 
         if 'exact' in self.trainer_type:
-            self.tracker.log({
-                'Num oracle calls':
-                self.task.num_calls - 1,
-                'best reward':
-                train_y.max().item(),
-                'noise param':
-                passed_model.likelihood.noise.item(),
-                'lengthscale param':
-                lengthscale.item(),
-                'outputscale param':
-                outputscale.item()
-            })
+            log_dict = {
+                'Num oracle calls': self.task.num_calls - 1,
+                'best reward': train_y.max().item(),
+                'noise param': passed_model.likelihood.noise.item(),
+                'lengthscale param': lengthscale.item(),
+                'outputscale param': outputscale.item(),
+                'train rmse': train_rmse
+            }
         else:
-            self.tracker.log({
+            log_dict = {
                 'Num oracle calls': self.task.num_calls - 1,
                 'best reward': train_y.max().item(),
                 'final svgp loss': final_loss,
                 'epochs trained': epochs_trained,
                 'noise param': self.model.likelihood.noise.item(),
                 'lengthscale param': lengthscale.item(),
-                'outputscale param': outputscale.item()
-            })
+                'outputscale param': outputscale.item(),
+                'train rmse': train_rmse
+            }
+
+        if not self.turn_off_wandb:
+            self.tracker.log(log_dict)
+
+        if log_to_file:
+            logging.info(', '.join(
+                [f'{key}: {value:.5f}' for key, value in log_dict.items()]))

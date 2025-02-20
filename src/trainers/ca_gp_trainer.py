@@ -12,6 +12,7 @@ from trainers.base_trainer import BaseTrainer
 from trainers.data_trainers import HartmannTrainer
 from trainers.svgp_trainer import SVGPEULBOTrainer
 import copy
+from gpytorch.metrics import mean_squared_error
 
 
 class CaGPTrainer(BaseTrainer):
@@ -61,6 +62,8 @@ class CaGPTrainer(BaseTrainer):
             final_loss, epochs_trained = self.train_model(train_loader, mll)
             self.model.eval()
 
+            train_rmse = self.eval(train_x, train_y)
+
             x_next = self.data_acquisition_iteration(self.model,
                                                      train_y,
                                                      train_x,
@@ -74,22 +77,11 @@ class CaGPTrainer(BaseTrainer):
             train_x = torch.cat((train_x, x_next), dim=-2)
             train_y = torch.cat((train_y, y_next), dim=-2)
 
-            if not self.turn_off_wandb:
-                self.log_wandb_metrics(train_y=train_y,
-                                       final_loss=final_loss,
-                                       epochs_trained=epochs_trained)
+            self.log_wandb_metrics(train_y=train_y,
+                                   final_loss=final_loss,
+                                   train_rmse=train_rmse,
+                                   epochs_trained=epochs_trained)
 
-            raw_outputscale = self.model.covar_module.raw_outputscale
-            constraint = self.model.covar_module.raw_outputscale_constraint
-            outputscale = constraint.transform(raw_outputscale)
-
-            raw_lengthscale = self.model.covar_module.base_kernel.raw_lengthscale
-            constraint = self.model.covar_module.base_kernel.raw_lengthscale_constraint
-            lengthscale = constraint.transform(raw_lengthscale)
-
-            logging.info(
-                f'Num oracle calls: {self.task.num_calls - 1}, best reward: {train_y.max().item():.3f}, final cagp loss: {final_loss:.3f}, epochs trained: {epochs_trained}, length scale parameter: {lengthscale.item():.5f}, outputscale param: {outputscale.item():.5f}, noise param: {self.model.likelihood.noise.item():.5f}'
-            )
             reward.append(train_y.max().item())
 
         self.save_metrics(metrics=reward,
@@ -100,18 +92,21 @@ class CaGPTrainer(BaseTrainer):
         self.model.train()
         best_loss = 1e+5
         early_stopping_counter = 0
+        best_model_state = None
         for i in range(self.epochs):
             loss = self.train_epoch(train_loader, mll)
-            # logging.info(f'epoch: {i} training loss: {loss:.3f}')
-
+            
             if loss < best_loss:
                 # self.save_model(f'{self.name}_{iter}')
+                best_model_state = copy.deepcopy(self.model.state_dict())
                 early_stopping_counter = 0
                 best_loss = loss
             else:
                 early_stopping_counter += 1
 
             if early_stopping_counter == self.early_stopping_threshold:
+                # Load the best model weights before returning
+                self.model.load_state_dict(best_model_state)
                 return loss, i + 1
 
         return loss, i + 1
@@ -142,8 +137,12 @@ class CaGPTrainer(BaseTrainer):
                                   shuffle=False)
         return train_loader
 
-    def eval(self):
-        pass
+    def eval(self, train_x, train_y):
+        self.model.eval()
+        preds = self.model(train_x)
+        return mean_squared_error(preds,
+                                  train_y.to(self.device),
+                                  squared=False).mean().item()
 
 
 class CaGPEULBOTrainer(SVGPEULBOTrainer):
