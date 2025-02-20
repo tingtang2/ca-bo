@@ -1,7 +1,8 @@
 import math
-import numpy as np
+
 import Box2D
 import gym
+import numpy as np
 from Box2D.b2 import (circleShape, contactListener, edgeShape, fixtureDef,
                       polygonShape, revoluteJointDef)
 from gym import spaces

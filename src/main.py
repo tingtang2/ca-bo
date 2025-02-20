@@ -4,13 +4,14 @@ import os
 import random
 import sys
 from datetime import date, datetime
-from set_seed import set_seed
 
 import numpy as np
 import torch
-import wandb
 from torch import nn
 from torch.optim import Adam, AdamW
+
+import wandb
+from set_seed import set_seed
 from trainers.base_trainer import BaseTrainer
 from trainers.ca_gp_trainer import (HartmannEICaGPEULBOTrainer,
                                     HartmannEICaGPTrainer,

@@ -4,13 +4,13 @@ import gpytorch
 import torch
 from botorch.fit import fit_gpytorch_model
 from botorch.models import SingleTaskGP
+from gpytorch.metrics import mean_squared_error
 from gpytorch.mlls import ExactMarginalLogLikelihood
 from tqdm import trange
 
 from trainers.acquisition_fn_trainers import EITrainer
 from trainers.base_trainer import BaseTrainer
 from trainers.data_trainers import HartmannTrainer, LunarTrainer
-from gpytorch.metrics import mean_squared_error
 
 
 class ExactGPTrainer(BaseTrainer):

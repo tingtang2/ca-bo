@@ -1,7 +1,9 @@
+import copy
 import logging
 
 import torch
 from gpytorch.likelihoods import GaussianLikelihood
+from gpytorch.metrics import mean_squared_error
 from gpytorch.mlls import ComputationAwareELBO
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import trange
@@ -11,8 +13,6 @@ from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
 from trainers.base_trainer import BaseTrainer
 from trainers.data_trainers import HartmannTrainer
 from trainers.svgp_trainer import SVGPEULBOTrainer
-import copy
-from gpytorch.metrics import mean_squared_error
 
 
 class CaGPTrainer(BaseTrainer):

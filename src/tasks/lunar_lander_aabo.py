@@ -1,11 +1,13 @@
 import sys
 
 sys.path.append("../")
+from collections.abc import Iterable
+
+import multiprocess as mp
 import numpy as np
 import torch
+
 from tasks.objective import Objective
-import multiprocess as mp
-from collections.abc import Iterable
 from tasks.utils.lunar_utils import simulate_lunar_lander
 
 

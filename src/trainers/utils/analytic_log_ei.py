@@ -1,9 +1,12 @@
 import math
+from abc import ABC
 from typing import Optional, Union
 
 import torch
+from botorch.acquisition import AcquisitionFunction
 from botorch.acquisition.analytic import AnalyticAcquisitionFunction
 from botorch.acquisition.objective import PosteriorTransform
+from botorch.exceptions import UnsupportedError
 from botorch.models.model import Model
 from botorch.utils.transforms import t_batch_mode_transform
 from torch import Tensor
@@ -13,9 +16,6 @@ from trainers.utils.probability_utils import log_phi
 from trainers.utils.probability_utils import ndtr as Phi
 from trainers.utils.probability_utils import phi
 from trainers.utils.safe_math import log1mexp
-from abc import ABC
-from botorch.acquisition import AcquisitionFunction
-from botorch.exceptions import UnsupportedError
 
 # the following two numbers are needed for _log_ei_helper
 _neg_inv_sqrt2 = -(2**-0.5)
