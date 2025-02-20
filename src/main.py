@@ -86,7 +86,10 @@ def main() -> int:
                         help='type of experiment to run')
     parser.add_argument('--kernel_type',
                         default='matern_5_2',
-                        help='type of experiment to run')
+                        help='kernel type for GP')
+    parser.add_argument('--ca_gp_init_mode',
+                        default='random',
+                        help='init mode for ca gp')
     parser.add_argument('--norm_data',
                         action='store_true',
                         help='normalize ys')
@@ -125,6 +128,8 @@ def main() -> int:
 
     # need this precision for GP fitting
     torch.set_default_dtype(torch.float64)
+    # set default device for CaGP
+    torch.set_default_device(torch.device(configs['device']))
 
     # set up logging
     filename = f'{configs["trainer_type"]}-{date.today()}'

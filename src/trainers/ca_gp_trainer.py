@@ -47,7 +47,8 @@ class CaGPTrainer(BaseTrainer):
                               projection_dim=int(self.proj_dim_ratio *
                                                  train_x.size(0)),
                               likelihood=GaussianLikelihood().to(self.device),
-                              kernel_type=self.kernel_type).to(self.device)
+                              kernel_type=self.kernel_type,
+                              init_mode=self.ca_gp_init_mode).to(self.device)
 
             self.optimizer = self.optimizer_type(
                 [{
@@ -66,9 +67,7 @@ class CaGPTrainer(BaseTrainer):
 
             x_next = self.data_acquisition_iteration(self.model,
                                                      train_y,
-                                                     train_x,
-                                                     raw_samples=10).to(
-                                                         self.device)
+                                                     train_x).to(self.device)
 
             # Evaluate candidates
             y_next = self.task(x_next)
