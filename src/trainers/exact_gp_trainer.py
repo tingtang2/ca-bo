@@ -27,6 +27,10 @@ class ExactGPTrainer(BaseTrainer):
     def run_experiment(self, iteration: int):
         logging.info(self.__dict__)
         train_x, train_y = self.initialize_data()
+        self.train_y_mean = train_y.mean()
+        self.train_y_std = train_y.std()
+        if self.train_y_std == 0:
+            self.train_y_std = 1
 
         reward = []
         if self.kernel_type == 'rbf':
@@ -39,11 +43,8 @@ class ExactGPTrainer(BaseTrainer):
         for i in trange(self.max_oracle_calls - self.num_initial_points):
             if self.norm_data:
                 # get normalized train y
-                train_y_mean = train_y.mean()
-                train_y_std = train_y.std()
-                if train_y_std == 0:
-                    train_y_std = 1
-                model_train_y = (train_y - train_y_mean) / train_y_std
+                model_train_y = (train_y -
+                                 self.train_y_mean) / self.train_y_std
             else:
                 model_train_y = train_y
 

@@ -11,7 +11,7 @@ from tqdm import trange
 from models.ca_gp import CaGP
 from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
 from trainers.base_trainer import BaseTrainer
-from trainers.data_trainers import HartmannTrainer
+from trainers.data_trainers import HartmannTrainer, LunarTrainer
 from trainers.svgp_trainer import SVGPEULBOTrainer
 
 
@@ -31,19 +31,22 @@ class CaGPTrainer(BaseTrainer):
         # get all attribute information
         logging.info(self.__dict__)
         train_x, train_y = self.initialize_data()
+        self.train_y_mean = train_y.mean()
+        self.train_y_std = train_y.std()
+        if self.train_y_std == 0:
+            self.train_y_std = 1
 
         reward = []
         for i in trange(self.max_oracle_calls - self.num_initial_points):
             if self.norm_data:
                 # get normalized train y
-                train_y_mean = train_y.mean()
-                train_y_std = train_y.std()
-                if train_y_std == 0:
-                    train_y_std = 1
-                train_y = (train_y - train_y_mean) / train_y_std
+                model_train_y = (train_y -
+                                 self.train_y_mean) / self.train_y_std
+            else:
+                model_train_y = train_y
 
             self.model = CaGP(train_inputs=train_x,
-                              train_targets=train_y.squeeze(),
+                              train_targets=model_train_y.squeeze(),
                               projection_dim=int(self.proj_dim_ratio *
                                                  train_x.size(0)),
                               likelihood=GaussianLikelihood().to(self.device),
@@ -57,16 +60,15 @@ class CaGPTrainer(BaseTrainer):
 
             mll = ComputationAwareELBO(self.model.likelihood, self.model)
 
-            train_loader = self.generate_dataloaders(train_x=train_x,
-                                                     train_y=train_y.squeeze())
+            train_loader = self.generate_dataloaders(
+                train_x=train_x, train_y=model_train_y.squeeze())
 
             final_loss, epochs_trained = self.train_model(train_loader, mll)
             self.model.eval()
 
             train_rmse = self.eval(train_x, train_y)
 
-            x_next = self.data_acquisition_iteration(self.model,
-                                                     train_y,
+            x_next = self.data_acquisition_iteration(self.model, model_train_y,
                                                      train_x).to(self.device)
 
             # Evaluate candidates
@@ -94,7 +96,7 @@ class CaGPTrainer(BaseTrainer):
         best_model_state = None
         for i in range(self.epochs):
             loss = self.train_epoch(train_loader, mll)
-            
+
             if loss < best_loss:
                 # self.save_model(f'{self.name}_{iter}')
                 best_model_state = copy.deepcopy(self.model.state_dict())
@@ -289,4 +291,8 @@ class HartmannLogEICaGPTrainer(CaGPTrainer, HartmannTrainer, LogEITrainer):
 
 
 class HartmannEICaGPEULBOTrainer(CaGPEULBOTrainer, HartmannTrainer, EITrainer):
+    pass
+
+
+class LunarEICaGPTrainer(CaGPTrainer, LunarTrainer, EITrainer):
     pass

@@ -11,7 +11,7 @@ from tqdm import trange
 from models.svgp import SVGPModel
 from trainers.acquisition_fn_trainers import EITrainer
 from trainers.base_trainer import BaseTrainer
-from trainers.data_trainers import HartmannTrainer
+from trainers.data_trainers import HartmannTrainer, LunarTrainer
 from trainers.utils.expected_log_utility import get_expected_log_utility_ei
 from trainers.utils.moss_et_al_inducing_pts_init import \
     GreedyImprovementReduction
@@ -167,6 +167,11 @@ class SVGPTrainer(BaseTrainer):
         logging.info(self.__dict__)
         train_x, train_y = self.initialize_data()
 
+        self.train_y_mean = train_y.mean()
+        self.train_y_std = train_y.std()
+        if self.train_y_std == 0:
+            self.train_y_std = 1
+
         # get inducing points
         inducing_points = train_x[:self.num_inducing_points]
 
@@ -184,20 +189,19 @@ class SVGPTrainer(BaseTrainer):
         for i in trange(self.max_oracle_calls - self.num_initial_points):
             if self.norm_data:
                 # get normalized train y
-                train_y_mean = train_y.mean()
-                train_y_std = train_y.std()
-                if train_y_std == 0:
-                    train_y_std = 1
-                train_y = (train_y - train_y_mean) / train_y_std
+                model_train_y = (train_y -
+                                 self.train_y_mean) / self.train_y_std
+            else:
+                model_train_y = train_y
 
             # only update on recently acquired points
             if i > 0:
                 update_x = train_x[-self.update_train_size:]
                 # y needs to only have 1 dimension when training in gpytorch
-                update_y = train_y.squeeze()[-self.update_train_size:]
+                update_y = model_train_y.squeeze()[-self.update_train_size:]
             else:
                 update_x = train_x
-                update_y = train_y.squeeze()
+                update_y = model_train_y.squeeze()
 
             mll = VariationalELBO(self.model.likelihood,
                                   self.model,
@@ -209,8 +213,8 @@ class SVGPTrainer(BaseTrainer):
             final_loss, epochs_trained = self.train_model(train_loader, mll)
             self.model.eval()
 
-            x_next = self.data_acquisition_iteration(self.model, train_y,
-                                                     train_x)
+            x_next = self.data_acquisition_iteration(self.model, model_train_y,
+                                                     train_x).to(self.device)
 
             # Evaluate candidates
             y_next = self.task(x_next)
@@ -295,6 +299,10 @@ class SVGPTrainer(BaseTrainer):
 
 
 class HartmannEISVGPTrainer(SVGPTrainer, HartmannTrainer, EITrainer):
+    pass
+
+
+class LunarEISVGPTrainer(SVGPTrainer, LunarTrainer, EITrainer):
     pass
 
 
