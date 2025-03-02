@@ -7,6 +7,7 @@ from gpytorch.mlls import VariationalELBO
 from torch.autograd import Variable
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import trange
+from gpytorch.metrics import mean_squared_error
 
 from models.svgp import SVGPModel
 from trainers.acquisition_fn_trainers import EITrainer
@@ -213,6 +214,8 @@ class SVGPTrainer(BaseTrainer):
             final_loss, epochs_trained = self.train_model(train_loader, mll)
             self.model.eval()
 
+            train_rmse = self.eval(train_x, train_y)
+
             x_next = self.data_acquisition_iteration(self.model, model_train_y,
                                                      train_x).to(self.device)
 
@@ -223,14 +226,10 @@ class SVGPTrainer(BaseTrainer):
             train_x = torch.cat((train_x, x_next), dim=-2)
             train_y = torch.cat((train_y, y_next), dim=-2)
 
-            logging.info(
-                f'Num oracle calls: {self.task.num_calls - 1}, best reward: {train_y.max().item():.3f}, final svgp loss: {final_loss:.3f}, epochs trained: {epochs_trained}, noise param: {self.model.likelihood.noise.item():.6f}'
-            )
-
-            if not self.turn_off_wandb:
-                self.log_wandb_metrics(train_y=train_y,
-                                       final_loss=final_loss,
-                                       epochs_trained=epochs_trained)
+            self.log_wandb_metrics(train_y=train_y,
+                                   final_loss=final_loss,
+                                   train_rmse=train_rmse,
+                                   epochs_trained=epochs_trained)
 
             reward.append(train_y.max().item())
 
@@ -278,11 +277,19 @@ class SVGPTrainer(BaseTrainer):
 
     def generate_dataloaders(self, train_x, train_y):
         train_dataset = TensorDataset(train_x, train_y)
-        train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+        train_loader = DataLoader(
+            train_dataset,
+            batch_size=32,
+            shuffle=True,
+            generator=torch.Generator(device=self.device))
         return train_loader
 
-    def eval(self):
-        pass
+    def eval(self, train_x, train_y):
+        self.model.eval()
+        preds = self.model(train_x)
+        return mean_squared_error(preds,
+                                  train_y.to(self.device),
+                                  squared=False).mean().item()
 
     def get_optimal_inducing_points(self, prev_inducing_points):
         greedy_imp_reduction = GreedyImprovementReduction(
@@ -422,6 +429,8 @@ class SVGPEULBOTrainer(SVGPTrainer):
                 assert 0, f"\nFailed to complete EULBO model update due to the following error:\n{error_message}"
             self.model.eval()
 
+            train_rmse = self.eval(train_x, train_y)
+
             # Evaluate candidates
             y_next = self.task(x_next)
 
@@ -429,14 +438,10 @@ class SVGPEULBOTrainer(SVGPTrainer):
             train_x = torch.cat((train_x, x_next), dim=-2)
             train_y = torch.cat((train_y, y_next), dim=-2)
 
-            logging.info(
-                f'Num oracle calls: {self.task.num_calls - 1}, best reward: {train_y.max().item():.3f}, final svgp loss: {final_loss:.3f}, epochs trained: {epochs_trained}, noise param: {self.model.likelihood.noise.item():.6f}'
-            )
-
-            if not self.turn_off_wandb:
-                self.log_wandb_metrics(train_y=train_y,
-                                       final_loss=final_loss,
-                                       epochs_trained=epochs_trained)
+            self.log_wandb_metrics(train_y=train_y,
+                                   final_loss=final_loss,
+                                   train_rmse=train_rmse,
+                                   epochs_trained=epochs_trained)
             reward.append(train_y.max().item())
 
         self.save_metrics(metrics=reward,
@@ -535,9 +540,10 @@ class SVGPEULBOTrainer(SVGPTrainer):
             loss = self.train_epoch(train_loader, mll)
         return loss, i + 1
 
-    def eval(self):
-        pass
-
 
 class HartmannEISVGPEULBOTrainer(SVGPEULBOTrainer, HartmannTrainer, EITrainer):
+    pass
+
+
+class LunarEISVGPEULBOTrainer(SVGPEULBOTrainer, LunarTrainer, EITrainer):
     pass
