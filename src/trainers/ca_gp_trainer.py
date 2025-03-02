@@ -177,7 +177,8 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
                               projection_dim=int(self.proj_dim_ratio *
                                                  train_x.size(0)),
                               likelihood=GaussianLikelihood().to(self.device),
-                              kernel_type=self.kernel_type).to(self.device)
+                              kernel_type=self.kernel_type,
+                              init_mode=self.ca_gp_init_mode).to(self.device)
 
             self.optimizer = self.optimizer_type(
                 [{
@@ -225,6 +226,8 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
                 assert 0, f"\nFailed to complete EULBO model update due to the following error:\n{error_message}"
             self.model.eval()
 
+            train_rmse = self.eval(train_x, train_y)
+
             # Evaluate candidates
             y_next = self.task(x_next)
 
@@ -232,14 +235,11 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
             train_x = torch.cat((train_x, x_next), dim=-2)
             train_y = torch.cat((train_y, y_next), dim=-2)
 
-            if not self.turn_off_wandb:
-                self.log_wandb_metrics(train_y=train_y,
-                                       final_loss=final_loss,
-                                       epochs_trained=epochs_trained)
+            self.log_wandb_metrics(train_y=train_y,
+                                   train_rmse=train_rmse,
+                                   final_loss=final_loss,
+                                   epochs_trained=epochs_trained)
 
-            logging.info(
-                f'Num oracle calls: {self.task.num_calls - 1}, best reward: {train_y.max().item():.3f}, final cagp loss: {final_loss:.3f}, epochs trained: {epochs_trained}'
-            )
             reward.append(train_y.max().item())
 
         self.save_metrics(metrics=reward,
@@ -278,9 +278,6 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
                                   shuffle=False)
         return train_loader
 
-    def eval(self):
-        pass
-
 
 class HartmannEICaGPTrainer(CaGPTrainer, HartmannTrainer, EITrainer):
     pass
@@ -295,4 +292,8 @@ class HartmannEICaGPEULBOTrainer(CaGPEULBOTrainer, HartmannTrainer, EITrainer):
 
 
 class LunarEICaGPTrainer(CaGPTrainer, LunarTrainer, EITrainer):
+    pass
+
+
+class LunarEICaGPEULBOTrainer(CaGPEULBOTrainer, LunarTrainer, EITrainer):
     pass

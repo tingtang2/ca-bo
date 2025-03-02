@@ -1,11 +1,9 @@
 import argparse
 import logging
 import os
-import random
 import sys
 from datetime import date, datetime
 
-import numpy as np
 import torch
 import wandb
 from torch import nn
@@ -16,7 +14,8 @@ from trainers.base_trainer import BaseTrainer
 from trainers.ca_gp_trainer import (HartmannEICaGPEULBOTrainer,
                                     HartmannEICaGPTrainer,
                                     HartmannLogEICaGPTrainer,
-                                    LunarEICaGPTrainer)
+                                    LunarEICaGPTrainer,
+                                    LunarEICaGPEULBOTrainer)
 from trainers.exact_gp_trainer import (HartmannEIExactGPTrainer,
                                        LunarEIExactGPTrainer)
 from trainers.svgp_trainer import (HartmannEISVGPEULBOTrainer,
@@ -35,7 +34,8 @@ arg_trainer_map = {
     'lunar_ei_exact_gp': LunarEIExactGPTrainer,
     'lunar_ei_ca_gp': LunarEICaGPTrainer,
     'lunar_ei_svgp': LunarEISVGPTrainer,
-    'lunar_ei_svgp_eulbo': LunarEISVGPEULBOTrainer
+    'lunar_ei_svgp_eulbo': LunarEISVGPEULBOTrainer,
+    'lunar_ei_ca_gp_eulbo': LunarEICaGPEULBOTrainer
 }
 arg_optimizer_map = {'adamW': AdamW, 'adam': Adam}
 
