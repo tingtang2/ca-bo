@@ -170,10 +170,13 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
         for i in trange(self.max_oracle_calls - self.num_initial_points):
             if self.norm_data:
                 # get normalized train y
-                train_y = (train_y - self.train_y_mean) / self.train_y_std
+                model_train_y = (train_y -
+                                 self.train_y_mean) / self.train_y_std
+            else:
+                model_train_y = train_y
 
             self.model = CaGP(train_inputs=train_x,
-                              train_targets=train_y.squeeze(),
+                              train_targets=model_train_y.squeeze(),
                               projection_dim=int(self.proj_dim_ratio *
                                                  train_x.size(0)),
                               likelihood=GaussianLikelihood().to(self.device),
@@ -187,16 +190,14 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
 
             mll = ComputationAwareELBO(self.model.likelihood, self.model)
 
-            train_loader = self.generate_dataloaders(train_x=train_x,
-                                                     train_y=train_y.squeeze())
+            train_loader = self.generate_dataloaders(
+                train_x=train_x, train_y=model_train_y.squeeze())
 
             final_loss, epochs_trained = self.train_model(train_loader, mll)
             self.model.eval()
 
-            x_next = self.data_acquisition_iteration(self.model,
-                                                     train_y,
-                                                     train_x,
-                                                     raw_samples=10)
+            x_next = self.data_acquisition_iteration(self.model, model_train_y,
+                                                     train_x)
 
             # above is warm start
             torch.autograd.set_detect_anomaly(True)
@@ -210,7 +211,7 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
                     x_next, final_loss, epochs_trained = self.eulbo_train_model(
                         mll=mll,
                         loader=train_loader,
-                        normed_best_train_y=train_y.max(),
+                        normed_best_train_y=model_train_y.max(),
                         init_x_next=x_next.to(self.device))
                     success = True
                 except Exception as e:
