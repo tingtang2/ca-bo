@@ -2,8 +2,13 @@ import logging
 
 import gpytorch
 import torch
-from botorch.fit import fit_gpytorch_model
+from botorch.fit import fit_gpytorch_mll
 from botorch.models import SingleTaskGP
+from botorch.models.utils.gpytorch_modules import (
+    get_covar_module_with_dim_scaled_prior,
+    get_gaussian_likelihood_with_gamma_prior,
+    get_gaussian_likelihood_with_lognormal_prior,
+    get_matern_kernel_with_gamma_prior)
 from gpytorch.metrics import mean_squared_error
 from gpytorch.mlls import ExactMarginalLogLikelihood
 from tqdm import trange
@@ -33,12 +38,6 @@ class ExactGPTrainer(BaseTrainer):
             self.train_y_std = 1
 
         reward = []
-        if self.kernel_type == 'rbf':
-            base_kernel = gpytorch.kernels.RBFKernel()
-        elif self.kernel_type == 'matern_3_2':
-            base_kernel = gpytorch.kernels.MaternKernel(1.5)
-        else:
-            base_kernel = gpytorch.kernels.MaternKernel(2.5)
 
         for i in trange(self.max_oracle_calls - self.num_initial_points):
             if self.norm_data:
@@ -49,17 +48,36 @@ class ExactGPTrainer(BaseTrainer):
                 model_train_y = train_y
 
             # Init exact gp model
+            if self.kernel_likelihood_prior == 'gamma':
+                covar_module = get_matern_kernel_with_gamma_prior(
+                    ard_num_dims=train_x.shape[-1])
+                likelihood = get_gaussian_likelihood_with_gamma_prior()
+            elif self.kernel_likelihood_prior == 'lognormal':
+                covar_module = get_covar_module_with_dim_scaled_prior(
+                    ard_num_dims=train_x.shape[-1], use_rbf_kernel=False)
+                likelihood = get_gaussian_likelihood_with_lognormal_prior()
+            else:
+                if self.kernel_type == 'rbf':
+                    base_kernel = gpytorch.kernels.RBFKernel()
+                elif self.kernel_type == 'matern_3_2':
+                    base_kernel = gpytorch.kernels.MaternKernel(1.5)
+                else:
+                    base_kernel = gpytorch.kernels.MaternKernel(2.5)
+
+                covar_module = gpytorch.kernels.ScaleKernel(base_kernel)
+                likelihood = gpytorch.likelihoods.GaussianLikelihood().to(
+                    self.device)
+
             model = SingleTaskGP(
                 train_x,
                 model_train_y,
-                covar_module=gpytorch.kernels.ScaleKernel(base_kernel),
-                likelihood=gpytorch.likelihoods.GaussianLikelihood().to(
-                    self.device),
+                covar_module=covar_module,
+                likelihood=likelihood,
             ).to(self.device)
             exact_gp_mll = ExactMarginalLogLikelihood(model.likelihood, model)
 
             # fit model to data
-            fit_gpytorch_model(exact_gp_mll)
+            fit_gpytorch_mll(exact_gp_mll)
             model.eval()
 
             # get train rmse

@@ -14,8 +14,8 @@ from trainers.base_trainer import BaseTrainer
 from trainers.ca_gp_trainer import (HartmannEICaGPEULBOTrainer,
                                     HartmannEICaGPTrainer,
                                     HartmannLogEICaGPTrainer,
-                                    LunarEICaGPTrainer,
-                                    LunarEICaGPEULBOTrainer)
+                                    LunarEICaGPEULBOTrainer,
+                                    LunarEICaGPTrainer)
 from trainers.exact_gp_trainer import (HartmannEIExactGPTrainer,
                                        LunarEIExactGPTrainer)
 from trainers.svgp_trainer import (HartmannEISVGPEULBOTrainer,
@@ -92,6 +92,9 @@ def main() -> int:
     parser.add_argument('--kernel_type',
                         default='matern_5_2',
                         help='kernel type for GP')
+    parser.add_argument('--kernel_likelihood_prior',
+                        default='none',
+                        help='kernel and likelihood prior for GP')
     parser.add_argument('--ca_gp_init_mode',
                         default='random',
                         help='init mode for ca gp')

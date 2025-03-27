@@ -3,11 +3,11 @@ import logging
 
 import torch
 from gpytorch.likelihoods import GaussianLikelihood
+from gpytorch.metrics import mean_squared_error
 from gpytorch.mlls import VariationalELBO
 from torch.autograd import Variable
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import trange
-from gpytorch.metrics import mean_squared_error
 
 from models.svgp import SVGPModel
 from trainers.acquisition_fn_trainers import EITrainer
