@@ -92,33 +92,55 @@ class BaseTrainer(ABC):
         else:
             passed_model = self.model
 
-        raw_outputscale = passed_model.covar_module.raw_outputscale
-        constraint = passed_model.covar_module.raw_outputscale_constraint
-        outputscale = constraint.transform(raw_outputscale)
+        if self.kernel_likelihood_prior == 'lognormal':
+            outputscale = 1
+            raw_lengthscale = passed_model.covar_module.raw_lengthscale
+            constraint = passed_model.covar_module.raw_lengthscale_constraint
+            lengthscale = constraint.transform(raw_lengthscale)
+        else:
+            raw_outputscale = passed_model.covar_module.raw_outputscale
+            constraint = passed_model.covar_module.raw_outputscale_constraint
+            outputscale = constraint.transform(raw_outputscale)
 
-        raw_lengthscale = passed_model.covar_module.base_kernel.raw_lengthscale
-        constraint = passed_model.covar_module.base_kernel.raw_lengthscale_constraint
-        lengthscale = constraint.transform(raw_lengthscale)
+            raw_lengthscale = passed_model.covar_module.base_kernel.raw_lengthscale
+            constraint = passed_model.covar_module.base_kernel.raw_lengthscale_constraint
+            lengthscale = constraint.transform(raw_lengthscale)
 
         if 'exact' in self.trainer_type:
             log_dict = {
-                'Num oracle calls': self.task.num_calls - 1,
-                'best reward': train_y.max().item(),
-                'noise param': passed_model.likelihood.noise.item(),
-                'lengthscale param': lengthscale.item(),
-                'outputscale param': outputscale.item(),
-                'train rmse': train_rmse
+                'Num oracle calls':
+                self.task.num_calls - 1,
+                'best reward':
+                train_y.max().item(),
+                'noise param':
+                passed_model.likelihood.noise.item(),
+                'lengthscale param':
+                torch.mean(lengthscale).item()
+                if self.use_ard_kernel else lengthscale.item(),
+                'outputscale param':
+                outputscale.item(),
+                'train rmse':
+                train_rmse
             }
         else:
             log_dict = {
-                'Num oracle calls': self.task.num_calls - 1,
-                'best reward': train_y.max().item(),
-                'final svgp loss': final_loss,
-                'epochs trained': epochs_trained,
-                'noise param': self.model.likelihood.noise.item(),
-                'lengthscale param': lengthscale.item(),
-                'outputscale param': outputscale.item(),
-                'train rmse': train_rmse
+                'Num oracle calls':
+                self.task.num_calls - 1,
+                'best reward':
+                train_y.max().item(),
+                'final svgp loss':
+                final_loss,
+                'epochs trained':
+                epochs_trained,
+                'noise param':
+                self.model.likelihood.noise.item(),
+                'lengthscale param':
+                torch.mean(lengthscale).item()
+                if self.use_ard_kernel else lengthscale.item(),
+                'outputscale param':
+                outputscale.item(),
+                'train rmse':
+                train_rmse
             }
 
         if not self.turn_off_wandb:

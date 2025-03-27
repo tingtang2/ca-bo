@@ -48,14 +48,19 @@ class ExactGPTrainer(BaseTrainer):
                 model_train_y = train_y
 
             # Init exact gp model
+            if self.use_ard_kernel:
+                ard_num_dims = train_x.shape[-1]
+            else:
+                ard_num_dims = None
+
             if self.kernel_likelihood_prior == 'gamma':
                 # TODO come back and set ard num dims to fit a lengthscale for every dim
                 covar_module = get_matern_kernel_with_gamma_prior(
-                    ard_num_dims=None)
+                    ard_num_dims=ard_num_dims)
                 likelihood = get_gaussian_likelihood_with_gamma_prior()
             elif self.kernel_likelihood_prior == 'lognormal':
                 covar_module = get_covar_module_with_dim_scaled_prior(
-                    ard_num_dims=None, use_rbf_kernel=False)
+                    ard_num_dims=ard_num_dims, use_rbf_kernel=False)
                 likelihood = get_gaussian_likelihood_with_lognormal_prior()
             else:
                 if self.kernel_type == 'rbf':

@@ -95,6 +95,10 @@ def main() -> int:
     parser.add_argument('--kernel_likelihood_prior',
                         default='none',
                         help='kernel and likelihood prior for GP')
+    parser.add_argument(
+        '--use_ard_kernel',
+        action='store_true',
+        help='fit a separate lengthscale for each input dimension')
     parser.add_argument('--ca_gp_init_mode',
                         default='random',
                         help='init mode for ca gp')
