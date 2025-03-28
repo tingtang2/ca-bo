@@ -54,7 +54,6 @@ class ExactGPTrainer(BaseTrainer):
                 ard_num_dims = None
 
             if self.kernel_likelihood_prior == 'gamma':
-                # TODO come back and set ard num dims to fit a lengthscale for every dim
                 covar_module = get_matern_kernel_with_gamma_prior(
                     ard_num_dims=ard_num_dims)
                 likelihood = get_gaussian_likelihood_with_gamma_prior()

@@ -93,7 +93,7 @@ class BaseTrainer(ABC):
             passed_model = self.model
 
         if self.kernel_likelihood_prior == 'lognormal':
-            outputscale = 1
+            outputscale = torch.tensor([1])
             raw_lengthscale = passed_model.covar_module.raw_lengthscale
             constraint = passed_model.covar_module.raw_lengthscale_constraint
             lengthscale = constraint.transform(raw_lengthscale)
