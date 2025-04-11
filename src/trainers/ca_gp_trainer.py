@@ -4,7 +4,7 @@ import logging
 import torch
 from gpytorch.likelihoods import GaussianLikelihood
 from gpytorch.metrics import mean_squared_error
-from gpytorch.mlls import ComputationAwareELBO
+from gpytorch.mlls import ComputationAwareELBO, ExactMarginalLogLikelihood
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import trange
 
@@ -59,6 +59,8 @@ class CaGPTrainer(BaseTrainer):
                 }], lr=self.learning_rate)
 
             mll = ComputationAwareELBO(self.model.likelihood, self.model)
+            exact_mll = ExactMarginalLogLikelihood(self.model.likelihood,
+                                                   self.model)
 
             train_loader = self.generate_dataloaders(
                 train_x=train_x, train_y=model_train_y.squeeze())
@@ -67,6 +69,7 @@ class CaGPTrainer(BaseTrainer):
             self.model.eval()
 
             train_rmse = self.eval(train_x, train_y)
+            train_nll = self.compute_nll(train_x, train_y, exact_mll)
 
             x_next = self.data_acquisition_iteration(self.model, model_train_y,
                                                      train_x).to(self.device)
@@ -81,6 +84,7 @@ class CaGPTrainer(BaseTrainer):
             self.log_wandb_metrics(train_y=train_y,
                                    final_loss=final_loss,
                                    train_rmse=train_rmse,
+                                   train_nll=train_nll,
                                    epochs_trained=epochs_trained)
 
             reward.append(train_y.max().item())
@@ -88,6 +92,11 @@ class CaGPTrainer(BaseTrainer):
         self.save_metrics(metrics=reward,
                           iter=iteration,
                           name=self.trainer_type)
+
+    def compute_nll(self, x, y, exact_mll):
+        self.model.eval()
+        output = self.model(x.to(self.device))
+        return -exact_mll(output, y.double().to(self.device)).mean().item()
 
     def train_model(self, train_loader: DataLoader, mll):
         self.model.train()
@@ -189,6 +198,8 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
                 }], lr=self.learning_rate)
 
             mll = ComputationAwareELBO(self.model.likelihood, self.model)
+            exact_mll = ExactMarginalLogLikelihood(self.model.likelihood,
+                                                   self.model)
 
             train_loader = self.generate_dataloaders(
                 train_x=train_x, train_y=model_train_y.squeeze())
@@ -228,6 +239,7 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
             self.model.eval()
 
             train_rmse = self.eval(train_x, train_y)
+            train_nll = self.compute_nll(train_x, train_y, exact_mll)
 
             # Evaluate candidates
             y_next = self.task(x_next)
@@ -238,6 +250,7 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
 
             self.log_wandb_metrics(train_y=train_y,
                                    train_rmse=train_rmse,
+                                   train_nll=train_nll,
                                    final_loss=final_loss,
                                    epochs_trained=epochs_trained)
 

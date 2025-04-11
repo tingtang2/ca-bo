@@ -291,6 +291,11 @@ class SVGPTrainer(BaseTrainer):
                                   train_y.to(self.device),
                                   squared=False).mean().item()
 
+    def compute_nll(self, x, y, exact_mll):
+        self.model.eval()
+        output = self.model(x.to(self.device))
+        return -exact_mll(output, y.double().to(self.device)).mean().item()
+
     def get_optimal_inducing_points(self, prev_inducing_points):
         greedy_imp_reduction = GreedyImprovementReduction(
             model=self.model,

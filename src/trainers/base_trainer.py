@@ -84,6 +84,7 @@ class BaseTrainer(ABC):
                           final_loss: float = -1,
                           epochs_trained: int = -1,
                           train_rmse: float = -1.0,
+                          train_nll: float = -1.0,
                           log_to_file: bool = True,
                           model=None):
 
@@ -140,7 +141,9 @@ class BaseTrainer(ABC):
                 'outputscale param':
                 outputscale.item(),
                 'train rmse':
-                train_rmse
+                train_rmse,
+                'train nll':
+                train_nll
             }
 
         if not self.turn_off_wandb:
