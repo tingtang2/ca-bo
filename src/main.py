@@ -120,6 +120,12 @@ def main() -> int:
                         default=0.5,
                         type=float,
                         help='ratio for ca gp projection dim')
+    parser.add_argument(
+        '--static_proj_dim',
+        default=-1,
+        type=int,
+        help='if not -1, keep ca gp projection dim constant throughout training'
+    )
 
     args = parser.parse_args()
     configs = args.__dict__

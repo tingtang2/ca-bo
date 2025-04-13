@@ -45,10 +45,14 @@ class CaGPTrainer(BaseTrainer):
             else:
                 model_train_y = train_y
 
+            if self.static_proj_dim != -1:
+                proj_dim = self.static_proj_dim
+            else:
+                proj_dim = int(self.proj_dim_ratio * train_x.size(0))
+
             self.model = CaGP(train_inputs=train_x,
                               train_targets=model_train_y.squeeze(),
-                              projection_dim=int(self.proj_dim_ratio *
-                                                 train_x.size(0)),
+                              projection_dim=proj_dim,
                               likelihood=GaussianLikelihood().to(self.device),
                               kernel_type=self.kernel_type,
                               init_mode=self.ca_gp_init_mode).to(self.device)
@@ -184,10 +188,14 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
             else:
                 model_train_y = train_y
 
+            if self.static_proj_dim != -1:
+                proj_dim = self.static_proj_dim
+            else:
+                proj_dim = int(self.proj_dim_ratio * train_x.size(0))
+
             self.model = CaGP(train_inputs=train_x,
                               train_targets=model_train_y.squeeze(),
-                              projection_dim=int(self.proj_dim_ratio *
-                                                 train_x.size(0)),
+                              projection_dim=proj_dim,
                               likelihood=GaussianLikelihood().to(self.device),
                               kernel_type=self.kernel_type,
                               init_mode=self.ca_gp_init_mode).to(self.device)
