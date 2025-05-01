@@ -82,25 +82,31 @@ class ExactGPTrainer(BaseTrainer):
             exact_gp_mll = ExactMarginalLogLikelihood(model.likelihood, model)
 
             # fit model to data
-            fit_gpytorch_mll(exact_gp_mll)
+            mll = fit_gpytorch_mll(exact_gp_mll)
             model.eval()
 
             # get train rmse
             train_rmse = self.eval(model, train_x, model_train_y)
-
+            train_nll = self.compute_nll(train_x, model_train_y.squeeze(), mll)
             x_next = self.data_acquisition_iteration(model, model_train_y,
                                                      train_x).to(self.device)
 
             # Evaluate candidates
             y_next = self.task(x_next)
+            cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x,
+                                                              train_y=train_y,
+                                                              x_next=x_next)
 
             # Update data
             train_x = torch.cat((train_x, x_next), dim=-2)
             train_y = torch.cat((train_y, y_next), dim=-2)
 
             self.log_wandb_metrics(train_y=train_y,
+                                   y_next=y_next,
                                    train_rmse=train_rmse,
-                                   model=model)
+                                   model=model,
+                                   cos_sim_incum=cos_sim_incum,
+                                   train_nll=train_nll)
 
             reward.append(train_y.max().item())
 

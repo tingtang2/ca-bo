@@ -8,14 +8,14 @@ import torch
 import wandb
 from torch import nn
 from torch.optim import Adam, AdamW
+import signal
 
 from set_seed import set_seed
 from trainers.base_trainer import BaseTrainer
-from trainers.ca_gp_trainer import (HartmannEICaGPEULBOTrainer,
-                                    HartmannEICaGPTrainer,
-                                    HartmannLogEICaGPTrainer,
-                                    LunarEICaGPEULBOTrainer,
-                                    LunarEICaGPTrainer)
+from trainers.ca_gp_trainer import (
+    HartmannEICaGPEULBOTrainer, HartmannEICaGPTrainer,
+    HartmannLogEICaGPTrainer, LunarEICaGPEULBOTrainer, LunarEICaGPTrainer,
+    LunarLogEICaGPEULBOTrainer, LunarLogEICaGPTrainer)
 from trainers.exact_gp_trainer import (HartmannEIExactGPTrainer,
                                        LunarEIExactGPTrainer)
 from trainers.svgp_trainer import (HartmannEISVGPEULBOTrainer,
@@ -33,11 +33,22 @@ arg_trainer_map = {
     'hartmann_log_ei_ca_gp': HartmannLogEICaGPTrainer,
     'lunar_ei_exact_gp': LunarEIExactGPTrainer,
     'lunar_ei_ca_gp': LunarEICaGPTrainer,
+    'lunar_log_ei_ca_gp': LunarLogEICaGPTrainer,
     'lunar_ei_svgp': LunarEISVGPTrainer,
     'lunar_ei_svgp_eulbo': LunarEISVGPEULBOTrainer,
-    'lunar_ei_ca_gp_eulbo': LunarEICaGPEULBOTrainer
+    'lunar_ei_ca_gp_eulbo': LunarEICaGPEULBOTrainer,
+    'lunar_log_ei_ca_gp_eulbo': LunarLogEICaGPEULBOTrainer
 }
 arg_optimizer_map = {'adamW': AdamW, 'adam': Adam}
+
+
+def handler(self, signum, frame):
+    # if we Ctrl-c, make sure we terminate wandb tracker
+    print('Ctrl-c hass been pressed, terminating wandb tracker...')
+    self.tracker.finish()
+    msg = 'tracker terminated, now exiting...'
+    print(msg, end='', flush=True)
+    exit(1)
 
 
 def main() -> int:
@@ -54,7 +65,7 @@ def main() -> int:
                         help='number of epochs to train model')
     parser.add_argument('--device',
                         '-d',
-                        default='cpu',
+                        default='cuda',
                         type=str,
                         help='cpu or gpu ID to use')
     parser.add_argument('--batch_size',
@@ -68,7 +79,7 @@ def main() -> int:
     parser.add_argument('--save_dir', help='path to saved model files')
     parser.add_argument('--data_dir', help='path to data files')
     parser.add_argument('--optimizer',
-                        default='adamW',
+                        default='adam',
                         help='type of optimizer to use')
     parser.add_argument('--num_repeats',
                         default=3,
@@ -79,7 +90,7 @@ def main() -> int:
                         type=int,
                         help='random seed to be used in numpy and torch')
     parser.add_argument('--learning_rate',
-                        default=1e-3,
+                        default=1e-2,
                         type=float,
                         help='learning rate for optimizer')
     parser.add_argument('--max_oracle_calls',
@@ -87,7 +98,7 @@ def main() -> int:
                         type=int,
                         help='max number of function evals/oracle calls')
     parser.add_argument('--trainer_type',
-                        default='hartmann_ei_exact_gp',
+                        default='lunar_ei_ca_gp',
                         help='type of experiment to run')
     parser.add_argument('--kernel_type',
                         default='matern_5_2',
@@ -129,17 +140,17 @@ def main() -> int:
 
     args = parser.parse_args()
     configs = args.__dict__
-    configs['date'] = datetime.now().strftime("%m_%d_%Y_%H:%M:%S")
+    configs['date'] = datetime.now().strftime('%m_%d_%Y_%H:%M:%S')
 
     # wandb tracking
     if configs['turn_off_wandb']:
         tracker = None
     else:
         tracker = wandb.init(project='Computation-Aware-BO',
-                             group=configs["trainer_type"],
+                             group=configs['trainer_type'],
                              config=configs,
                              notes=configs['notes'])
-        os.environ["WANDB_RUN_GROUP"] = "experiment-" + configs["trainer_type"]
+        os.environ['WANDB_RUN_GROUP'] = 'experiment-' + configs['trainer_type']
 
     # for repeatability
     set_seed(configs['seed'])
@@ -166,6 +177,7 @@ def main() -> int:
         tracker=tracker,
         **configs)
 
+    signal.signal(signal.SIGINT, handler)
     # perform experiment n times
     for iter in range(configs['num_repeats']):
         trainer.run_experiment(iter)
@@ -177,7 +189,7 @@ def main() -> int:
         if iter != configs['num_repeats'] - 1:
             trainer.tracker.finish()
             tracker = wandb.init(project='Computation-Aware-BO',
-                                 group=configs["trainer_type"],
+                                 group=configs['trainer_type'],
                                  config=configs,
                                  notes=configs['notes'])
             trainer.init_new_run(tracker)

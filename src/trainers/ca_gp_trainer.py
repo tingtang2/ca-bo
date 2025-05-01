@@ -3,7 +3,6 @@ import logging
 
 import torch
 from gpytorch.likelihoods import GaussianLikelihood
-from gpytorch.metrics import mean_squared_error
 from gpytorch.mlls import ComputationAwareELBO, ExactMarginalLogLikelihood
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import trange
@@ -26,11 +25,19 @@ class CaGPTrainer(BaseTrainer):
         self.train_batch_size = 32
 
         self.update_train_size = 100
+        self.name = 'vanilla_ca_gp'
+        self.debug = False
 
     def run_experiment(self, iteration: int):
         # get all attribute information
         logging.info(self.__dict__)
         train_x, train_y = self.initialize_data()
+
+        # log initial y_max
+        print(f'initial y max: {train_y.max().item()}')
+        logging.info(f'initial y max: {train_y.max().item()}')
+        self.tracker.log({'initial y max': train_y.max().item()})
+
         self.train_y_mean = train_y.mean()
         self.train_y_std = train_y.std()
         if self.train_y_std == 0:
@@ -56,6 +63,11 @@ class CaGPTrainer(BaseTrainer):
                               likelihood=GaussianLikelihood().to(self.device),
                               kernel_type=self.kernel_type,
                               init_mode=self.ca_gp_init_mode).to(self.device)
+            if self.debug:
+                torch.save(train_x, f'{self.save_dir}models/train_x.pt')
+                torch.save(model_train_y,
+                           f'{self.save_dir}models/model_train_y.pt')
+                torch.save(train_y, f'{self.save_dir}models/train_y.pt')
 
             self.optimizer = self.optimizer_type(
                 [{
@@ -72,10 +84,12 @@ class CaGPTrainer(BaseTrainer):
             final_loss, epochs_trained = self.train_model(train_loader, mll)
             self.model.eval()
 
-            train_rmse = self.eval(train_x, train_y)
-            train_nll = self.compute_nll(train_x, train_y, exact_mll)
+            train_rmse = self.eval(train_x, model_train_y)
+            train_nll = self.compute_nll(train_x, model_train_y.squeeze(),
+                                         exact_mll)
 
-            x_next = self.data_acquisition_iteration(self.model, model_train_y,
+            x_next = self.data_acquisition_iteration(self.model,
+                                                     model_train_y.squeeze(),
                                                      train_x).to(self.device)
 
             # Evaluate candidates
@@ -97,11 +111,6 @@ class CaGPTrainer(BaseTrainer):
                           iter=iteration,
                           name=self.trainer_type)
 
-    def compute_nll(self, x, y, exact_mll):
-        self.model.eval()
-        output = self.model(x.to(self.device))
-        return -exact_mll(output, y.double().to(self.device)).mean().item()
-
     def train_model(self, train_loader: DataLoader, mll):
         self.model.train()
         best_loss = 1e+5
@@ -111,7 +120,7 @@ class CaGPTrainer(BaseTrainer):
             loss = self.train_epoch(train_loader, mll)
 
             if loss < best_loss:
-                # self.save_model(f'{self.name}_{iter}')
+                # self.save_model(f'{self.name}')
                 best_model_state = copy.deepcopy(self.model.state_dict())
                 early_stopping_counter = 0
                 best_loss = loss
@@ -150,13 +159,6 @@ class CaGPTrainer(BaseTrainer):
                                   batch_size=train_x.shape[0],
                                   shuffle=False)
         return train_loader
-
-    def eval(self, train_x, train_y):
-        self.model.eval()
-        preds = self.model(train_x)
-        return mean_squared_error(preds,
-                                  train_y.to(self.device),
-                                  squared=False).mean().item()
 
 
 class CaGPEULBOTrainer(SVGPEULBOTrainer):
@@ -246,8 +248,9 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
                 assert 0, f"\nFailed to complete EULBO model update due to the following error:\n{error_message}"
             self.model.eval()
 
-            train_rmse = self.eval(train_x, train_y)
-            train_nll = self.compute_nll(train_x, train_y, exact_mll)
+            train_rmse = self.eval(train_x, model_train_y.squeeze())
+            train_nll = self.compute_nll(train_x, model_train_y.squeeze(),
+                                         exact_mll)
 
             # Evaluate candidates
             y_next = self.task(x_next)
@@ -317,5 +320,13 @@ class LunarEICaGPTrainer(CaGPTrainer, LunarTrainer, EITrainer):
     pass
 
 
+class LunarLogEICaGPTrainer(CaGPTrainer, LunarTrainer, LogEITrainer):
+    pass
+
+
 class LunarEICaGPEULBOTrainer(CaGPEULBOTrainer, LunarTrainer, EITrainer):
+    pass
+
+
+class LunarLogEICaGPEULBOTrainer(CaGPEULBOTrainer, LunarTrainer, LogEITrainer):
     pass

@@ -5,6 +5,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Union
 
+from gpytorch.metrics import mean_squared_error
+from torch.nn.functional import cosine_similarity
 import torch
 
 from tasks.task import Task
@@ -79,6 +81,22 @@ class BaseTrainer(ABC):
     def init_new_run(self, tracker):
         self.tracker = tracker
 
+    def compute_nll(self, x, y, exact_mll):
+        output = self.model(x.to(self.device))
+        return -exact_mll(output, y.double().to(self.device)).mean().item()
+
+    def eval(self, train_x, train_y):
+        self.model.eval()
+        preds = self.model(train_x)
+        return mean_squared_error(preds,
+                                  train_y.to(self.device),
+                                  squared=False).mean().item()
+
+    def compute_cos_sim_to_incumbent(self, train_x, train_y, x_next):
+        incumbent = train_x[torch.argmax(train_y)]
+
+        return cosine_similarity(incumbent, x_next)
+
     def log_wandb_metrics(self,
                           train_y: torch.Tensor,
                           final_loss: float = -1,
@@ -86,6 +104,8 @@ class BaseTrainer(ABC):
                           train_rmse: float = -1.0,
                           train_nll: float = -1.0,
                           log_to_file: bool = True,
+                          y_next: float = -1.0,
+                          cos_sim_incum: float = -1.0,
                           model=None):
 
         if 'exact' in self.trainer_type:
@@ -121,7 +141,11 @@ class BaseTrainer(ABC):
                 'outputscale param':
                 outputscale.item(),
                 'train rmse':
-                train_rmse
+                train_rmse,
+                'y_next':
+                y_next,
+                'cos_sim_incum':
+                cos_sim_incum
             }
         else:
             log_dict = {
@@ -143,7 +167,11 @@ class BaseTrainer(ABC):
                 'train rmse':
                 train_rmse,
                 'train nll':
-                train_nll
+                train_nll,
+                'y_next':
+                y_next,
+                'cos_sim_incum':
+                cos_sim_incum
             }
 
         if not self.turn_off_wandb:
