@@ -10,7 +10,7 @@ from tqdm import trange
 from models.ca_gp import CaGP
 from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
 from trainers.base_trainer import BaseTrainer
-from trainers.data_trainers import HartmannTrainer, LunarTrainer
+from trainers.data_trainers import HartmannTrainer, LunarTrainer, RoverTrainer
 from trainers.svgp_trainer import SVGPEULBOTrainer
 
 
@@ -337,4 +337,8 @@ class LunarEICaGPEULBOTrainer(CaGPEULBOTrainer, LunarTrainer, EITrainer):
 
 
 class LunarLogEICaGPEULBOTrainer(CaGPEULBOTrainer, LunarTrainer, LogEITrainer):
+    pass
+
+
+class RoverEICaGPTrainer(CaGPTrainer, RoverTrainer, EITrainer):
     pass
