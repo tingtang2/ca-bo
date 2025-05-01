@@ -9,7 +9,6 @@ from botorch.models.utils.gpytorch_modules import (
     get_gaussian_likelihood_with_gamma_prior,
     get_gaussian_likelihood_with_lognormal_prior,
     get_matern_kernel_with_gamma_prior)
-from gpytorch.metrics import mean_squared_error
 from gpytorch.mlls import ExactMarginalLogLikelihood
 from tqdm import trange
 
@@ -73,22 +72,23 @@ class ExactGPTrainer(BaseTrainer):
                 likelihood = gpytorch.likelihoods.GaussianLikelihood().to(
                     self.device)
 
-            model = SingleTaskGP(
+            self.model = SingleTaskGP(
                 train_x,
                 model_train_y,
                 covar_module=covar_module,
                 likelihood=likelihood,
             ).to(self.device)
-            exact_gp_mll = ExactMarginalLogLikelihood(model.likelihood, model)
+            exact_gp_mll = ExactMarginalLogLikelihood(self.model.likelihood,
+                                                      self.model)
 
             # fit model to data
             mll = fit_gpytorch_mll(exact_gp_mll)
-            model.eval()
+            self.model.eval()
 
             # get train rmse
-            train_rmse = self.eval(model, train_x, model_train_y)
+            train_rmse = self.eval(train_x, model_train_y)
             train_nll = self.compute_nll(train_x, model_train_y.squeeze(), mll)
-            x_next = self.data_acquisition_iteration(model, model_train_y,
+            x_next = self.data_acquisition_iteration(self.model, model_train_y,
                                                      train_x).to(self.device)
 
             # Evaluate candidates
@@ -102,9 +102,8 @@ class ExactGPTrainer(BaseTrainer):
             train_y = torch.cat((train_y, y_next), dim=-2)
 
             self.log_wandb_metrics(train_y=train_y,
-                                   y_next=y_next,
+                                   y_next=y_next.item(),
                                    train_rmse=train_rmse,
-                                   model=model,
                                    cos_sim_incum=cos_sim_incum,
                                    train_nll=train_nll)
 
@@ -113,11 +112,6 @@ class ExactGPTrainer(BaseTrainer):
         self.save_metrics(metrics=reward,
                           iter=iteration,
                           name=self.trainer_type)
-
-    def eval(self, model, X, y):
-        preds = model(X)
-        return mean_squared_error(preds, y.to(self.device),
-                                  squared=False).mean().item()
 
 
 class HartmannEIExactGPTrainer(ExactGPTrainer, HartmannTrainer, EITrainer):

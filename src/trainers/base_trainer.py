@@ -95,7 +95,7 @@ class BaseTrainer(ABC):
     def compute_cos_sim_to_incumbent(self, train_x, train_y, x_next):
         incumbent = train_x[torch.argmax(train_y)]
 
-        return cosine_similarity(incumbent, x_next)
+        return cosine_similarity(incumbent, x_next).item()
 
     def log_wandb_metrics(self,
                           train_y: torch.Tensor,
@@ -105,13 +105,9 @@ class BaseTrainer(ABC):
                           train_nll: float = -1.0,
                           log_to_file: bool = True,
                           y_next: float = -1.0,
-                          cos_sim_incum: float = -1.0,
-                          model=None):
+                          cos_sim_incum: float = -1.0):
 
-        if 'exact' in self.trainer_type:
-            passed_model = model
-        else:
-            passed_model = self.model
+        passed_model = self.model
 
         if self.kernel_likelihood_prior == 'lognormal':
             outputscale = torch.tensor([1])
