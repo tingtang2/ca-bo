@@ -180,8 +180,11 @@ def main() -> int:
     signal.signal(signal.SIGINT, handler)
     # perform experiment n times
     for iter in range(configs['num_repeats']):
+        # for repeatability
         trainer.run_experiment(iter)
         trainer.task.num_calls = 0
+        trainer.reinitialize_task()
+        set_seed(configs['seed'] + iter + 1)
         if configs['turn_off_wandb']:
             continue
 

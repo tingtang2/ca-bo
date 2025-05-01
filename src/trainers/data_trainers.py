@@ -23,6 +23,9 @@ class HartmannTrainer(BaseTrainer):
 
         return init_train_x, init_train_y
 
+    def reinitialize_task(self):
+        self.task = Hartmann6D()
+
 
 class LunarTrainer(BaseTrainer):
 
@@ -38,3 +41,6 @@ class LunarTrainer(BaseTrainer):
         init_train_y = self.task(init_train_x.to(self.device))
 
         return init_train_x, init_train_y
+
+    def reinitialize_task(self):
+        self.task = LunarLander()
