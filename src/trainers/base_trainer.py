@@ -138,6 +138,8 @@ class BaseTrainer(ABC):
                 outputscale.item(),
                 'train rmse':
                 train_rmse,
+                'train nll':
+                train_nll,
                 'y_next':
                 y_next,
                 'cos_sim_incum':

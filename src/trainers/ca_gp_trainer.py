@@ -36,7 +36,8 @@ class CaGPTrainer(BaseTrainer):
         # log initial y_max
         print(f'initial y max: {train_y.max().item()}')
         logging.info(f'initial y max: {train_y.max().item()}')
-        self.tracker.log({'initial y max': train_y.max().item()})
+        if not self.turn_off_wandb:
+            self.tracker.log({'initial y max': train_y.max().item()})
 
         self.train_y_mean = train_y.mean()
         self.train_y_std = train_y.std()
@@ -92,6 +93,10 @@ class CaGPTrainer(BaseTrainer):
                                                      model_train_y.squeeze(),
                                                      train_x).to(self.device)
 
+            cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x,
+                                                              train_y=train_y,
+                                                              x_next=x_next)
+
             # Evaluate candidates
             y_next = self.task(x_next)
 
@@ -100,9 +105,11 @@ class CaGPTrainer(BaseTrainer):
             train_y = torch.cat((train_y, y_next), dim=-2)
 
             self.log_wandb_metrics(train_y=train_y,
+                                   y_next=y_next.item(),
                                    final_loss=final_loss,
                                    train_rmse=train_rmse,
                                    train_nll=train_nll,
+                                   cos_sim_incum=cos_sim_incum,
                                    epochs_trained=epochs_trained)
 
             reward.append(train_y.max().item())
@@ -132,6 +139,7 @@ class CaGPTrainer(BaseTrainer):
                 self.model.load_state_dict(best_model_state)
                 return loss, i + 1
 
+        self.model.load_state_dict(best_model_state)
         return loss, i + 1
 
     def train_epoch(self, train_loader: DataLoader, mll):
