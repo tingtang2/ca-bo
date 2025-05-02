@@ -184,6 +184,13 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
         # get all attribute information
         logging.info(self.__dict__)
         train_x, train_y = self.initialize_data()
+
+        # log initial y_max
+        print(f'initial y max: {train_y.max().item()}')
+        logging.info(f'initial y max: {train_y.max().item()}')
+        if not self.turn_off_wandb:
+            self.tracker.log({'initial y max': train_y.max().item()})
+
         self.train_y_mean = train_y.mean()
         self.train_y_std = train_y.std()
         if self.train_y_std == 0:
@@ -260,6 +267,9 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
             train_nll = self.compute_nll(train_x, model_train_y.squeeze(),
                                          exact_mll)
 
+            cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x,
+                                                              train_y=train_y,
+                                                              x_next=x_next)
             # Evaluate candidates
             y_next = self.task(x_next)
 
@@ -268,9 +278,11 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
             train_y = torch.cat((train_y, y_next), dim=-2)
 
             self.log_wandb_metrics(train_y=train_y,
+                                   y_next=y_next.item(),
+                                   final_loss=final_loss,
                                    train_rmse=train_rmse,
                                    train_nll=train_nll,
-                                   final_loss=final_loss,
+                                   cos_sim_incum=cos_sim_incum,
                                    epochs_trained=epochs_trained)
 
             reward.append(train_y.max().item())
@@ -341,4 +353,8 @@ class LunarLogEICaGPEULBOTrainer(CaGPEULBOTrainer, LunarTrainer, LogEITrainer):
 
 
 class RoverEICaGPTrainer(CaGPTrainer, RoverTrainer, EITrainer):
+    pass
+
+
+class RoverEICaGPEULBOTrainer(CaGPEULBOTrainer, RoverTrainer, EITrainer):
     pass

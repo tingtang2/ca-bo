@@ -15,7 +15,8 @@ from trainers.base_trainer import BaseTrainer
 from trainers.ca_gp_trainer import (
     HartmannEICaGPEULBOTrainer, HartmannEICaGPTrainer,
     HartmannLogEICaGPTrainer, LunarEICaGPEULBOTrainer, LunarEICaGPTrainer,
-    LunarLogEICaGPEULBOTrainer, LunarLogEICaGPTrainer, RoverEICaGPTrainer)
+    LunarLogEICaGPEULBOTrainer, LunarLogEICaGPTrainer, RoverEICaGPTrainer,
+    RoverEICaGPEULBOTrainer)
 from trainers.exact_gp_trainer import (HartmannEIExactGPTrainer,
                                        LunarEIExactGPTrainer,
                                        RoverEIExactGPTrainer)
@@ -41,6 +42,7 @@ arg_trainer_map = {
     'lunar_log_ei_ca_gp_eulbo': LunarLogEICaGPEULBOTrainer,
     'rover_ei_exact_gp': RoverEIExactGPTrainer,
     'rover_ei_ca_gp': RoverEICaGPTrainer,
+    'rover_ei_ca_gp_eulbo': RoverEICaGPEULBOTrainer,
 }
 arg_optimizer_map = {'adamW': AdamW, 'adam': Adam}
 
