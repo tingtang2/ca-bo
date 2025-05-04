@@ -23,7 +23,8 @@ from trainers.exact_gp_trainer import (HartmannEIExactGPTrainer,
 from trainers.svgp_trainer import (HartmannEISVGPEULBOTrainer,
                                    HartmannEISVGPRetrainTrainer,
                                    HartmannEISVGPTrainer,
-                                   LunarEISVGPEULBOTrainer, LunarEISVGPTrainer)
+                                   LunarEISVGPEULBOTrainer, LunarEISVGPTrainer,
+                                   RoverEISVGPEULBOTrainer, RoverEISVGPTrainer)
 
 arg_trainer_map = {
     'hartmann_ei_exact_gp': HartmannEIExactGPTrainer,
@@ -43,6 +44,8 @@ arg_trainer_map = {
     'rover_ei_exact_gp': RoverEIExactGPTrainer,
     'rover_ei_ca_gp': RoverEICaGPTrainer,
     'rover_ei_ca_gp_eulbo': RoverEICaGPEULBOTrainer,
+    'rover_ei_svgp': RoverEISVGPTrainer,
+    'rover_ei_svgp_eulbo': RoverEISVGPEULBOTrainer,
 }
 arg_optimizer_map = {'adamW': AdamW, 'adam': Adam}
 

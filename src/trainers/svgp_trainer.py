@@ -3,8 +3,7 @@ import logging
 
 import torch
 from gpytorch.likelihoods import GaussianLikelihood
-from gpytorch.metrics import mean_squared_error
-from gpytorch.mlls import VariationalELBO
+from gpytorch.mlls import VariationalELBO, ExactMarginalLogLikelihood
 from torch.autograd import Variable
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import trange
@@ -12,7 +11,7 @@ from tqdm import trange
 from models.svgp import SVGPModel
 from trainers.acquisition_fn_trainers import EITrainer
 from trainers.base_trainer import BaseTrainer
-from trainers.data_trainers import HartmannTrainer, LunarTrainer
+from trainers.data_trainers import HartmannTrainer, LunarTrainer, RoverTrainer
 from trainers.utils.expected_log_utility import get_expected_log_utility_ei
 from trainers.utils.moss_et_al_inducing_pts_init import \
     GreedyImprovementReduction
@@ -207,6 +206,8 @@ class SVGPTrainer(BaseTrainer):
             mll = VariationalELBO(self.model.likelihood,
                                   self.model,
                                   num_data=update_x.size(0))
+            exact_mll = ExactMarginalLogLikelihood(self.model.likelihood,
+                                                   self.model)
 
             train_loader = self.generate_dataloaders(train_x=update_x,
                                                      train_y=update_y)
@@ -214,10 +215,16 @@ class SVGPTrainer(BaseTrainer):
             final_loss, epochs_trained = self.train_model(train_loader, mll)
             self.model.eval()
 
-            train_rmse = self.eval(train_x, train_y)
+            train_rmse = self.eval(train_x, model_train_y)
+            train_nll = self.compute_nll(train_x, model_train_y.squeeze(),
+                                         exact_mll)
 
             x_next = self.data_acquisition_iteration(self.model, model_train_y,
                                                      train_x).to(self.device)
+
+            cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x,
+                                                              train_y=train_y,
+                                                              x_next=x_next)
 
             # Evaluate candidates
             y_next = self.task(x_next)
@@ -227,15 +234,18 @@ class SVGPTrainer(BaseTrainer):
             train_y = torch.cat((train_y, y_next), dim=-2)
 
             self.log_wandb_metrics(train_y=train_y,
+                                   y_next=y_next.item(),
                                    final_loss=final_loss,
                                    train_rmse=train_rmse,
+                                   train_nll=train_nll,
+                                   cos_sim_incum=cos_sim_incum,
                                    epochs_trained=epochs_trained)
 
             reward.append(train_y.max().item())
 
-        self.save_metrics(metrics=reward,
-                          iter=iteration,
-                          name=self.trainer_type)
+        # self.save_metrics(metrics=reward,
+        #                   iter=iteration,
+        #                   name=self.trainer_type)
 
     def train_model(self, train_loader: DataLoader, mll):
         self.model.train()
@@ -246,14 +256,18 @@ class SVGPTrainer(BaseTrainer):
 
             if loss < best_loss:
                 # self.save_model(f'{self.name}_{iter}')
+                best_model_state = copy.deepcopy(self.model.state_dict())
                 early_stopping_counter = 0
                 best_loss = loss
             else:
                 early_stopping_counter += 1
 
             if early_stopping_counter == self.early_stopping_threshold:
+                # Load the best model weights before returning
+                self.model.load_state_dict(best_model_state)
                 return loss, i + 1
 
+        self.model.load_state_dict(best_model_state)
         return loss, i + 1
 
     def train_epoch(self, train_loader: DataLoader, mll):
@@ -284,18 +298,6 @@ class SVGPTrainer(BaseTrainer):
             generator=torch.Generator(device=self.device))
         return train_loader
 
-    def eval(self, train_x, train_y):
-        self.model.eval()
-        preds = self.model(train_x)
-        return mean_squared_error(preds,
-                                  train_y.to(self.device),
-                                  squared=False).mean().item()
-
-    def compute_nll(self, x, y, exact_mll):
-        self.model.eval()
-        output = self.model(x.to(self.device))
-        return -exact_mll(output, y.double().to(self.device)).mean().item()
-
     def get_optimal_inducing_points(self, prev_inducing_points):
         greedy_imp_reduction = GreedyImprovementReduction(
             model=self.model,
@@ -315,6 +317,10 @@ class HartmannEISVGPTrainer(SVGPTrainer, HartmannTrainer, EITrainer):
 
 
 class LunarEISVGPTrainer(SVGPTrainer, LunarTrainer, EITrainer):
+    pass
+
+
+class RoverEISVGPTrainer(SVGPTrainer, RoverTrainer, EITrainer):
     pass
 
 
@@ -412,6 +418,8 @@ class SVGPEULBOTrainer(SVGPTrainer):
             mll = VariationalELBO(self.model.likelihood,
                                   self.model,
                                   num_data=update_x.size(0))
+            exact_mll = ExactMarginalLogLikelihood(self.model.likelihood,
+                                                   self.model)
 
             while (n_failures < 8) and (not success):
                 try:
@@ -434,7 +442,13 @@ class SVGPEULBOTrainer(SVGPTrainer):
                 assert 0, f"\nFailed to complete EULBO model update due to the following error:\n{error_message}"
             self.model.eval()
 
-            train_rmse = self.eval(train_x, train_y)
+            train_rmse = self.eval(train_x, model_train_y.squeeze())
+            train_nll = self.compute_nll(train_x, model_train_y.squeeze(),
+                                         exact_mll)
+
+            cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x,
+                                                              train_y=train_y,
+                                                              x_next=x_next)
 
             # Evaluate candidates
             y_next = self.task(x_next)
@@ -444,14 +458,17 @@ class SVGPEULBOTrainer(SVGPTrainer):
             train_y = torch.cat((train_y, y_next), dim=-2)
 
             self.log_wandb_metrics(train_y=train_y,
+                                   y_next=y_next.item(),
                                    final_loss=final_loss,
                                    train_rmse=train_rmse,
+                                   train_nll=train_nll,
+                                   cos_sim_incum=cos_sim_incum,
                                    epochs_trained=epochs_trained)
             reward.append(train_y.max().item())
 
-        self.save_metrics(metrics=reward,
-                          iter=iteration,
-                          name=self.trainer_type)
+        # self.save_metrics(metrics=reward,
+        #                   iter=iteration,
+        #                   name=self.trainer_type)
 
     def eulbo_train_model(self, loader, mll, normed_best_train_y, init_x_next):
         self.model.train()
@@ -551,4 +568,8 @@ class HartmannEISVGPEULBOTrainer(SVGPEULBOTrainer, HartmannTrainer, EITrainer):
 
 
 class LunarEISVGPEULBOTrainer(SVGPEULBOTrainer, LunarTrainer, EITrainer):
+    pass
+
+
+class RoverEISVGPEULBOTrainer(SVGPEULBOTrainer, RoverTrainer, EITrainer):
     pass
