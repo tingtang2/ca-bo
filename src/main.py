@@ -101,6 +101,11 @@ def main() -> int:
                         default=1e-2,
                         type=float,
                         help='learning rate for optimizer')
+    parser.add_argument(
+        '--ca_gp_actions_learning_rate',
+        default=1e-2,
+        type=float,
+        help='learning rate for CaGP action specific optimizer')
     parser.add_argument('--max_oracle_calls',
                         default=2000,
                         type=int,

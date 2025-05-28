@@ -70,10 +70,23 @@ class CaGPTrainer(BaseTrainer):
                            f'{self.save_dir}models/model_train_y.pt')
                 torch.save(train_y, f'{self.save_dir}models/train_y.pt')
 
+            action_params = [
+                p for name, p in self.model.named_parameters()
+                if 'action' in name
+            ]
+            others = [
+                p for name, p in self.model.named_parameters()
+                if 'action' not in name
+            ]
+
             self.optimizer = self.optimizer_type(
                 [{
-                    'params': self.model.parameters(),
-                }], lr=self.learning_rate)
+                    'params': others
+                }, {
+                    'params': action_params,
+                    'lr': self.ca_gp_actions_learning_rate
+                }],
+                lr=self.learning_rate)
 
             mll = ComputationAwareELBO(self.model.likelihood, self.model)
             exact_mll = ExactMarginalLogLikelihood(self.model.likelihood,
