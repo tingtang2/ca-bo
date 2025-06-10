@@ -16,7 +16,7 @@ from trainers.ca_gp_trainer import (
     HartmannEICaGPEULBOTrainer, HartmannEICaGPTrainer,
     HartmannLogEICaGPTrainer, LunarEICaGPEULBOTrainer, LunarEICaGPTrainer,
     LunarLogEICaGPEULBOTrainer, LunarLogEICaGPTrainer, RoverEICaGPTrainer,
-    RoverEICaGPEULBOTrainer)
+    RoverEICaGPEULBOTrainer, RoverEICaGPSlidingWindowTrainer)
 from trainers.exact_gp_trainer import (HartmannEIExactGPTrainer,
                                        LunarEIExactGPTrainer,
                                        RoverEIExactGPTrainer)
@@ -44,6 +44,7 @@ arg_trainer_map = {
     'rover_ei_exact_gp': RoverEIExactGPTrainer,
     'rover_ei_ca_gp': RoverEICaGPTrainer,
     'rover_ei_ca_gp_eulbo': RoverEICaGPEULBOTrainer,
+    'rover_ei_ca_gp_sliding_window': RoverEICaGPSlidingWindowTrainer,
     'rover_ei_svgp': RoverEISVGPTrainer,
     'rover_ei_svgp_eulbo': RoverEISVGPEULBOTrainer,
 }

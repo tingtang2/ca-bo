@@ -12,6 +12,7 @@ from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
 from trainers.base_trainer import BaseTrainer
 from trainers.data_trainers import HartmannTrainer, LunarTrainer, RoverTrainer
 from trainers.svgp_trainer import SVGPEULBOTrainer
+import math
 
 
 class CaGPTrainer(BaseTrainer):
@@ -345,6 +346,150 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
         return train_loader
 
 
+class CaGPSlidingWindowTrainer(CaGPTrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.name = 'sliding_window_ca_gp'
+        self.update_train_size = 100
+
+    def run_experiment(self, iteration: int):
+        # get all attribute information
+        logging.info(self.__dict__)
+        train_x, train_y = self.initialize_data()
+
+        # log initial y_max
+        print(f'initial y max: {train_y.max().item()}')
+        logging.info(f'initial y max: {train_y.max().item()}')
+        if not self.turn_off_wandb:
+            self.tracker.log({'initial y max': train_y.max().item()})
+
+        self.train_y_mean = train_y.mean()
+        self.train_y_std = train_y.std()
+        if self.train_y_std == 0:
+            self.train_y_std = 1
+
+        if self.static_proj_dim != -1:
+            proj_dim = self.static_proj_dim
+        else:
+            proj_dim = int(self.proj_dim_ratio * train_x.size(0))
+
+        if self.norm_data:
+            # get normalized train y
+            model_train_y = (train_y - self.train_y_mean) / self.train_y_std
+        else:
+            model_train_y = train_y
+
+        self.model = CaGP(train_inputs=train_x,
+                          train_targets=model_train_y.squeeze(),
+                          projection_dim=proj_dim,
+                          likelihood=GaussianLikelihood().to(self.device),
+                          kernel_type=self.kernel_type,
+                          init_mode=self.ca_gp_init_mode).to(self.device)
+        if self.debug:
+            torch.save(train_x, f'{self.save_dir}models/train_x.pt')
+            torch.save(model_train_y,
+                       f'{self.save_dir}models/model_train_y.pt')
+            torch.save(train_y, f'{self.save_dir}models/train_y.pt')
+
+        reward = []
+        for i in trange(self.max_oracle_calls - self.num_initial_points):
+            if self.norm_data:
+                # get normalized train y
+                model_train_y = (train_y -
+                                 self.train_y_mean) / self.train_y_std
+            else:
+                model_train_y = train_y
+
+            # only update on recently acquired points
+            if i > 0:
+                update_x = train_x[-self.update_train_size:]
+                # y needs to only have 1 dimension when training in gpytorch
+                update_y = model_train_y.squeeze()[-self.update_train_size:]
+            else:
+                update_x = train_x
+                update_y = model_train_y.squeeze()
+
+            # TODO: sliding window here
+            self.model.train_inputs = tuple(
+                tri.unsqueeze(-1) if tri.ndimension() == 1 else tri
+                for tri in update_x)
+            self.model.train_targets = update_y
+            self.model.actions_op.blocks.data = torch.concat(
+                (self.model.actions_op.blocks.data[:-1], torch.randn(
+                    (1, 1)).div(math.sqrt(self.model.num_non_zero))))
+
+            action_params = [
+                p for name, p in self.model.named_parameters()
+                if 'action' in name
+            ]
+            others = [
+                p for name, p in self.model.named_parameters()
+                if 'action' not in name
+            ]
+
+            self.optimizer = self.optimizer_type(
+                [{
+                    'params': others
+                }, {
+                    'params': action_params,
+                    'lr': self.ca_gp_actions_learning_rate
+                }],
+                lr=self.learning_rate)
+
+            mll = ComputationAwareELBO(self.model.likelihood, self.model)
+            exact_mll = ExactMarginalLogLikelihood(self.model.likelihood,
+                                                   self.model)
+
+            train_loader = self.generate_dataloaders(train_x=update_x,
+                                                     train_y=update_y)
+
+            final_loss, epochs_trained = self.train_model(train_loader, mll)
+            self.model.eval()
+
+            train_rmse = self.eval(train_x, model_train_y)
+            train_nll = self.compute_nll(train_x, model_train_y.squeeze(),
+                                         exact_mll)
+
+            x_next = self.data_acquisition_iteration(self.model,
+                                                     model_train_y.squeeze(),
+                                                     train_x).to(self.device)
+
+            cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x,
+                                                              train_y=train_y,
+                                                              x_next=x_next)
+
+            # Evaluate candidates
+            y_next = self.task(x_next)
+
+            # Update data
+            train_x = torch.cat((train_x, x_next), dim=-2)
+            train_y = torch.cat((train_y, y_next), dim=-2)
+
+            # calc gradients of actions
+            total_norm = 0.0
+            for p in action_params:
+                param_norm = p.grad.detach().data.norm(2)
+                total_norm += param_norm.item()**2
+            total_norm = total_norm**0.5
+
+            self.log_wandb_metrics(train_y=train_y,
+                                   y_next=y_next.item(),
+                                   final_loss=final_loss,
+                                   train_rmse=train_rmse,
+                                   train_nll=train_nll,
+                                   cos_sim_incum=cos_sim_incum,
+                                   epochs_trained=epochs_trained,
+                                   action_norm=total_norm)
+
+            reward.append(train_y.max().item())
+
+        self.save_metrics(metrics=reward,
+                          iter=iteration,
+                          name=self.trainer_type)
+
+
 class HartmannEICaGPTrainer(CaGPTrainer, HartmannTrainer, EITrainer):
     pass
 
@@ -378,4 +523,9 @@ class RoverEICaGPTrainer(CaGPTrainer, RoverTrainer, EITrainer):
 
 
 class RoverEICaGPEULBOTrainer(CaGPEULBOTrainer, RoverTrainer, EITrainer):
+    pass
+
+
+class RoverEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer, RoverTrainer,
+                                      EITrainer):
     pass
