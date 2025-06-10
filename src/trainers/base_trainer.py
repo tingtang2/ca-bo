@@ -105,7 +105,8 @@ class BaseTrainer(ABC):
                           train_nll: float = -1.0,
                           log_to_file: bool = True,
                           y_next: float = -1.0,
-                          cos_sim_incum: float = -1.0):
+                          cos_sim_incum: float = -1.0,
+                          action_norm: float = -1.0):
 
         passed_model = self.model
 
@@ -169,7 +170,9 @@ class BaseTrainer(ABC):
                 'y_next':
                 y_next,
                 'cos_sim_incum':
-                cos_sim_incum
+                cos_sim_incum,
+                'action_norm':
+                action_norm
             }
 
         if not self.turn_off_wandb:

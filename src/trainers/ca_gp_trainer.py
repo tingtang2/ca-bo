@@ -117,13 +117,21 @@ class CaGPTrainer(BaseTrainer):
             train_x = torch.cat((train_x, x_next), dim=-2)
             train_y = torch.cat((train_y, y_next), dim=-2)
 
+            # calc gradients of actions
+            total_norm = 0.0
+            for p in action_params:
+                param_norm = p.grad.detach().data.norm(2)
+                total_norm += param_norm.item()**2
+            total_norm = total_norm**0.5
+
             self.log_wandb_metrics(train_y=train_y,
                                    y_next=y_next.item(),
                                    final_loss=final_loss,
                                    train_rmse=train_rmse,
                                    train_nll=train_nll,
                                    cos_sim_incum=cos_sim_incum,
-                                   epochs_trained=epochs_trained)
+                                   epochs_trained=epochs_trained,
+                                   action_norm=total_norm)
 
             reward.append(train_y.max().item())
 
