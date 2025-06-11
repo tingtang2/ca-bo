@@ -1,6 +1,11 @@
 # adapted from https://github.com/nataliemaus/aabo/blob/main/svgp/model.py
 
 import gpytorch
+from botorch.models.utils.gpytorch_modules import (
+    get_covar_module_with_dim_scaled_prior,
+    get_gaussian_likelihood_with_gamma_prior,
+    get_gaussian_likelihood_with_lognormal_prior,
+    get_matern_kernel_with_gamma_prior)
 from botorch.posteriors.gpytorch import GPyTorchPosterior
 from gpytorch.models import ApproximateGP
 from gpytorch.variational import (CholeskyVariationalDistribution,
@@ -13,14 +18,32 @@ class SVGPModel(ApproximateGP):
                  inducing_points,
                  likelihood,
                  learn_inducing_locations=True,
-                 kernel_type: str = 'matern_5_2'):
+                 kernel_type: str = 'matern_5_2',
+                 kernel_likelihood_prior: str = None,
+                 use_ard_kernel: bool = False):
 
-        if kernel_type == 'rbf':
-            base_kernel = gpytorch.kernels.RBFKernel()
-        elif kernel_type == 'matern_3_2':
-            base_kernel = gpytorch.kernels.MaternKernel(1.5)
+        if use_ard_kernel:
+            ard_num_dims = inducing_points.shape[-1]
         else:
-            base_kernel = gpytorch.kernels.MaternKernel(2.5)
+            ard_num_dims = None
+
+        if kernel_likelihood_prior == 'gamma':
+            covar_module = get_matern_kernel_with_gamma_prior(
+                ard_num_dims=ard_num_dims)
+            likelihood = get_gaussian_likelihood_with_gamma_prior()
+        elif kernel_likelihood_prior == 'lognormal':
+            covar_module = get_covar_module_with_dim_scaled_prior(
+                ard_num_dims=ard_num_dims, use_rbf_kernel=False)
+            likelihood = get_gaussian_likelihood_with_lognormal_prior()
+        else:
+            if kernel_type == 'rbf':
+                base_kernel = gpytorch.kernels.RBFKernel()
+            elif kernel_type == 'matern_3_2':
+                base_kernel = gpytorch.kernels.MaternKernel(1.5)
+            else:
+                base_kernel = gpytorch.kernels.MaternKernel(2.5)
+
+            covar_module = gpytorch.kernels.ScaleKernel(base_kernel)
 
         variational_distribution = CholeskyVariationalDistribution(
             inducing_points.size(0))
@@ -32,7 +55,7 @@ class SVGPModel(ApproximateGP):
         )
         super(SVGPModel, self).__init__(variational_strategy)
         self.mean_module = gpytorch.means.ConstantMean()
-        self.covar_module = gpytorch.kernels.ScaleKernel(base_kernel)
+        self.covar_module = covar_module
         self.likelihood = likelihood
         self.num_outputs = 1
 

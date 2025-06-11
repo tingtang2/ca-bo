@@ -3,7 +3,7 @@ import logging
 
 import torch
 from gpytorch.likelihoods import GaussianLikelihood
-from gpytorch.mlls import VariationalELBO, ExactMarginalLogLikelihood
+from gpytorch.mlls import ExactMarginalLogLikelihood, VariationalELBO
 from torch.autograd import Variable
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import trange
@@ -176,9 +176,12 @@ class SVGPTrainer(BaseTrainer):
         inducing_points = train_x[:self.num_inducing_points]
 
         # init model
-        self.model = SVGPModel(inducing_points=inducing_points,
-                               likelihood=GaussianLikelihood().to(self.device),
-                               kernel_type=self.kernel_type).to(self.device)
+        self.model = SVGPModel(
+            inducing_points=inducing_points,
+            likelihood=GaussianLikelihood().to(self.device),
+            kernel_type=self.kernel_type,
+            kernel_likelihood_prior=self.kernel_likelihood_prior,
+            use_ard_kernel=self.use_ard_kernel).to(self.device)
 
         self.optimizer = self.optimizer_type(
             [{

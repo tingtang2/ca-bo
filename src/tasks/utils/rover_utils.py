@@ -1,8 +1,9 @@
 import itertools
+
 import numpy as np
 import scipy.interpolate as si
 import torch
-import itertools 
+
 
 class Trajectory:
     def __init__(self):

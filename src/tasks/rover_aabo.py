@@ -1,6 +1,7 @@
 import torch
+
 from tasks.objective import Objective
-from tasks.utils.rover_utils import create_large_domain, ConstantOffsetFn
+from tasks.utils.rover_utils import ConstantOffsetFn, create_large_domain
 
 
 class RoverObjective(Objective):

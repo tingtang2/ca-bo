@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import signal
 import sys
 from datetime import date, datetime
 
@@ -8,15 +9,19 @@ import torch
 import wandb
 from torch import nn
 from torch.optim import Adam, AdamW
-import signal
 
 from set_seed import set_seed
 from trainers.base_trainer import BaseTrainer
-from trainers.ca_gp_trainer import (
-    HartmannEICaGPEULBOTrainer, HartmannEICaGPTrainer,
-    HartmannLogEICaGPTrainer, LunarEICaGPEULBOTrainer, LunarEICaGPTrainer,
-    LunarLogEICaGPEULBOTrainer, LunarLogEICaGPTrainer, RoverEICaGPTrainer,
-    RoverEICaGPEULBOTrainer, RoverEICaGPSlidingWindowTrainer)
+from trainers.ca_gp_trainer import (HartmannEICaGPEULBOTrainer,
+                                    HartmannEICaGPTrainer,
+                                    HartmannLogEICaGPTrainer,
+                                    LunarEICaGPEULBOTrainer,
+                                    LunarEICaGPTrainer,
+                                    LunarLogEICaGPEULBOTrainer,
+                                    LunarLogEICaGPTrainer,
+                                    RoverEICaGPEULBOTrainer,
+                                    RoverEICaGPSlidingWindowTrainer,
+                                    RoverEICaGPTrainer)
 from trainers.exact_gp_trainer import (HartmannEIExactGPTrainer,
                                        LunarEIExactGPTrainer,
                                        RoverEIExactGPTrainer)

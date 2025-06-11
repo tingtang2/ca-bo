@@ -1,5 +1,6 @@
 import copy
 import logging
+import math
 
 import torch
 from gpytorch.likelihoods import GaussianLikelihood
@@ -12,7 +13,6 @@ from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
 from trainers.base_trainer import BaseTrainer
 from trainers.data_trainers import HartmannTrainer, LunarTrainer, RoverTrainer
 from trainers.svgp_trainer import SVGPEULBOTrainer
-import math
 
 
 class CaGPTrainer(BaseTrainer):
@@ -59,12 +59,15 @@ class CaGPTrainer(BaseTrainer):
             else:
                 proj_dim = int(self.proj_dim_ratio * train_x.size(0))
 
-            self.model = CaGP(train_inputs=train_x,
-                              train_targets=model_train_y.squeeze(),
-                              projection_dim=proj_dim,
-                              likelihood=GaussianLikelihood().to(self.device),
-                              kernel_type=self.kernel_type,
-                              init_mode=self.ca_gp_init_mode).to(self.device)
+            self.model = CaGP(
+                train_inputs=train_x,
+                train_targets=model_train_y.squeeze(),
+                projection_dim=proj_dim,
+                likelihood=GaussianLikelihood().to(self.device),
+                kernel_type=self.kernel_type,
+                init_mode=self.ca_gp_init_mode,
+                kernel_likelihood_prior=self.kernel_likelihood_prior,
+                use_ard_kernel=self.use_ard_kernel).to(self.device)
             if self.debug:
                 torch.save(train_x, f'{self.save_dir}models/train_x.pt')
                 torch.save(model_train_y,

@@ -5,9 +5,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Union
 
+import torch
 from gpytorch.metrics import mean_squared_error
 from torch.nn.functional import cosine_similarity
-import torch
 
 from tasks.task import Task
 
