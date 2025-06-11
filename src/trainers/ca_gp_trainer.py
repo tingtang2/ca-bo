@@ -100,6 +100,14 @@ class CaGPTrainer(BaseTrainer):
                 train_x=train_x, train_y=model_train_y.squeeze())
 
             final_loss, epochs_trained = self.train_model(train_loader, mll)
+
+            # calc gradients of actions
+            total_norm = 0.0
+            for p in action_params:
+                param_norm = p.grad.detach().data.norm(2)
+                total_norm += param_norm.item()**2
+            total_norm = total_norm**0.5
+
             self.model.eval()
 
             train_rmse = self.eval(train_x, model_train_y)
@@ -120,13 +128,6 @@ class CaGPTrainer(BaseTrainer):
             # Update data
             train_x = torch.cat((train_x, x_next), dim=-2)
             train_y = torch.cat((train_y, y_next), dim=-2)
-
-            # calc gradients of actions
-            total_norm = 0.0
-            for p in action_params:
-                param_norm = p.grad.detach().data.norm(2)
-                total_norm += param_norm.item()**2
-            total_norm = total_norm**0.5
 
             self.log_wandb_metrics(train_y=train_y,
                                    y_next=y_next.item(),
