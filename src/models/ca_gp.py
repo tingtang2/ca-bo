@@ -46,7 +46,6 @@ class CaGP(ComputationAwareGP):
             covar_module = gpytorch.kernels.ScaleKernel(base_kernel)
 
         mean_module = gpytorch.means.ConstantMean()
-        print(ard_num_dims)
 
         super(CaGP, self).__init__(train_inputs=train_inputs,
                                    train_targets=train_targets,

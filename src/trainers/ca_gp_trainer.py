@@ -411,18 +411,20 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                 update_x = train_x[-self.update_train_size:]
                 # y needs to only have 1 dimension when training in gpytorch
                 update_y = model_train_y.squeeze()[-self.update_train_size:]
+
+                # sliding window here
+                # Set number of non-zero action entries such that num_non_zero * projection_dim = num_train_targets
+                num_non_zero = update_y.size(-1) // proj_dim
+                self.model.train_inputs = tuple(
+                    tri.unsqueeze(-1) if tri.ndimension() == 1 else tri
+                    for tri in (update_x[0:num_non_zero * proj_dim], ))
+                self.model.train_targets = update_y[0:num_non_zero * proj_dim]
+                self.model.actions_op.blocks.data = torch.concat(
+                    (self.model.actions_op.blocks.data[:-1], torch.randn(
+                        (1, 1)).div(math.sqrt(self.model.num_non_zero))))
             else:
                 update_x = train_x
                 update_y = model_train_y.squeeze()
-
-            # TODO: sliding window here
-            self.model.train_inputs = tuple(
-                tri.unsqueeze(-1) if tri.ndimension() == 1 else tri
-                for tri in update_x)
-            self.model.train_targets = update_y
-            self.model.actions_op.blocks.data = torch.concat(
-                (self.model.actions_op.blocks.data[:-1], torch.randn(
-                    (1, 1)).div(math.sqrt(self.model.num_non_zero))))
 
             action_params = [
                 p for name, p in self.model.named_parameters()
@@ -450,6 +452,12 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                                                      train_y=update_y)
 
             final_loss, epochs_trained = self.train_model(train_loader, mll)
+            # calc gradients of actions
+            total_norm = 0.0
+            for p in action_params:
+                param_norm = p.grad.detach().data.norm(2)
+                total_norm += param_norm.item()**2
+            total_norm = total_norm**0.5
             self.model.eval()
 
             train_rmse = self.eval(train_x, model_train_y)
@@ -470,13 +478,6 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
             # Update data
             train_x = torch.cat((train_x, x_next), dim=-2)
             train_y = torch.cat((train_y, y_next), dim=-2)
-
-            # calc gradients of actions
-            total_norm = 0.0
-            for p in action_params:
-                param_norm = p.grad.detach().data.norm(2)
-                total_norm += param_norm.item()**2
-            total_norm = total_norm**0.5
 
             self.log_wandb_metrics(train_y=train_y,
                                    y_next=y_next.item(),
