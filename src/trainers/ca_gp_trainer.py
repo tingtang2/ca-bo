@@ -420,7 +420,7 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                     for tri in (update_x[0:num_non_zero * proj_dim], ))
                 self.model.train_targets = update_y[0:num_non_zero * proj_dim]
                 self.model.actions_op.blocks.data = torch.concat(
-                    (self.model.actions_op.blocks.data[:-1], torch.randn(
+                    (self.model.actions_op.blocks.data[1:], torch.randn(
                         (1, 1)).div(math.sqrt(self.model.num_non_zero))))
             else:
                 update_x = train_x
