@@ -54,7 +54,7 @@ arg_trainer_map = {
     'lasso_dna_log_ei_ca_gp': LassoDNALogEICaGPTrainer,
     'lasso_dna_log_ei_ca_gp_sliding_window':
     LassoDNALogEICaGPSlidingWindowTrainer,
-    'lasso_dan_log_ei_svgp': LassoDNALogEISVGPTrainer,
+    'lasso_dna_log_ei_svgp': LassoDNALogEISVGPTrainer,
 }
 arg_optimizer_map = {'adamW': AdamW, 'adam': Adam}
 
