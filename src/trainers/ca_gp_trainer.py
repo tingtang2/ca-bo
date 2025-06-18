@@ -11,7 +11,8 @@ from tqdm import trange
 from models.ca_gp import CaGP
 from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
 from trainers.base_trainer import BaseTrainer
-from trainers.data_trainers import HartmannTrainer, LunarTrainer, RoverTrainer
+from trainers.data_trainers import (HartmannTrainer, LassoDNATrainer,
+                                    LunarTrainer, RoverTrainer)
 from trainers.svgp_trainer import SVGPEULBOTrainer
 
 
@@ -533,4 +534,13 @@ class RoverEICaGPEULBOTrainer(CaGPEULBOTrainer, RoverTrainer, EITrainer):
 
 class RoverEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer, RoverTrainer,
                                       EITrainer):
+    pass
+
+
+class LassoDNALogEICaGPTrainer(CaGPTrainer, LassoDNATrainer, LogEITrainer):
+    pass
+
+
+class LassoDNALogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
+                                            LassoDNATrainer, LogEITrainer):
     pass

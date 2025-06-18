@@ -9,9 +9,10 @@ from torch.utils.data import DataLoader, TensorDataset
 from tqdm import trange
 
 from models.svgp import SVGPModel
-from trainers.acquisition_fn_trainers import EITrainer
+from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
 from trainers.base_trainer import BaseTrainer
-from trainers.data_trainers import HartmannTrainer, LunarTrainer, RoverTrainer
+from trainers.data_trainers import (HartmannTrainer, LassoDNATrainer,
+                                    LunarTrainer, RoverTrainer)
 from trainers.utils.expected_log_utility import get_expected_log_utility_ei
 from trainers.utils.moss_et_al_inducing_pts_init import \
     GreedyImprovementReduction
@@ -575,4 +576,8 @@ class LunarEISVGPEULBOTrainer(SVGPEULBOTrainer, LunarTrainer, EITrainer):
 
 
 class RoverEISVGPEULBOTrainer(SVGPEULBOTrainer, RoverTrainer, EITrainer):
+    pass
+
+
+class LassoDNALogEISVGPTrainer(SVGPTrainer, LassoDNATrainer, LogEITrainer):
     pass

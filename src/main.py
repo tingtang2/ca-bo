@@ -6,28 +6,26 @@ import sys
 from datetime import date, datetime
 
 import torch
-import wandb
 from torch import nn
 from torch.optim import Adam, AdamW
 
+import wandb
 from set_seed import set_seed
 from trainers.base_trainer import BaseTrainer
-from trainers.ca_gp_trainer import (HartmannEICaGPEULBOTrainer,
-                                    HartmannEICaGPTrainer,
-                                    HartmannLogEICaGPTrainer,
-                                    LunarEICaGPEULBOTrainer,
-                                    LunarEICaGPTrainer,
-                                    LunarLogEICaGPEULBOTrainer,
-                                    LunarLogEICaGPTrainer,
-                                    RoverEICaGPEULBOTrainer,
-                                    RoverEICaGPSlidingWindowTrainer,
-                                    RoverEICaGPTrainer)
+from trainers.ca_gp_trainer import (
+    HartmannEICaGPEULBOTrainer, HartmannEICaGPTrainer,
+    HartmannLogEICaGPTrainer, LassoDNALogEICaGPSlidingWindowTrainer,
+    LassoDNALogEICaGPTrainer, LunarEICaGPEULBOTrainer, LunarEICaGPTrainer,
+    LunarLogEICaGPEULBOTrainer, LunarLogEICaGPTrainer, RoverEICaGPEULBOTrainer,
+    RoverEICaGPSlidingWindowTrainer, RoverEICaGPTrainer)
 from trainers.exact_gp_trainer import (HartmannEIExactGPTrainer,
+                                       LassoDNALogEIExactGPTrainer,
                                        LunarEIExactGPTrainer,
                                        RoverEIExactGPTrainer)
 from trainers.svgp_trainer import (HartmannEISVGPEULBOTrainer,
                                    HartmannEISVGPRetrainTrainer,
                                    HartmannEISVGPTrainer,
+                                   LassoDNALogEISVGPTrainer,
                                    LunarEISVGPEULBOTrainer, LunarEISVGPTrainer,
                                    RoverEISVGPEULBOTrainer, RoverEISVGPTrainer)
 
@@ -52,6 +50,11 @@ arg_trainer_map = {
     'rover_ei_ca_gp_sliding_window': RoverEICaGPSlidingWindowTrainer,
     'rover_ei_svgp': RoverEISVGPTrainer,
     'rover_ei_svgp_eulbo': RoverEISVGPEULBOTrainer,
+    'lasso_dna_log_ei_exact_gp': LassoDNALogEIExactGPTrainer,
+    'lasso_dna_log_ei_ca_gp': LassoDNALogEICaGPTrainer,
+    'lasso_dna_log_ei_ca_gp_sliding_window':
+    LassoDNALogEICaGPSlidingWindowTrainer,
+    'lasso_dan_log_ei_svgp': LassoDNALogEISVGPTrainer,
 }
 arg_optimizer_map = {'adamW': AdamW, 'adam': Adam}
 

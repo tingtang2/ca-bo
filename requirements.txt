@@ -1,9 +1,11 @@
-git+https://github.com/cornellius-gp/linear_operator.git@sparsity
-git+https://github.com/cornellius-gp/gpytorch.git@computation-aware-gps-v2
 pykeops
-botorch
+botorch>=0.13.0
 wandb
 multiprocess
 gym
 box2d
 pytest
+yapf
+git+https://github.com/ksehic/LassoBench.git
+git+https://github.com/cornellius-gp/linear_operator.git@sparsity # have to do these at the end customly due to dependency conflicts
+git+https://github.com/tingtang2/gpytorch.git@computation-aware-gps-v2

@@ -12,9 +12,10 @@ from botorch.models.utils.gpytorch_modules import (
 from gpytorch.mlls import ExactMarginalLogLikelihood
 from tqdm import trange
 
-from trainers.acquisition_fn_trainers import EITrainer
+from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
 from trainers.base_trainer import BaseTrainer
-from trainers.data_trainers import HartmannTrainer, LunarTrainer, RoverTrainer
+from trainers.data_trainers import (HartmannTrainer, LassoDNATrainer,
+                                    LunarTrainer, RoverTrainer)
 
 
 class ExactGPTrainer(BaseTrainer):
@@ -129,4 +130,9 @@ class LunarEIExactGPTrainer(ExactGPTrainer, LunarTrainer, EITrainer):
 
 
 class RoverEIExactGPTrainer(ExactGPTrainer, RoverTrainer, EITrainer):
+    pass
+
+
+class LassoDNALogEIExactGPTrainer(ExactGPTrainer, LassoDNATrainer,
+                                  LogEITrainer):
     pass
