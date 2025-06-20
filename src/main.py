@@ -24,12 +24,11 @@ from trainers.exact_gp_trainer import (HartmannEIExactGPTrainer,
                                        LunarEIExactGPTrainer,
                                        RoverEIExactGPTrainer,
                                        OsmbLogEIExactGPTrainer)
-from trainers.svgp_trainer import (HartmannEISVGPEULBOTrainer,
-                                   HartmannEISVGPRetrainTrainer,
-                                   HartmannEISVGPTrainer,
-                                   LassoDNALogEISVGPTrainer,
-                                   LunarEISVGPEULBOTrainer, LunarEISVGPTrainer,
-                                   RoverEISVGPEULBOTrainer, RoverEISVGPTrainer)
+from trainers.svgp_trainer import (
+    HartmannEISVGPEULBOTrainer, HartmannEISVGPRetrainTrainer,
+    HartmannEISVGPTrainer, LassoDNALogEISVGPTrainer, LunarEISVGPEULBOTrainer,
+    LunarEISVGPTrainer, RoverEISVGPEULBOTrainer, RoverEISVGPTrainer,
+    OsmbLogEISVGPTrainer)
 
 arg_trainer_map = {
     'hartmann_ei_exact_gp': HartmannEIExactGPTrainer,
@@ -60,6 +59,7 @@ arg_trainer_map = {
     'osmb_log_ei_exact_gp': OsmbLogEIExactGPTrainer,
     'osmb_log_ei_ca_gp': OsmbLogEICaGPTrainer,
     'osmb_log_ei_ca_gp_sliding_window': OsmbLogEICaGPSlidingWindowTrainer,
+    'osmb_log_ei_svgp': OsmbLogEISVGPTrainer,
 }
 arg_optimizer_map = {'adamW': AdamW, 'adam': Adam}
 

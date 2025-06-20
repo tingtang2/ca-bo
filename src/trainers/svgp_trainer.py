@@ -12,7 +12,8 @@ from models.svgp import SVGPModel
 from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
 from trainers.base_trainer import BaseTrainer
 from trainers.data_trainers import (HartmannTrainer, LassoDNATrainer,
-                                    LunarTrainer, RoverTrainer)
+                                    LunarTrainer, RoverTrainer,
+                                    GuacamolTrainer)
 from trainers.utils.expected_log_utility import get_expected_log_utility_ei
 from trainers.utils.moss_et_al_inducing_pts_init import \
     GreedyImprovementReduction
@@ -581,3 +582,9 @@ class RoverEISVGPEULBOTrainer(SVGPEULBOTrainer, RoverTrainer, EITrainer):
 
 class LassoDNALogEISVGPTrainer(SVGPTrainer, LassoDNATrainer, LogEITrainer):
     pass
+
+
+class OsmbLogEISVGPTrainer(SVGPTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='osmb', **kwargs)
