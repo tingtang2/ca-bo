@@ -17,11 +17,13 @@ from trainers.ca_gp_trainer import (
     HartmannLogEICaGPTrainer, LassoDNALogEICaGPSlidingWindowTrainer,
     LassoDNALogEICaGPTrainer, LunarEICaGPEULBOTrainer, LunarEICaGPTrainer,
     LunarLogEICaGPEULBOTrainer, LunarLogEICaGPTrainer, RoverEICaGPEULBOTrainer,
-    RoverEICaGPSlidingWindowTrainer, RoverEICaGPTrainer)
+    RoverEICaGPSlidingWindowTrainer, RoverEICaGPTrainer,
+    OsmbLogEICaGPSlidingWindowTrainer, OsmbLogEICaGPTrainer)
 from trainers.exact_gp_trainer import (HartmannEIExactGPTrainer,
                                        LassoDNALogEIExactGPTrainer,
                                        LunarEIExactGPTrainer,
-                                       RoverEIExactGPTrainer)
+                                       RoverEIExactGPTrainer,
+                                       OsmbLogEIExactGPTrainer)
 from trainers.svgp_trainer import (HartmannEISVGPEULBOTrainer,
                                    HartmannEISVGPRetrainTrainer,
                                    HartmannEISVGPTrainer,
@@ -55,6 +57,9 @@ arg_trainer_map = {
     'lasso_dna_log_ei_ca_gp_sliding_window':
     LassoDNALogEICaGPSlidingWindowTrainer,
     'lasso_dna_log_ei_svgp': LassoDNALogEISVGPTrainer,
+    'osmb_log_ei_exact_gp': OsmbLogEIExactGPTrainer,
+    'osmb_log_ei_ca_gp': OsmbLogEICaGPTrainer,
+    'osmb_log_ei_ca_gp_sliding_window': OsmbLogEICaGPSlidingWindowTrainer,
 }
 arg_optimizer_map = {'adamW': AdamW, 'adam': Adam}
 

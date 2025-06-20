@@ -15,7 +15,8 @@ from tqdm import trange
 from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
 from trainers.base_trainer import BaseTrainer
 from trainers.data_trainers import (HartmannTrainer, LassoDNATrainer,
-                                    LunarTrainer, RoverTrainer)
+                                    LunarTrainer, RoverTrainer,
+                                    GuacamolTrainer)
 
 
 class ExactGPTrainer(BaseTrainer):
@@ -136,3 +137,10 @@ class RoverEIExactGPTrainer(ExactGPTrainer, RoverTrainer, EITrainer):
 class LassoDNALogEIExactGPTrainer(ExactGPTrainer, LassoDNATrainer,
                                   LogEITrainer):
     pass
+
+
+class OsmbLogEIExactGPTrainer(ExactGPTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='osmb', **kwargs)
+        self.update_train_size = 100  # just need this for data initialization

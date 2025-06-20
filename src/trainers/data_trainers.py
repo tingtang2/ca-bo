@@ -1,12 +1,14 @@
 from typing import Tuple
 
 import torch
+import pandas as pd
 
 # from tasks.hartmannn import Hartmann6D
 from tasks.hartmannn_aabo import Hartmann6D
 from tasks.lasso_dna_aabo import LassoDNA
 from tasks.lunar_lander_aabo import LunarLander
 from tasks.rover_aabo import RoverObjective
+from tasks.guacamol_objective_aabo import GuacamolObjective
 from trainers.base_trainer import BaseTrainer
 
 
@@ -84,3 +86,33 @@ class LassoDNATrainer(BaseTrainer):
 
     def reinitialize_task(self):
         self.task = LassoDNA()
+
+
+class GuacamolTrainer(BaseTrainer):
+
+    def __init__(self, molecule, **kwargs):
+        super().__init__(**kwargs)
+
+        self.molecule = molecule
+        self.task = GuacamolObjective(guacamol_task_id=molecule,
+                                      dtype=torch.float64)
+        self.num_initial_points = 100
+
+    def initialize_data(self) -> Tuple[torch.tensor, torch.tensor]:
+        # load guacamol data for initialization
+        df = pd.read_csv("src/tasks/utils/selfies_vae/train_ys.csv")
+        train_y = torch.from_numpy(df[self.molecule].values).double()
+        train_x = torch.load(
+            "src/tasks/utils/selfies_vae/train_zs.pt").double()
+        init_train_x = train_x[0:self.num_initial_points]
+        init_train_y = train_y[0:self.num_initial_points]
+        init_train_y, top_k_idxs = torch.topk(
+            init_train_y, min(self.update_train_size, len(init_train_y)))
+        init_train_x = init_train_x[top_k_idxs]
+        init_train_y = init_train_y.unsqueeze(-1)
+
+        return init_train_x.to(self.device), init_train_y.to(self.device)
+
+    def reinitialize_task(self):
+        self.task = GuacamolObjective(guacamol_task_id=self.molecule,
+                                      dtype=torch.float64)

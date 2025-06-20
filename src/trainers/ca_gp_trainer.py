@@ -12,7 +12,8 @@ from models.ca_gp import CaGP
 from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
 from trainers.base_trainer import BaseTrainer
 from trainers.data_trainers import (HartmannTrainer, LassoDNATrainer,
-                                    LunarTrainer, RoverTrainer)
+                                    LunarTrainer, RoverTrainer,
+                                    GuacamolTrainer)
 from trainers.svgp_trainer import SVGPEULBOTrainer
 
 
@@ -544,3 +545,16 @@ class LassoDNALogEICaGPTrainer(CaGPTrainer, LassoDNATrainer, LogEITrainer):
 class LassoDNALogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
                                             LassoDNATrainer, LogEITrainer):
     pass
+
+
+class OsmbLogEICaGPTrainer(CaGPTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='osmb', **kwargs)
+
+
+class OsmbLogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
+                                        GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='osmb', **kwargs)
