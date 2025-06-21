@@ -185,10 +185,29 @@ class SVGPTrainer(BaseTrainer):
             kernel_likelihood_prior=self.kernel_likelihood_prior,
             use_ard_kernel=self.use_ard_kernel).to(self.device)
 
+        # TODO: increase LR on IP and variational parameters?
+        inducing_points = [
+            p for name, p in self.model.named_parameters()
+            if 'inducing' in name
+        ]
+        others = [
+            p for name, p in self.model.named_parameters()
+            if 'inducing' not in name
+        ]
+
         self.optimizer = self.optimizer_type(
             [{
-                'params': self.model.parameters(),
-            }], lr=self.learning_rate)
+                'params': others
+            }, {
+                'params': inducing_points,
+                'lr': self.svgp_inducing_point_learning_rate
+            }],
+            lr=self.learning_rate)
+
+        # self.optimizer = self.optimizer_type(
+        #     [{
+        #         'params': self.model.parameters(),
+        #     }], lr=self.learning_rate)
 
         reward = []
         for i in trange(self.max_oracle_calls - self.num_initial_points):

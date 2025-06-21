@@ -120,6 +120,11 @@ def main() -> int:
         default=1e-2,
         type=float,
         help='learning rate for CaGP action specific optimizer')
+    parser.add_argument(
+        '--svgp_inducing_point_learning_rate',
+        default=1e-2,
+        type=float,
+        help='learning rate for SVGP inducing point specific optimizer')
     parser.add_argument('--max_oracle_calls',
                         default=2000,
                         type=int,
