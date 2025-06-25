@@ -75,7 +75,6 @@ class LassoDNATrainer(BaseTrainer):
         super().__init__(**kwargs)
 
         self.task = LassoDNA()
-        self.num_initial_points = 100
 
     def initialize_data(self) -> Tuple[torch.tensor, torch.tensor]:
         init_train_x = torch.rand((self.num_initial_points, self.task.dim)).to(

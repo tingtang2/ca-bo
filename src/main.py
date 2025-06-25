@@ -159,6 +159,14 @@ def main() -> int:
                         default=3,
                         type=int,
                         help='patience for early stopping')
+    parser.add_argument('--num_initial_points',
+                        default=100,
+                        type=int,
+                        help='initial number of points to train model on')
+    parser.add_argument('--update_train_size',
+                        default=100,
+                        type=int,
+                        help='size of sliding window to update on')
     parser.add_argument('--proj_dim_ratio',
                         default=0.5,
                         type=float,

@@ -22,7 +22,6 @@ class CaGPTrainer(BaseTrainer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.num_inducing_points = 100
         self.grad_clip = 2.0
 
         self.train_batch_size = 32
@@ -202,7 +201,6 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.num_inducing_points = 100
         self.grad_clip = 2.0
 
         self.early_stopping_threshold = 3
@@ -358,7 +356,6 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
         super().__init__(**kwargs)
 
         self.name = 'sliding_window_ca_gp'
-        self.update_train_size = 100
 
     def run_experiment(self, iteration: int):
         # get all attribute information
