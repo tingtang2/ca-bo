@@ -26,7 +26,6 @@ class CaGPTrainer(BaseTrainer):
 
         self.train_batch_size = 32
 
-        self.update_train_size = 100
         self.name = 'vanilla_ca_gp'
         self.debug = False
 
