@@ -24,13 +24,10 @@ class SVGPRetrainTrainer(BaseTrainer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.num_inducing_points = 100
         self.grad_clip = 2.0
 
         self.early_stopping_threshold = 3
         self.train_batch_size = 32
-
-        self.update_train_size = 100
 
     def run_experiment(self, iteration: int):
         # get all attribute information
@@ -156,13 +153,10 @@ class SVGPTrainer(BaseTrainer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.num_inducing_points = 100
         self.grad_clip = 2.0
 
         self.early_stopping_threshold = 3
         self.train_batch_size = 32
-
-        self.update_train_size = 100
 
     def run_experiment(self, iteration: int):
         # get all attribute information
@@ -185,29 +179,24 @@ class SVGPTrainer(BaseTrainer):
             kernel_likelihood_prior=self.kernel_likelihood_prior,
             use_ard_kernel=self.use_ard_kernel).to(self.device)
 
-        # TODO: increase LR on IP and variational parameters?
-        inducing_points = [
+        # set custom LR on IP and variational parameters
+        variational_params_and_ip = [
             p for name, p in self.model.named_parameters()
-            if 'inducing' in name
+            if 'variational' in name
         ]
         others = [
             p for name, p in self.model.named_parameters()
-            if 'inducing' not in name
+            if 'variational' not in name
         ]
 
         self.optimizer = self.optimizer_type(
             [{
                 'params': others
             }, {
-                'params': inducing_points,
+                'params': variational_params_and_ip,
                 'lr': self.svgp_inducing_point_learning_rate
             }],
             lr=self.learning_rate)
-
-        # self.optimizer = self.optimizer_type(
-        #     [{
-        #         'params': self.model.parameters(),
-        #     }], lr=self.learning_rate)
 
         reward = []
         for i in trange(self.max_oracle_calls - self.num_initial_points):
@@ -358,14 +347,12 @@ class SVGPEULBOTrainer(SVGPTrainer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.num_inducing_points = 100
         self.grad_clip = 2.0
 
         self.early_stopping_threshold = self.epochs
         self.early_stopping_threshold_eulbo = 3
         self.train_batch_size = 32
 
-        self.update_train_size = 100
         self.inducing_pt_init_w_moss23 = True
 
         self.alternate_updates = True

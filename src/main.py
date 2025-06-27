@@ -167,6 +167,10 @@ def main() -> int:
                         default=100,
                         type=int,
                         help='size of sliding window to update on')
+    parser.add_argument('--num_inducing_points',
+                        default=100,
+                        type=int,
+                        help='number of inducing points for svgp')
     parser.add_argument('--proj_dim_ratio',
                         default=0.5,
                         type=float,
