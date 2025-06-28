@@ -30,11 +30,17 @@ class EITrainer(BaseTrainer):
         else:
             ei = qExpectedImprovement(model, Y.max().to(self.device))
 
+        if self.enable_raasp:
+            options = {'sample_around_best': True}
+        else:
+            options = None
+
         X_next, _ = optimize_acqf(ei,
                                   bounds=torch.stack([lb, ub]).to(self.device),
                                   q=self.batch_size,
                                   num_restarts=num_restarts,
-                                  raw_samples=raw_samples)
+                                  raw_samples=raw_samples,
+                                  options=options)
         return X_next.detach().cpu()
 
 
@@ -53,11 +59,18 @@ class LogEITrainer(BaseTrainer):
         ub = self.task.ub * weights
 
         ei = LogExpectedImprovement(model, Y.max().to(self.device))
+
+        if self.enable_raasp:
+            options = {'sample_around_best': True}
+        else:
+            options = None
+
         X_next, _ = optimize_acqf(ei,
                                   bounds=torch.stack([lb, ub]).to(self.device),
                                   q=self.batch_size,
                                   num_restarts=num_restarts,
-                                  raw_samples=raw_samples)
+                                  raw_samples=raw_samples,
+                                  options=options)
         return X_next
 
 

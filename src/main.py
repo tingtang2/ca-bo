@@ -155,6 +155,9 @@ def main() -> int:
     parser.add_argument('--use_analytic_acq_func',
                         action='store_true',
                         help='use analytic acquisition function instead of MC')
+    parser.add_argument('--enable_raasp',
+                        action='store_true',
+                        help='enable RAASP sampling in AF optimization')
     parser.add_argument('--early_stopping_threshold',
                         default=3,
                         type=int,
