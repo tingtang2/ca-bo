@@ -143,4 +143,3 @@ class OsmbLogEIExactGPTrainer(ExactGPTrainer, GuacamolTrainer, LogEITrainer):
 
     def __init__(self, **kwargs):
         super().__init__(molecule='osmb', **kwargs)
-        self.update_train_size = 100  # just need this for data initialization

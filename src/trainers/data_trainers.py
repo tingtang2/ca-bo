@@ -95,7 +95,6 @@ class GuacamolTrainer(BaseTrainer):
         self.molecule = molecule
         self.task = GuacamolObjective(guacamol_task_id=molecule,
                                       dtype=torch.float64)
-        self.num_initial_points = 100
 
     def initialize_data(self) -> Tuple[torch.tensor, torch.tensor]:
         # load guacamol data for initialization
