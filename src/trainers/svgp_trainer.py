@@ -24,8 +24,6 @@ class SVGPRetrainTrainer(BaseTrainer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.grad_clip = 2.0
-
         self.early_stopping_threshold = 3
         self.train_batch_size = 32
 
@@ -152,8 +150,6 @@ class SVGPTrainer(BaseTrainer):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-        self.grad_clip = 2.0
 
         self.early_stopping_threshold = 3
         self.train_batch_size = 32
@@ -346,8 +342,6 @@ class SVGPEULBOTrainer(SVGPTrainer):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-        self.grad_clip = 2.0
 
         self.early_stopping_threshold = self.epochs
         self.early_stopping_threshold_eulbo = 3

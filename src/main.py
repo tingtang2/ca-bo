@@ -98,6 +98,10 @@ def main() -> int:
                         default=0.3,
                         type=float,
                         help='probability for dropout layers')
+    parser.add_argument('--grad_clip',
+                        default=2.0,
+                        type=float,
+                        help='probability for dropout layers')
     parser.add_argument('--save_dir', help='path to saved model files')
     parser.add_argument('--data_dir', help='path to data files')
     parser.add_argument('--optimizer',

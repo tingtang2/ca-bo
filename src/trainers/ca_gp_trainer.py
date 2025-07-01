@@ -22,8 +22,6 @@ class CaGPTrainer(BaseTrainer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.grad_clip = 2.0
-
         self.train_batch_size = 32
 
         self.name = 'vanilla_ca_gp'
@@ -199,8 +197,6 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-        self.grad_clip = 2.0
 
         self.early_stopping_threshold = 3
         self.train_batch_size = 32
