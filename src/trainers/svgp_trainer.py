@@ -11,9 +11,9 @@ from tqdm import trange
 from models.svgp import SVGPModel
 from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
 from trainers.base_trainer import BaseTrainer
-from trainers.data_trainers import (HartmannTrainer, LassoDNATrainer,
-                                    LunarTrainer, RoverTrainer,
-                                    GuacamolTrainer)
+from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
+                                    LassoDNATrainer, LunarTrainer,
+                                    RoverTrainer)
 from trainers.utils.expected_log_utility import get_expected_log_utility_ei
 from trainers.utils.moss_et_al_inducing_pts_init import \
     GreedyImprovementReduction
@@ -255,48 +255,6 @@ class SVGPTrainer(BaseTrainer):
         # self.save_metrics(metrics=reward,
         #                   iter=iteration,
         #                   name=self.trainer_type)
-
-    def train_model(self, train_loader: DataLoader, mll):
-        self.model.train()
-        best_loss = 1e+5
-        early_stopping_counter = 0
-        for i in range(self.epochs):
-            loss = self.train_epoch(train_loader, mll)
-
-            if loss < best_loss:
-                # self.save_model(f'{self.name}_{iter}')
-                best_model_state = copy.deepcopy(self.model.state_dict())
-                early_stopping_counter = 0
-                best_loss = loss
-            else:
-                early_stopping_counter += 1
-
-            if early_stopping_counter == self.early_stopping_threshold:
-                # Load the best model weights before returning
-                self.model.load_state_dict(best_model_state)
-                return loss, i + 1
-
-        self.model.load_state_dict(best_model_state)
-        return loss, i + 1
-
-    def train_epoch(self, train_loader: DataLoader, mll):
-        running_loss = 0.0
-        for i, (x, y) in enumerate(train_loader):
-            self.optimizer.zero_grad()
-
-            output = self.model(x.to(self.device))
-            loss = -mll(output, y.to(self.device))
-
-            loss.backward()
-            if self.grad_clip is not None:
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(),
-                                               max_norm=self.grad_clip)
-
-            self.optimizer.step()
-
-            running_loss += loss.item()
-
-        return running_loss
 
     def generate_dataloaders(self, train_x, train_y):
         train_dataset = TensorDataset(train_x, train_y)

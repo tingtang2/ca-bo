@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 from abc import ABC, abstractmethod
@@ -8,6 +9,7 @@ from typing import List, Union
 import torch
 from gpytorch.metrics import mean_squared_error
 from torch.nn.functional import cosine_similarity
+from torch.utils.data import DataLoader
 
 from tasks.task import Task
 
@@ -181,3 +183,46 @@ class BaseTrainer(ABC):
         if log_to_file:
             logging.info(', '.join(
                 [f'{key}: {value:.5f}' for key, value in log_dict.items()]))
+
+    def train_epoch(self, train_loader: DataLoader, mll):
+        running_loss = 0.0
+        for i, (x, y) in enumerate(train_loader):
+            self.optimizer.zero_grad()
+
+            output = self.model(x.to(self.device))
+            loss = -mll(output, y.to(self.device))
+
+            loss.backward()
+            if self.grad_clip is not None:
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(),
+                                               max_norm=self.grad_clip)
+
+            self.optimizer.step()
+
+            running_loss += loss.item()
+
+        return running_loss
+
+    def train_model(self, train_loader: DataLoader, mll):
+        self.model.train()
+        best_loss = 1e+5
+        early_stopping_counter = 0
+        best_model_state = None
+        for i in range(self.epochs):
+            loss = self.train_epoch(train_loader, mll)
+
+            if loss < best_loss:
+                # self.save_model(f'{self.name}')
+                best_model_state = copy.deepcopy(self.model.state_dict())
+                early_stopping_counter = 0
+                best_loss = loss
+            else:
+                early_stopping_counter += 1
+
+            if early_stopping_counter == self.early_stopping_threshold:
+                # Load the best model weights before returning
+                self.model.load_state_dict(best_model_state)
+                return loss, i + 1
+
+        self.model.load_state_dict(best_model_state)
+        return loss, i + 1

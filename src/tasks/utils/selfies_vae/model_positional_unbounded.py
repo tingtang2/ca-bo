@@ -1,12 +1,14 @@
-import os 
+import os
 from math import log
+
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks import ModelCheckpoint, RichProgressBar
 import torch
+from pytorch_lightning.callbacks import ModelCheckpoint, RichProgressBar
 from torch import Tensor, nn
 from torch.nn import functional as F
-from tasks.utils.selfies_vae.data import SELFIESDataModule, SELFIESDataset
 from torch.optim import Adam
+
+from tasks.utils.selfies_vae.data import SELFIESDataModule, SELFIESDataset
 
 BATCH_SIZE = 256
 ENCODER_LR = 1e-3
@@ -17,6 +19,7 @@ AGGRESSIVE_STEPS = 5
 
 # Disable verbose rdkit logs 
 from rdkit import rdBase
+
 rdBase.DisableLog('rdApp.*')
 
 def is_valid_molecule(x): return True 

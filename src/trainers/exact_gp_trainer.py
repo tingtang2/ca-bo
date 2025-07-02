@@ -14,9 +14,9 @@ from tqdm import trange
 
 from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
 from trainers.base_trainer import BaseTrainer
-from trainers.data_trainers import (HartmannTrainer, LassoDNATrainer,
-                                    LunarTrainer, RoverTrainer,
-                                    GuacamolTrainer)
+from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
+                                    LassoDNATrainer, LunarTrainer,
+                                    RoverTrainer)
 
 
 class ExactGPTrainer(BaseTrainer):

@@ -6,29 +6,38 @@ import sys
 from datetime import date, datetime
 
 import torch
+import wandb
 from torch import nn
 from torch.optim import Adam, AdamW
 
-import wandb
 from set_seed import set_seed
 from trainers.base_trainer import BaseTrainer
-from trainers.ca_gp_trainer import (
-    HartmannEICaGPEULBOTrainer, HartmannEICaGPTrainer,
-    HartmannLogEICaGPTrainer, LassoDNALogEICaGPSlidingWindowTrainer,
-    LassoDNALogEICaGPTrainer, LunarEICaGPEULBOTrainer, LunarEICaGPTrainer,
-    LunarLogEICaGPEULBOTrainer, LunarLogEICaGPTrainer, RoverEICaGPEULBOTrainer,
-    RoverEICaGPSlidingWindowTrainer, RoverEICaGPTrainer,
-    OsmbLogEICaGPSlidingWindowTrainer, OsmbLogEICaGPTrainer)
+from trainers.ca_gp_trainer import (HartmannEICaGPEULBOTrainer,
+                                    HartmannEICaGPTrainer,
+                                    HartmannLogEICaGPTrainer,
+                                    LassoDNALogEICaGPSlidingWindowTrainer,
+                                    LassoDNALogEICaGPTrainer,
+                                    LunarEICaGPEULBOTrainer,
+                                    LunarEICaGPTrainer,
+                                    LunarLogEICaGPEULBOTrainer,
+                                    LunarLogEICaGPTrainer,
+                                    OsmbLogEICaGPSlidingWindowTrainer,
+                                    OsmbLogEICaGPTrainer,
+                                    RoverEICaGPEULBOTrainer,
+                                    RoverEICaGPSlidingWindowTrainer,
+                                    RoverEICaGPTrainer)
 from trainers.exact_gp_trainer import (HartmannEIExactGPTrainer,
                                        LassoDNALogEIExactGPTrainer,
                                        LunarEIExactGPTrainer,
-                                       RoverEIExactGPTrainer,
-                                       OsmbLogEIExactGPTrainer)
-from trainers.svgp_trainer import (
-    HartmannEISVGPEULBOTrainer, HartmannEISVGPRetrainTrainer,
-    HartmannEISVGPTrainer, LassoDNALogEISVGPTrainer, LunarEISVGPEULBOTrainer,
-    LunarEISVGPTrainer, RoverEISVGPEULBOTrainer, RoverEISVGPTrainer,
-    OsmbLogEISVGPTrainer)
+                                       OsmbLogEIExactGPTrainer,
+                                       RoverEIExactGPTrainer)
+from trainers.svgp_trainer import (HartmannEISVGPEULBOTrainer,
+                                   HartmannEISVGPRetrainTrainer,
+                                   HartmannEISVGPTrainer,
+                                   LassoDNALogEISVGPTrainer,
+                                   LunarEISVGPEULBOTrainer, LunarEISVGPTrainer,
+                                   OsmbLogEISVGPTrainer,
+                                   RoverEISVGPEULBOTrainer, RoverEISVGPTrainer)
 
 arg_trainer_map = {
     'hartmann_ei_exact_gp': HartmannEIExactGPTrainer,

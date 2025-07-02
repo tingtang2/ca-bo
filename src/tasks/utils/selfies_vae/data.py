@@ -1,9 +1,11 @@
-import torch
-import selfies as sf
-import pytorch_lightning as pl
-from torch.utils.data import DataLoader, Dataset
-import torch.nn.functional as F
 from pathlib import Path
+
+import pytorch_lightning as pl
+import selfies as sf
+import torch
+import torch.nn.functional as F
+from torch.utils.data import DataLoader, Dataset
+
 
 class SELFIESDataModule(pl.LightningDataModule):
     def __init__(
