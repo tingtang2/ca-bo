@@ -25,7 +25,6 @@ class CaGPTrainer(BaseTrainer):
         self.train_batch_size = 32
 
         self.name = 'vanilla_ca_gp'
-        self.debug = False
 
     def run_experiment(self, iteration: int):
         # get all attribute information
@@ -66,11 +65,11 @@ class CaGPTrainer(BaseTrainer):
                 init_mode=self.ca_gp_init_mode,
                 kernel_likelihood_prior=self.kernel_likelihood_prior,
                 use_ard_kernel=self.use_ard_kernel).to(self.device)
-            if self.debug:
-                torch.save(train_x, f'{self.save_dir}models/train_x.pt')
-                torch.save(model_train_y,
-                           f'{self.save_dir}models/model_train_y.pt')
-                torch.save(train_y, f'{self.save_dir}models/train_y.pt')
+            # if self.debug:
+            #     torch.save(train_x, f'{self.save_dir}models/train_x.pt')
+            #     torch.save(model_train_y,
+            #                f'{self.save_dir}models/model_train_y.pt')
+            #     torch.save(train_y, f'{self.save_dir}models/train_y.pt')
 
             action_params = [
                 p for name, p in self.model.named_parameters()

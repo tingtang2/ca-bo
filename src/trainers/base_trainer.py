@@ -219,6 +219,20 @@ class BaseTrainer(ABC):
             else:
                 early_stopping_counter += 1
 
+            if self.debug:
+                # get hyperparameters
+                raw_outputscale = self.model.covar_module.raw_outputscale
+                constraint = self.model.covar_module.raw_outputscale_constraint
+                outputscale = constraint.transform(raw_outputscale)
+
+                raw_lengthscale = self.model.covar_module.base_kernel.raw_lengthscale
+                constraint = self.model.covar_module.base_kernel.raw_lengthscale_constraint
+                lengthscale = constraint.transform(raw_lengthscale)
+
+                print(
+                    f'epoch: {i} training loss: {loss:.3f} patience: {early_stopping_counter} outputscale: {outputscale.item():.3f} lengthscale: {lengthscale.item():.3f} noise: {self.model.likelihood.noise.item():.3f}'
+                )
+
             if early_stopping_counter == self.early_stopping_threshold:
                 # Load the best model weights before returning
                 self.model.load_state_dict(best_model_state)

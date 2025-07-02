@@ -151,7 +151,6 @@ class SVGPTrainer(BaseTrainer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.early_stopping_threshold = 3
         self.train_batch_size = 32
 
     def run_experiment(self, iteration: int):
