@@ -187,12 +187,15 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
             else:
                 proj_dim = int(self.proj_dim_ratio * train_x.size(0))
 
-            self.model = CaGP(train_inputs=train_x,
-                              train_targets=model_train_y.squeeze(),
-                              projection_dim=proj_dim,
-                              likelihood=GaussianLikelihood().to(self.device),
-                              kernel_type=self.kernel_type,
-                              init_mode=self.ca_gp_init_mode).to(self.device)
+            self.model = CaGP(
+                train_inputs=train_x,
+                train_targets=model_train_y.squeeze(),
+                projection_dim=proj_dim,
+                likelihood=GaussianLikelihood().to(self.device),
+                kernel_type=self.kernel_type,
+                init_mode=self.ca_gp_init_mode,
+                kernel_likelihood_prior=self.kernel_likelihood_prior,
+                use_ard_kernel=self.use_ard_kernel).to(self.device)
 
             self.optimizer = self.optimizer_type(
                 [{
@@ -340,7 +343,9 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                           projection_dim=proj_dim,
                           likelihood=GaussianLikelihood().to(self.device),
                           kernel_type=self.kernel_type,
-                          init_mode=self.ca_gp_init_mode).to(self.device)
+                          init_mode=self.ca_gp_init_mode,
+                          kernel_likelihood_prior=self.kernel_likelihood_prior,
+                          use_ard_kernel=self.use_ard_kernel).to(self.device)
         if self.debug:
             torch.save(train_x, f'{self.save_dir}models/train_x.pt')
             torch.save(model_train_y,
