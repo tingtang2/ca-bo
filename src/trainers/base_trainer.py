@@ -18,7 +18,6 @@ class BaseTrainer(ABC):
 
     def __init__(self,
                  optimizer_type,
-                 criterion,
                  device: str,
                  save_dir: Union[str, Path],
                  batch_size: int,
@@ -29,12 +28,12 @@ class BaseTrainer(ABC):
                  seed: int = 11202022,
                  norm_data: bool = False,
                  tracker=None,
+                 debug: bool = False,
                  **kwargs) -> None:
         super().__init__()
 
         # basic configs every trainer needs
         self.optimizer_type = optimizer_type
-        self.criterion = criterion
         self.device = torch.device(device)
         self.save_plots = save_plots
         self.save_dir = save_dir
@@ -42,6 +41,7 @@ class BaseTrainer(ABC):
         self.batch_size = batch_size
         self.dropout_prob = dropout_prob
         self.learning_rate = learning_rate
+        self.debug = debug
 
         # BO specific
         self.task: Task = None
@@ -193,7 +193,7 @@ class BaseTrainer(ABC):
             loss = -mll(output, y.to(self.device))
 
             loss.backward()
-            if self.grad_clip is not None:
+            if self.grad_clip != -1.0:
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(),
                                                max_norm=self.grad_clip)
 

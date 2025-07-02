@@ -25,7 +25,6 @@ class ExactGPTrainer(BaseTrainer):
         super().__init__(**kwargs)
         # if not self.turn_off_wandb:
         #     self.tracker.watch(self.model,
-        #                        criterion=self.criterion,
         #                        log='all',
         #                        log_freq=20,
         #                        log_graph=True)
