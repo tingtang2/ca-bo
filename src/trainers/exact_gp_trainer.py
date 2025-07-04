@@ -69,15 +69,20 @@ class ExactGPTrainer(BaseTrainer):
                 likelihood = get_gaussian_likelihood_with_lognormal_prior()
             else:
                 if self.kernel_type == 'rbf':
-                    base_kernel = gpytorch.kernels.RBFKernel()
+                    base_kernel = gpytorch.kernels.RBFKernel(
+                        ard_num_dims=ard_num_dims)
                 elif self.kernel_type == 'matern_3_2':
-                    base_kernel = gpytorch.kernels.MaternKernel(1.5)
+                    base_kernel = gpytorch.kernels.MaternKernel(
+                        1.5, ard_num_dims=ard_num_dims)
                 else:
-                    base_kernel = gpytorch.kernels.MaternKernel(2.5)
+                    base_kernel = gpytorch.kernels.MaternKernel(
+                        2.5, ard_num_dims=ard_num_dims)
 
                 covar_module = gpytorch.kernels.ScaleKernel(base_kernel)
                 likelihood = gpytorch.likelihoods.GaussianLikelihood().to(
                     self.device)
+
+            assert covar_module.base_kernel.ard_num_dims == ard_num_dims
 
             self.model = SingleTaskGP(
                 train_x,
