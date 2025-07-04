@@ -58,6 +58,9 @@ class CaGP(ComputationAwareGP):
                                    likelihood=likelihood,
                                    projection_dim=projection_dim,
                                    initialization=init_mode)
+
+        # need these attributes for BoTorch to work
+        self._has_transformed_inputs = False  # need this for RAASP sampling
         self.num_outputs = 1
 
     def posterior(self,
