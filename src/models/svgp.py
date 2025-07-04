@@ -62,6 +62,9 @@ class SVGPModel(ApproximateGP):
         self.mean_module = gpytorch.means.ConstantMean()
         self.covar_module = covar_module
         self.likelihood = likelihood
+
+        # need these attributes for BoTorch to work
+        self._has_transformed_inputs = False  # need this for RAASP sampling
         self.num_outputs = 1
 
     def forward(self, x):
