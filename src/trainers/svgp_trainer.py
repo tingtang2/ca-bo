@@ -210,6 +210,9 @@ class SVGPTrainer(BaseTrainer):
             else:
                 update_x = train_x
                 update_y = model_train_y.squeeze()
+            self.model.train_inputs = tuple(
+                tri.unsqueeze(-1) if tri.ndimension() == 1 else tri
+                for tri in (update_x, ))
 
             mll = VariationalELBO(self.model.likelihood,
                                   self.model,
