@@ -374,44 +374,59 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                 # y needs to only have 1 dimension when training in gpytorch
                 update_y = model_train_y.squeeze()[-self.update_train_size:]
 
-                # set projection dim to min of training data size and requested dim size
-                self.model.projection_dim = min(update_y.size(0), proj_dim)
-
-                # sliding window here
-                # Set number of non-zero action entries such that num_non_zero * projection_dim = num_train_targets
-                self.model.num_non_zero = update_y.size(
-                    -1) // self.model.projection_dim
-
-                self.model.train_inputs = tuple(
-                    tri.unsqueeze(-1) if tri.ndimension() == 1 else tri
-                    for tri in (update_x[0:self.model.num_non_zero *
-                                         self.model.projection_dim], ))
-                self.model.train_targets = update_y[0:self.model.num_non_zero *
-                                                    self.model.projection_dim]
-
-                # add on a new action if proj_dim >= training data size, else slide window
-                if train_x.size(0) <= proj_dim:
-                    blocks = torch.concat(
-                        (self.model.actions_op.blocks.data, torch.randn(
-                            (1, 1)).div(math.sqrt(self.model.num_non_zero))))
-                    non_zero_idcs = torch.arange(
-                        self.model.num_non_zero * self.model.projection_dim,
-                        device=self.device).reshape(self.model.projection_dim,
-                                                    -1)
-
-                    self.model.non_zero_action_entries = torch.nn.Parameter(
-                        blocks)
-                    self.model.actions_op = operators.BlockDiagonalSparseLinearOperator(
-                        non_zero_idcs=non_zero_idcs,
-                        blocks=self.model.non_zero_action_entries,
-                        size_input_dim=self.model.num_non_zero *
-                        self.model.projection_dim)
-
+                if self.add_actions_by_reinit:
+                    self.model = CaGP(
+                        train_inputs=train_x,
+                        train_targets=update_y,
+                        projection_dim=min(update_y.size(0), proj_dim),
+                        likelihood=GaussianLikelihood().to(self.device),
+                        kernel_type=self.kernel_type,
+                        init_mode=self.ca_gp_init_mode,
+                        kernel_likelihood_prior=self.kernel_likelihood_prior,
+                        use_ard_kernel=self.use_ard_kernel).to(self.device)
                 else:
-                    self.model.actions_op.blocks.data = torch.concat(
-                        (self.model.actions_op.blocks.data[1:],
-                         torch.randn(
-                             (1, 1)).div(math.sqrt(self.model.num_non_zero))))
+                    # set projection dim to min of training data size and requested dim size
+                    self.model.projection_dim = min(update_y.size(0), proj_dim)
+
+                    # sliding window here
+                    # Set number of non-zero action entries such that num_non_zero * projection_dim = num_train_targets
+                    self.model.num_non_zero = update_y.size(
+                        -1) // self.model.projection_dim
+
+                    self.model.train_inputs = tuple(
+                        tri.unsqueeze(-1) if tri.ndimension() == 1 else tri
+                        for tri in (update_x[0:self.model.num_non_zero *
+                                             self.model.projection_dim], ))
+                    self.model.train_targets = update_y[
+                        0:self.model.num_non_zero * self.model.projection_dim]
+
+                    # add on a new action if proj_dim >= training data size, else slide window
+                    if train_x.size(0) <= proj_dim:
+                        blocks = torch.concat(
+                            (self.model.actions_op.blocks.data,
+                             torch.randn(
+                                 (1,
+                                  1)).div(math.sqrt(self.model.num_non_zero))))
+                        non_zero_idcs = torch.arange(
+                            self.model.num_non_zero *
+                            self.model.projection_dim,
+                            device=self.device).reshape(
+                                self.model.projection_dim, -1)
+
+                        self.model.non_zero_action_entries = torch.nn.Parameter(
+                            blocks)
+                        self.model.actions_op = operators.BlockDiagonalSparseLinearOperator(
+                            non_zero_idcs=non_zero_idcs,
+                            blocks=self.model.non_zero_action_entries,
+                            size_input_dim=self.model.num_non_zero *
+                            self.model.projection_dim)
+
+                    else:
+                        self.model.actions_op.blocks.data = torch.concat(
+                            (self.model.actions_op.blocks.data[1:],
+                             torch.randn(
+                                 (1,
+                                  1)).div(math.sqrt(self.model.num_non_zero))))
 
             else:
                 update_x = train_x

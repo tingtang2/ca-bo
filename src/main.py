@@ -153,6 +153,9 @@ def main() -> int:
     parser.add_argument('--norm_data',
                         action='store_true',
                         help='normalize ys')
+    parser.add_argument('--add_actions_by_reinit',
+                        action='store_true',
+                        help='reinitialize actions when adding')
     parser.add_argument('--turn_off_wandb',
                         action='store_true',
                         help='skip wandb logging')
