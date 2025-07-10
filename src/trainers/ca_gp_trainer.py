@@ -374,7 +374,7 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                 # y needs to only have 1 dimension when training in gpytorch
                 update_y = model_train_y.squeeze()[-self.update_train_size:]
 
-                if self.add_actions_by_reinit:
+                if self.add_actions_by_reinit and train_x.size(0) <= proj_dim:
                     self.model = CaGP(
                         train_inputs=train_x,
                         train_targets=update_y,
