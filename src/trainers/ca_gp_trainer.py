@@ -404,9 +404,8 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                     if train_x.size(0) <= proj_dim:
                         blocks = torch.concat(
                             (self.model.actions_op.blocks.data,
-                             torch.randn(
-                                 (1,
-                                  1)).div(math.sqrt(self.model.num_non_zero))))
+                             torch.randn((1, self.model.num_non_zero)).div(
+                                 math.sqrt(self.model.num_non_zero))))
                         non_zero_idcs = torch.arange(
                             self.model.num_non_zero *
                             self.model.projection_dim,
@@ -424,9 +423,8 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                     else:
                         self.model.actions_op.blocks.data = torch.concat(
                             (self.model.actions_op.blocks.data[1:],
-                             torch.randn(
-                                 (1,
-                                  1)).div(math.sqrt(self.model.num_non_zero))))
+                             torch.randn((1, self.model.num_non_zero)).div(
+                                 math.sqrt(self.model.num_non_zero))))
 
             else:
                 update_x = train_x
@@ -440,6 +438,12 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                 p for name, p in self.model.named_parameters()
                 if 'action' not in name
             ]
+
+            if self.debug:
+                # check all params are being optimized
+                assert action_params[0].size(0) == self.model.projection_dim
+                old_final_action = self.model.actions_op.blocks.data[
+                    -1].detach().clone()
 
             self.optimizer = self.optimizer_type(
                 [{
@@ -458,6 +462,13 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                                                      train_y=update_y)
 
             final_loss, epochs_trained = self.train_model(train_loader, mll)
+
+            if self.debug:
+                # check final action is optimized
+                assert torch.ne(old_final_action,
+                                self.model.actions_op.blocks.data[-1])
+                print(old_final_action, self.model.actions_op.blocks.data[-1])
+
             # calc gradients of actions
             total_norm = 0.0
             for p in action_params:
