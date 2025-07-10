@@ -89,19 +89,26 @@ class LassoDNATrainer(BaseTrainer):
 
 class GuacamolTrainer(BaseTrainer):
 
-    def __init__(self, molecule, **kwargs):
+    def __init__(self,
+                 molecule,
+                 path_to_selfies_vae_files='src/tasks/utils/selfies_vae/',
+                 **kwargs):
         super().__init__(**kwargs)
 
         self.molecule = molecule
-        self.task = GuacamolObjective(guacamol_task_id=molecule,
-                                      dtype=torch.float64)
+        self.path_to_selfies_vae_files = path_to_selfies_vae_files
+        self.task = GuacamolObjective(
+            guacamol_task_id=molecule,
+            path_to_vae_statedict=self.path_to_selfies_vae_files +
+            'selfies-vae-state-dict.pt',
+            dtype=torch.float64)
 
     def initialize_data(self) -> Tuple[torch.tensor, torch.tensor]:
         # load guacamol data for initialization
-        df = pd.read_csv("src/tasks/utils/selfies_vae/train_ys.csv")
+        df = pd.read_csv(self.path_to_selfies_vae_files + "train_ys.csv")
         train_y = torch.from_numpy(df[self.molecule].values).double()
-        train_x = torch.load(
-            "src/tasks/utils/selfies_vae/train_zs.pt").double()
+        train_x = torch.load(self.path_to_selfies_vae_files +
+                             "train_zs.pt").double()
         init_train_x = train_x[0:self.num_initial_points]
         init_train_y = train_y[0:self.num_initial_points]
         init_train_y, top_k_idxs = torch.topk(
