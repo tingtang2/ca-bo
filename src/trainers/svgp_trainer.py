@@ -163,6 +163,12 @@ class SVGPTrainer(BaseTrainer):
         if self.train_y_std == 0:
             self.train_y_std = 1
 
+        # log initial y_max
+        print(f'initial y max: {train_y.max().item()}')
+        logging.info(f'initial y max: {train_y.max().item()}')
+        if not self.turn_off_wandb:
+            self.tracker.log({'initial y max': train_y.max().item()})
+
         # get inducing points
         inducing_points = train_x[:self.num_inducing_points]
 
