@@ -12,6 +12,7 @@ from botorch.models.utils.gpytorch_modules import (
 from gpytorch.mlls import ExactMarginalLogLikelihood
 from tqdm import trange
 
+from torch.utils.data import DataLoader, TensorDataset
 from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
 from trainers.base_trainer import BaseTrainer
 from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
@@ -124,6 +125,14 @@ class ExactGPTrainer(BaseTrainer):
         self.save_metrics(metrics=reward,
                           iter=iteration,
                           name=self.trainer_type)
+
+    # just for debugging purposes
+    def generate_dataloaders(self, train_x, train_y):
+        train_dataset = TensorDataset(train_x, train_y)
+        train_loader = DataLoader(train_dataset,
+                                  batch_size=train_x.shape[0],
+                                  shuffle=False)
+        return train_loader
 
 
 class HartmannEIExactGPTrainer(ExactGPTrainer, HartmannTrainer, EITrainer):

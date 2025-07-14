@@ -203,13 +203,41 @@ class BaseTrainer(ABC):
 
         return running_loss
 
+    def train_epoch_lbfgs(self, train_loader: DataLoader, mll):
+        running_loss = 0.0
+        for i, (x, y) in enumerate(train_loader):
+
+            def closure():
+                self.optimizer.zero_grad()
+
+                output = self.model(x.to(self.device))
+                loss = -mll(output, y.to(self.device))
+
+                loss.backward()
+                if self.grad_clip != -1.0:
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(),
+                                                   max_norm=self.grad_clip)
+                return loss
+
+            output = self.model(x.to(self.device))
+            loss = -mll(output, y.to(self.device))
+            running_loss += loss.item()
+
+            self.optimizer.step(closure)
+
+        return running_loss
+
     def train_model(self, train_loader: DataLoader, mll):
         self.model.train()
         best_loss = 1e+5
         early_stopping_counter = 0
         best_model_state = None
         for i in range(self.epochs):
-            loss = self.train_epoch(train_loader, mll)
+
+            if isinstance(self.optimizer, torch.optim.LBFGS):
+                loss = self.train_epoch_lbfgs(train_loader, mll)
+            else:
+                loss = self.train_epoch(train_loader, mll)
 
             if loss < best_loss:
                 # self.save_model(f'{self.name}')

@@ -4,11 +4,14 @@ from gpytorch.models import ExactGP
 
 class ExactGPModel(ExactGP):
 
-    def __init__(self, train_x, train_y, likelihood):
+    def __init__(self, train_x, train_y, covar_module, likelihood):
         super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
         self.mean_module = gpytorch.means.ConstantMean()
-        self.covar_module = gpytorch.kernels.ScaleKernel(
-            gpytorch.kernels.RBFKernel())
+        self.covar_module = covar_module
+
+        # need these attributes for BoTorch to work
+        self._has_transformed_inputs = False  # need this for RAASP sampling
+        self.num_outputs = 1
 
     def forward(self, x):
         mean_x = self.mean_module(x)
