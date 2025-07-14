@@ -1,5 +1,6 @@
 import gpytorch
 from gpytorch.models import ExactGP
+from botorch.posteriors.gpytorch import GPyTorchPosterior
 
 
 class ExactGPModel(ExactGP):
@@ -17,3 +18,15 @@ class ExactGPModel(ExactGP):
         mean_x = self.mean_module(x)
         covar_x = self.covar_module(x)
         return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
+
+    def posterior(self,
+                  X,
+                  output_indices=None,
+                  observation_noise=False,
+                  *args,
+                  **kwargs) -> GPyTorchPosterior:
+        self.eval()
+        self.likelihood.eval()
+        dist = self.likelihood(self(X))
+
+        return GPyTorchPosterior(dist)
