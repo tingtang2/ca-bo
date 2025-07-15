@@ -145,9 +145,10 @@ def train_exact(dataset):
 
         # fit model to data
         # mll = fit_gpytorch_mll(exact_gp_mll)
-        exact_gp_trainer.optimizer = torch.optim.LBFGS(
+        # exact_gp_trainer.optimizer = torch.optim.LBFGS(
+        #     exact_gp_trainer.model.parameters(), lr=1e-1)
+        exact_gp_trainer.optimizer = torch.optim.Adam(
             exact_gp_trainer.model.parameters(), lr=1e-1)
-        # exact_gp_trainer.optimizer = torch.optim.Adam(exact_gp_trainer.model.parameters(), lr=1e-2)
 
         train_loader = exact_gp_trainer.generate_dataloaders(
             train_x=train_x_exact, train_y=model_train_y_exact.squeeze())
@@ -257,8 +258,16 @@ def train_cagp(dataset):
         if 'action' not in name
     ]
 
-    cagp_trainer.optimizer = torch.optim.LBFGS(cagp_trainer.model.parameters(),
-                                               lr=1e-2)
+    # cagp_trainer.optimizer = torch.optim.LBFGS(cagp_trainer.model.parameters(),
+    #                                            lr=5e-1)
+
+    cagp_trainer.optimizer = torch.optim.Adam([{
+        'params': others
+    }, {
+        'params': action_params,
+        'lr': 1
+    }],
+                                              lr=1)
 
     mll = ComputationAwareELBO(cagp_trainer.model.likelihood,
                                cagp_trainer.model)
