@@ -12,6 +12,7 @@ from torch.nn.functional import cosine_similarity
 from torch.utils.data import DataLoader
 
 from tasks.task import Task
+import matplotlib.pyplot as plt
 
 
 class BaseTrainer(ABC):
@@ -232,8 +233,12 @@ class BaseTrainer(ABC):
         best_loss = 1e+5
         early_stopping_counter = 0
         best_model_state = None
-        for i in range(self.epochs):
 
+        # Only initialize if debugging
+        if self.debug:
+            grad_norm_history = {}
+
+        for i in range(self.epochs):
             if isinstance(self.optimizer, torch.optim.LBFGS):
                 loss = self.train_epoch_lbfgs(train_loader, mll)
             else:
@@ -261,10 +266,36 @@ class BaseTrainer(ABC):
                     f'epoch: {i} training loss: {loss:.3f} patience: {early_stopping_counter} outputscale: {outputscale.item():.3f} lengthscale: {lengthscale.item():.3f} noise: {self.model.likelihood.noise.item():.3f}'
                 )
 
+                # Calculate and store gradient norms
+                for name, param in self.model.named_parameters():
+                    if param.grad is not None:
+                        norm = param.grad.detach().data.norm(2).item()
+                        print(f'{name} norm: {norm:.6f}')
+                        if name not in grad_norm_history:
+                            grad_norm_history[name] = []
+                        grad_norm_history[name].append(norm)
+
             if early_stopping_counter == self.early_stopping_threshold:
+                # Plot gradient norms before returning
+                if self.debug:
+                    self._plot_grad_norms(grad_norm_history)
                 # Load the best model weights before returning
                 self.model.load_state_dict(best_model_state)
                 return loss, i + 1
 
+        # Plot gradient norms before returning
+        if self.debug:
+            self._plot_grad_norms(grad_norm_history)
         self.model.load_state_dict(best_model_state)
         return loss, i + 1
+
+    def _plot_grad_norms(self, grad_norm_history):
+        plt.figure(figsize=(10, 6))
+        for name, norms in grad_norm_history.items():
+            plt.plot(norms, label=name)
+        plt.xlabel('Epoch')
+        plt.ylabel('Gradient Norm (L2)')
+        plt.title('Gradient Norms per Parameter over Epochs')
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(f'{self.name}_.png')

@@ -30,6 +30,8 @@ class ExactGPTrainer(BaseTrainer):
         #                        log_freq=20,
         #                        log_graph=True)
 
+        self.name = 'exact_gp'
+
     def run_experiment(self, iteration: int):
         logging.info(self.__dict__)
         train_x, train_y = self.initialize_data()
