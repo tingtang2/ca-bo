@@ -39,7 +39,7 @@ mock_args = dict(
     grad_clip=-1,
     ca_gp_actions_learning_rate=1e-2,
     svgp_inducing_point_learning_rate=1e-2,
-    max_oracle_calls=101,
+    max_oracle_calls=513,
     trainer_type='lunar_ei_ca_gp',
     kernel_type='matern_5_2',
     kernel_likelihood_prior='none',
@@ -49,8 +49,8 @@ mock_args = dict(
     turn_off_wandb=True,
     use_analytic_acq_func=True,
     early_stopping_threshold=20,
-    num_initial_points=100,
-    update_train_size=100,
+    num_initial_points=512,
+    update_train_size=512,
     num_inducing_points=100,
     proj_dim_ratio=0.5,
     static_proj_dim=101,
@@ -80,10 +80,10 @@ def train_exact(dataset):
         **mock_args)
 
     # simulate first round of training
-    # train_x_exact, train_y_exact = exact_gp_trainer.initialize_data()
-    train_x_exact, train_y_exact = torch.load(
-        '../src/train_x_exact_101.pt'), torch.load(
-            '../src/train_y_exact_101.pt')
+    train_x_exact, train_y_exact = exact_gp_trainer.initialize_data()
+    # train_x_exact, train_y_exact = torch.load(
+    #     '../src/train_x_exact_101.pt'), torch.load(
+    #         '../src/train_y_exact_101.pt')
     print(f'initial y max: {train_y_exact.max().item()}')
     exact_gp_trainer.train_y_mean = train_y_exact.mean()
     exact_gp_trainer.train_y_std = train_y_exact.std()
@@ -126,35 +126,34 @@ def train_exact(dataset):
             likelihood = gpytorch.likelihoods.GaussianLikelihood().to(
                 exact_gp_trainer.device)
 
-        # exact_gp_trainer.model = SingleTaskGP(
+        exact_gp_trainer.model = SingleTaskGP(train_x_exact,
+                                              model_train_y_exact,
+                                              covar_module=covar_module,
+                                              likelihood=likelihood,
+                                              outcome_transform=None).to(
+                                                  exact_gp_trainer.device)
+
+        # exact_gp_trainer.model = ExactGPModel(
         #     train_x_exact,
-        #     model_train_y_exact,
+        #     model_train_y_exact.squeeze(),
         #     covar_module=covar_module,
         #     likelihood=likelihood,
-        #     outcome_transform=None
         # ).to(exact_gp_trainer.device)
-
-        exact_gp_trainer.model = ExactGPModel(
-            train_x_exact,
-            model_train_y_exact.squeeze(),
-            covar_module=covar_module,
-            likelihood=likelihood,
-        ).to(exact_gp_trainer.device)
         exact_gp_mll = ExactMarginalLogLikelihood(
             exact_gp_trainer.model.likelihood, exact_gp_trainer.model)
 
         # fit model to data
-        # mll = fit_gpytorch_mll(exact_gp_mll)
+        exact_gp_mll = fit_gpytorch_mll(exact_gp_mll)
         # exact_gp_trainer.optimizer = torch.optim.LBFGS(
         #     exact_gp_trainer.model.parameters(), lr=1e-1)
-        exact_gp_trainer.optimizer = torch.optim.Adam(
-            exact_gp_trainer.model.parameters(), lr=1e-1)
+        # exact_gp_trainer.optimizer = torch.optim.Adam(
+        #     exact_gp_trainer.model.parameters(), lr=1e-1)
 
-        train_loader = exact_gp_trainer.generate_dataloaders(
-            train_x=train_x_exact, train_y=model_train_y_exact.squeeze())
+        # train_loader = exact_gp_trainer.generate_dataloaders(
+        #     train_x=train_x_exact, train_y=model_train_y_exact.squeeze())
 
-        final_loss, epochs_trained = exact_gp_trainer.train_model(
-            train_loader, exact_gp_mll)
+        # final_loss, epochs_trained = exact_gp_trainer.train_model(
+        #     train_loader, exact_gp_mll)
         exact_gp_trainer.model.eval()
 
         # get train rmse
@@ -258,19 +257,20 @@ def train_cagp(dataset):
         if 'action' not in name
     ]
 
-    # cagp_trainer.optimizer = torch.optim.LBFGS(cagp_trainer.model.parameters(),
-    #                                            lr=5e-1)
+    cagp_trainer.optimizer = torch.optim.LBFGS(cagp_trainer.model.parameters(),
+                                               lr=1)
 
-    cagp_trainer.optimizer = torch.optim.Adam([{
-        'params': others
-    }, {
-        'params': action_params,
-        'lr': 1
-    }],
-                                              lr=1)
+    # cagp_trainer.optimizer = torch.optim.Adam([{
+    #     'params': others
+    # }, {
+    #     'params': action_params,
+    #     'lr': 1
+    # }],
+    #                                           lr=1)
 
     mll = ComputationAwareELBO(cagp_trainer.model.likelihood,
-                               cagp_trainer.model)
+                               cagp_trainer.model,
+                               beta=1)
     exact_mll = ExactMarginalLogLikelihood(cagp_trainer.model.likelihood,
                                            cagp_trainer.model)
 
