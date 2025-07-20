@@ -196,7 +196,10 @@ class BaseTrainer(ABC):
 
             if 'ca_gp' in self.name:
                 loss, ll, kl = mll(output, y.to(self.device))
+                assert kl.item() >= 0
                 loss = -loss
+                running_kl += kl.item()
+                running_ll += ll.item()
             else:
                 loss = -mll(output, y.to(self.device))
 
@@ -208,8 +211,6 @@ class BaseTrainer(ABC):
             self.optimizer.step()
 
             running_loss += loss.item()
-            running_kl += kl.item()
-            running_ll += ll.item()
 
         if self.debug and 'ca_gp' in self.name:
             print(
@@ -225,7 +226,12 @@ class BaseTrainer(ABC):
                 self.optimizer.zero_grad()
 
                 output = self.model(x.to(self.device))
-                loss = -mll(output, y.to(self.device))
+                if 'ca_gp' in self.name:
+                    loss, ll, kl = mll(output, y.to(self.device))
+                    assert kl.item() >= 0
+                    loss = -loss
+                else:
+                    loss = -mll(output, y.to(self.device))
 
                 loss.backward()
                 if self.grad_clip != -1.0:
@@ -234,8 +240,13 @@ class BaseTrainer(ABC):
                 return loss
 
             output = self.model(x.to(self.device))
-            loss = -mll(output, y.to(self.device))
-            running_loss += loss.item()
+            if 'ca_gp' in self.name:
+                loss, ll, kl = mll(output, y.to(self.device))
+                assert kl.item() >= 0
+                loss = -loss
+            else:
+                loss = -mll(output, y.to(self.device))
+            running_loss += -loss.item()
 
             self.optimizer.step(closure)
 
