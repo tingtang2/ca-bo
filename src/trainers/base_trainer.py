@@ -187,11 +187,18 @@ class BaseTrainer(ABC):
 
     def train_epoch(self, train_loader: DataLoader, mll):
         running_loss = 0.0
+        running_kl = 0.0
+        running_ll = 0.0
         for i, (x, y) in enumerate(train_loader):
             self.optimizer.zero_grad()
 
             output = self.model(x.to(self.device))
-            loss = -mll(output, y.to(self.device))
+
+            if 'ca_gp' in self.name:
+                loss, ll, kl = mll(output, y.to(self.device))
+                loss = -loss
+            else:
+                loss = -mll(output, y.to(self.device))
 
             loss.backward()
             if self.grad_clip != -1.0:
@@ -201,7 +208,13 @@ class BaseTrainer(ABC):
             self.optimizer.step()
 
             running_loss += loss.item()
+            running_kl += kl.item()
+            running_ll += ll.item()
 
+        if self.debug and 'ca_gp' in self.name:
+            print(
+                f'positive kl (want to min): {running_kl:.3f}, positive ll (want to max): {running_ll:.3f}'
+            )
         return running_loss
 
     def train_epoch_lbfgs(self, train_loader: DataLoader, mll):
