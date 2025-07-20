@@ -48,12 +48,12 @@ mock_args = dict(
     norm_data=True,
     turn_off_wandb=True,
     use_analytic_acq_func=True,
-    early_stopping_threshold=20,
+    early_stopping_threshold=5,
     num_initial_points=512,
     update_train_size=512,
     num_inducing_points=100,
     proj_dim_ratio=0.5,
-    static_proj_dim=101,
+    static_proj_dim=512,
     debug=True,
     enable_raasp=True,
     path_to_selfies_vae_files='../src/tasks/utils/selfies_vae/')
@@ -200,10 +200,10 @@ def train_cagp(dataset):
 
     cagp_trainer = dataset_trainer_mapping[dataset]['cagp'](
         optimizer_type=torch.optim.Adam, tracker=None, **mock_args)
-    # train_x_cagp, train_y_cagp = cagp_trainer.initialize_data()
-    train_x_cagp, train_y_cagp = torch.load(
-        '../src/train_x_exact_101.pt'), torch.load(
-            '../src/train_y_exact_101.pt')
+    train_x_cagp, train_y_cagp = cagp_trainer.initialize_data()
+    # train_x_cagp, train_y_cagp = torch.load(
+    #     '../src/train_x_exact_101.pt'), torch.load(
+    #         '../src/train_y_exact_101.pt')
 
     # log initial y_max
     print(f'initial y max: {train_y_cagp.max().item()}')
@@ -258,15 +258,16 @@ def train_cagp(dataset):
     ]
 
     cagp_trainer.optimizer = torch.optim.LBFGS(cagp_trainer.model.parameters(),
-                                               lr=1)
+                                               lr=1,
+                                               line_search_fn='strong_wolfe')
 
     # cagp_trainer.optimizer = torch.optim.Adam([{
     #     'params': others
     # }, {
     #     'params': action_params,
-    #     'lr': 1
+    #     'lr': 1e-1
     # }],
-    #                                           lr=1)
+    #                                           lr=1e-1)
 
     mll = ComputationAwareELBO(cagp_trainer.model.likelihood,
                                cagp_trainer.model,
