@@ -445,14 +445,20 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                 old_final_action = self.model.actions_op.blocks.data[
                     -1].detach().clone()
 
-            self.optimizer = self.optimizer_type(
-                [{
-                    'params': others
-                }, {
-                    'params': action_params,
-                    'lr': self.ca_gp_actions_learning_rate
-                }],
-                lr=self.learning_rate)
+            if self.optimizer_type != torch.optim.LBFGS:
+                self.optimizer = self.optimizer_type(
+                    [{
+                        'params': others
+                    }, {
+                        'params': action_params,
+                        'lr': self.ca_gp_actions_learning_rate
+                    }],
+                    lr=self.learning_rate)
+            else:
+                self.optimizer = self.optimizer_type(
+                    self.model.parameters(),
+                    lr=self.learning_rate,
+                    line_search_fn='strong_wolfe')
 
             mll = ComputationAwareELBO(self.model.likelihood, self.model)
             exact_mll = ExactMarginalLogLikelihood(self.model.likelihood,

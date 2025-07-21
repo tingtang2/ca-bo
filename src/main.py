@@ -8,7 +8,7 @@ from datetime import date, datetime
 import torch
 import wandb
 from torch import nn
-from torch.optim import Adam, AdamW
+from torch.optim import Adam, AdamW, LBFGS
 
 from set_seed import set_seed
 from trainers.base_trainer import BaseTrainer
@@ -62,7 +62,7 @@ arg_trainer_map = {
     'osmb_log_ei_ca_gp_sliding_window': OsmbLogEICaGPSlidingWindowTrainer,
     'osmb_log_ei_svgp': OsmbLogEISVGPTrainer,
 }
-arg_optimizer_map = {'adamW': AdamW, 'adam': Adam}
+arg_optimizer_map = {'adamW': AdamW, 'adam': Adam, 'lbfgs': LBFGS}
 
 
 def handler(self, signum, frame):
