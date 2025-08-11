@@ -7,7 +7,6 @@ from datetime import date, datetime
 
 import torch
 import wandb
-from torch import nn
 from torch.optim import Adam, AdamW, LBFGS
 
 from set_seed import set_seed
