@@ -152,6 +152,7 @@ class SVGPTrainer(BaseTrainer):
         super().__init__(**kwargs)
 
         self.train_batch_size = 32
+        self.name = 'vanilla_svgp'
 
     def run_experiment(self, iteration: int):
         # get all attribute information
