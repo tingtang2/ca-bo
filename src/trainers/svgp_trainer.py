@@ -555,3 +555,15 @@ class OsmbLogEISVGPTrainer(SVGPTrainer, GuacamolTrainer, LogEITrainer):
 
     def __init__(self, **kwargs):
         super().__init__(molecule='osmb', **kwargs)
+
+
+class FexoLogEISVGPTrainer(SVGPTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='fexo', **kwargs)
+
+
+class Med1LogEISVGPTrainer(SVGPTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='med1', **kwargs)

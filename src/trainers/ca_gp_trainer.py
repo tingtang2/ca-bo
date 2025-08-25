@@ -579,3 +579,17 @@ class OsmbLogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
 
     def __init__(self, **kwargs):
         super().__init__(molecule='osmb', **kwargs)
+
+
+class FexoLogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
+                                        GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='fexo', **kwargs)
+
+
+class Med1LogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
+                                        GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='med1', **kwargs)
