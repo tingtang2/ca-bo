@@ -224,8 +224,8 @@ class SVGPTrainer(BaseTrainer):
             mll = VariationalELBO(self.model.likelihood,
                                   self.model,
                                   num_data=update_x.size(0))
-            exact_mll = ExactMarginalLogLikelihood(self.model.likelihood,
-                                                   self.model)
+            # exact_mll = ExactMarginalLogLikelihood(self.model.likelihood,
+            #                                        self.model)
 
             train_loader = self.generate_dataloaders(train_x=update_x,
                                                      train_y=update_y)
@@ -233,9 +233,9 @@ class SVGPTrainer(BaseTrainer):
             final_loss, epochs_trained = self.train_model(train_loader, mll)
             self.model.eval()
 
-            train_rmse = self.eval(train_x, model_train_y)
-            train_nll = self.compute_nll(train_x, model_train_y.squeeze(),
-                                         exact_mll)
+            # train_rmse = self.eval(train_x, model_train_y)
+            # train_nll = self.compute_nll(train_x, model_train_y.squeeze(),
+            #                              exact_mll)
 
             x_next = self.data_acquisition_iteration(self.model, model_train_y,
                                                      train_x).to(self.device)
@@ -254,8 +254,8 @@ class SVGPTrainer(BaseTrainer):
             self.log_wandb_metrics(train_y=train_y,
                                    y_next=y_next.item(),
                                    final_loss=final_loss,
-                                   train_rmse=train_rmse,
-                                   train_nll=train_nll,
+                                   train_rmse=-1,
+                                   train_nll=-1,
                                    cos_sim_incum=cos_sim_incum,
                                    epochs_trained=epochs_trained)
 
