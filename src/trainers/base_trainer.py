@@ -86,7 +86,7 @@ class BaseTrainer(ABC):
 
     def compute_nll(self, x, y, exact_mll):
         output = self.model(x.to(self.device))
-        return -exact_mll(output, y.double().to(self.device)).mean().item()
+        return -exact_mll(output, y.to(self.device)).mean().item()
 
     def eval(self, train_x, train_y):
         self.model.eval()

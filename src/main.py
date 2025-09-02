@@ -68,6 +68,19 @@ arg_trainer_map = {
 }
 arg_optimizer_map = {'adamW': AdamW, 'adam': Adam, 'lbfgs': LBFGS}
 
+# Map string names to torch dtypes
+TORCH_DTYPES = {
+    "float16": torch.float16,
+    "float32": torch.float32,
+    "float64": torch.float64,
+    "int8": torch.int8,
+    "int16": torch.int16,
+    "int32": torch.int32,
+    "int64": torch.int64,
+    "uint8": torch.uint8,
+    "bfloat16": torch.bfloat16,
+}
+
 
 def handler(self, signum, frame):
     # if we Ctrl-c, make sure we terminate wandb tracker
@@ -196,6 +209,12 @@ def main() -> int:
         type=int,
         help='if not -1, keep ca gp projection dim constant throughout training'
     )
+    parser.add_argument(
+        '--data_type',
+        default=torch.float32,
+        help=
+        'Specify the PyTorch data type. Choose from: float16, float32, float64, etc. (default: float32)'
+    )
 
     args = parser.parse_args()
     configs = args.__dict__
@@ -214,8 +233,7 @@ def main() -> int:
     # for repeatability
     set_seed(configs['seed'])
 
-    # need this precision for GP fitting
-    torch.set_default_dtype(torch.float64)
+    torch.set_default_dtype(configs['data_type'])
     # set default device for CaGP
     torch.set_default_device(torch.device(configs['device']))
 

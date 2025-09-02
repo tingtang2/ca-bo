@@ -101,18 +101,17 @@ class GuacamolTrainer(BaseTrainer):
             guacamol_task_id=molecule,
             path_to_vae_statedict=self.path_to_selfies_vae_files +
             'selfies-vae-state-dict.pt',
-            dtype=torch.float64)
+            dtype=self.data_type)
 
     def initialize_data(self) -> Tuple[torch.tensor, torch.tensor]:
         # load guacamol data for initialization
         df = pd.read_csv(self.path_to_selfies_vae_files + "train_ys.csv")
-        train_y = torch.from_numpy(df[self.molecule].values).double()
-        train_x = torch.load(self.path_to_selfies_vae_files +
-                             "train_zs.pt").double()
+        train_y = torch.from_numpy(df[self.molecule].values)
+        train_x = torch.load(self.path_to_selfies_vae_files + "train_zs.pt")
         init_train_x = train_x[0:self.num_initial_points]
         init_train_y = train_y[0:self.num_initial_points]
         init_train_y, top_k_idxs = torch.topk(
-            init_train_y, min(self.update_train_size, len(init_train_y)))
+            init_train_y, min(self.num_initial_points, len(init_train_y)))
         init_train_x = init_train_x[top_k_idxs]
         init_train_y = init_train_y.unsqueeze(-1)
         self.task.num_calls = self.num_initial_points
@@ -120,5 +119,8 @@ class GuacamolTrainer(BaseTrainer):
         return init_train_x.to(self.device), init_train_y.to(self.device)
 
     def reinitialize_task(self):
-        self.task = GuacamolObjective(guacamol_task_id=self.molecule,
-                                      dtype=torch.float64)
+        self.task = GuacamolObjective(
+            guacamol_task_id=self.molecule,
+            path_to_vae_statedict=self.path_to_selfies_vae_files +
+            'selfies-vae-state-dict.pt',
+            dtype=self.data_type)
