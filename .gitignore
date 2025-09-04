@@ -176,3 +176,5 @@ wandb/
 ca_gp_run.sh
 
 *.sh
+
+.vscode/
