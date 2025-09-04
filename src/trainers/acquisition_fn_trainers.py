@@ -66,7 +66,8 @@ class LogEITrainer(BaseTrainer):
             options = None
 
         X_next, _ = optimize_acqf(ei,
-                                  bounds=torch.stack([lb, ub]).to(self.device),
+                                  bounds=torch.stack([lb, ub]).to(
+                                      self.device, self.data_type),
                                   q=self.batch_size,
                                   num_restarts=num_restarts,
                                   raw_samples=raw_samples,

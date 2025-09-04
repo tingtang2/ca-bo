@@ -11,20 +11,18 @@ from tasks.utils.selfies_vae.data import SELFIESDataset
 from tasks.utils.selfies_vae.model_positional_unbounded import \
     InfoTransformerVAE
 
-med1 = standard_benchmarks.median_camphor_menthol()  #'Median molecules 1'
-med2 = standard_benchmarks.median_tadalafil_sildenafil(
-)  #'Median molecules 2',
-pdop = standard_benchmarks.perindopril_rings()  # 'Perindopril MPO',
-osmb = standard_benchmarks.hard_osimertinib()  # 'Osimertinib MPO',
-adip = standard_benchmarks.amlodipine_rings()  # 'Amlodipine MPO'
-siga = standard_benchmarks.sitagliptin_replacement()  #'Sitagliptin MPO'
-zale = standard_benchmarks.zaleplon_with_other_formula()  # 'Zaleplon MPO'
-valt = standard_benchmarks.valsartan_smarts()  #'Valsartan SMARTS',
-dhop = standard_benchmarks.decoration_hop()  # 'Deco Hop'
-shop = standard_benchmarks.scaffold_hop()  # Scaffold Hop'
-rano = standard_benchmarks.ranolazine_mpo()  #'Ranolazine MPO'
-fexo = standard_benchmarks.hard_fexofenadine(
-)  # 'Fexofenadine MPO'... 'make fexofenadine less greasy'
+med1 = standard_benchmarks.median_camphor_menthol()    #'Median molecules 1'
+med2 = standard_benchmarks.median_tadalafil_sildenafil()    #'Median molecules 2',
+pdop = standard_benchmarks.perindopril_rings()    # 'Perindopril MPO',
+osmb = standard_benchmarks.hard_osimertinib()    # 'Osimertinib MPO',
+adip = standard_benchmarks.amlodipine_rings()    # 'Amlodipine MPO'
+siga = standard_benchmarks.sitagliptin_replacement()    #'Sitagliptin MPO'
+zale = standard_benchmarks.zaleplon_with_other_formula()    # 'Zaleplon MPO'
+valt = standard_benchmarks.valsartan_smarts()    #'Valsartan SMARTS',
+dhop = standard_benchmarks.decoration_hop()    # 'Deco Hop'
+shop = standard_benchmarks.scaffold_hop()    # Scaffold Hop'
+rano = standard_benchmarks.ranolazine_mpo()    #'Ranolazine MPO'
+fexo = standard_benchmarks.hard_fexofenadine()    # 'Fexofenadine MPO'... 'make fexofenadine less greasy'
 
 guacamol_objs = {
     "med1": med1,
@@ -122,7 +120,7 @@ class GuacamolObjective:
         if self.path_to_vae_statedict:
             state_dict = torch.load(self.path_to_vae_statedict)
             self.vae.load_state_dict(state_dict, strict=True)
-        self.vae = self.vae.to(device)
+        self.vae = self.vae.to(device, self.dtype)
         self.vae = self.vae.eval()
         # set max string length that VAE can generate
         self.vae.max_string_length = self.max_string_length
@@ -143,9 +141,7 @@ class GuacamolObjective:
         with torch.no_grad():
             sample = self.vae.sample(z=z.reshape(-1, 2, 128))
         # grab decoded selfies strings
-        decoded_selfies = [
-            self.dataobj.decode(sample[i]) for i in range(sample.size(-2))
-        ]
+        decoded_selfies = [self.dataobj.decode(sample[i]) for i in range(sample.size(-2))]
         # decode selfies strings to smiles strings (SMILES is needed format for oracle)
         decoded_smiles = []
         for selfie in decoded_selfies:

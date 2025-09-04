@@ -179,7 +179,7 @@ class SVGPTrainer(BaseTrainer):
             likelihood=GaussianLikelihood().to(self.device),
             kernel_type=self.kernel_type,
             kernel_likelihood_prior=self.kernel_likelihood_prior,
-            use_ard_kernel=self.use_ard_kernel).to(self.device)
+            use_ard_kernel=self.use_ard_kernel).to(self.device, self.data_type)
 
         # set custom LR on IP and variational parameters
         variational_params_and_ip = [
@@ -237,6 +237,7 @@ class SVGPTrainer(BaseTrainer):
             cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x,
                                                               train_y=train_y,
                                                               x_next=x_next)
+            print(f'x next dtype', x_next.dtype)
 
             # Evaluate candidates
             y_next = self.task(x_next)

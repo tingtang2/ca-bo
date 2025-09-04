@@ -70,15 +70,8 @@ arg_optimizer_map = {'adamW': AdamW, 'adam': Adam, 'lbfgs': LBFGS}
 
 # Map string names to torch dtypes
 TORCH_DTYPES = {
-    "float16": torch.float16,
-    "float32": torch.float32,
-    "float64": torch.float64,
-    "int8": torch.int8,
-    "int16": torch.int16,
-    "int32": torch.int32,
-    "int64": torch.int64,
-    "uint8": torch.uint8,
-    "bfloat16": torch.bfloat16,
+    'float32': torch.float32,
+    'float64': torch.float64,
 }
 
 
@@ -89,6 +82,14 @@ def handler(self, signum, frame):
     msg = 'tracker terminated, now exiting...'
     print(msg, end='', flush=True)
     exit(1)
+
+
+def parse_dtype(dtype_str):
+    if dtype_str in TORCH_DTYPES:
+        return TORCH_DTYPES[dtype_str]
+    raise argparse.ArgumentTypeError(
+        f"Invalid dtype: '{dtype_str}'. Choose from {list(TORCH_DTYPES.keys())}"
+    )
 
 
 def main() -> int:
@@ -211,7 +212,8 @@ def main() -> int:
     )
     parser.add_argument(
         '--data_type',
-        default=torch.float32,
+        default='float32',
+        type=parse_dtype,
         help=
         'Specify the PyTorch data type. Choose from: float16, float32, float64, etc. (default: float32)'
     )
