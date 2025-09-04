@@ -20,7 +20,8 @@ class BaseTrainer(ABC):
     def __init__(self,
                  optimizer_type,
                  device: str,
-                 save_dir: Union[str, Path],
+                 save_dir: Union[str,
+                                 Path],
                  batch_size: int,
                  dropout_prob: float,
                  learning_rate: float,
@@ -77,8 +78,7 @@ class BaseTrainer(ABC):
 
     def save_metrics(self, metrics: List[float], iter: int, name: str):
         save_name = f'{name}_iteration_{iter}-{datetime.now().strftime("%m_%d_%Y_%H:%M:%S")}.json'
-        with open(Path(Path.home(), self.save_dir, 'metrics/', save_name),
-                  'w') as f:
+        with open(Path(Path.home(), self.save_dir, 'metrics/', save_name), 'w') as f:
             json.dump(metrics, f)
 
     def init_new_run(self, tracker):
@@ -91,14 +91,23 @@ class BaseTrainer(ABC):
     def eval(self, train_x, train_y):
         self.model.eval()
         preds = self.model(train_x)
-        return mean_squared_error(preds,
-                                  train_y.to(self.device),
-                                  squared=False).mean().item()
+        return mean_squared_error(preds, train_y.to(self.device), squared=False).mean().item()
 
     def compute_cos_sim_to_incumbent(self, train_x, train_y, x_next):
         incumbent = train_x[torch.argmax(train_y)]
 
         return cosine_similarity(incumbent, x_next).item()
+
+    def calc_log_det_kernel_ips(self):
+        self.model.eval()
+
+        # get inducing points
+        ips = self.model.variational_strategy.inducing_points
+
+        # get K(Z, Z)
+        covar_ips_lazy = self.model.covar_module(ips, ips)
+
+        return covar_ips_lazy.logdet().item()
 
     def log_wandb_metrics(self,
                           train_y: torch.Tensor,
@@ -129,61 +138,53 @@ class BaseTrainer(ABC):
 
         if 'exact' in self.trainer_type:
             log_dict = {
-                'Num oracle calls':
-                self.task.num_calls - 1,
-                'best reward':
-                train_y.max().item(),
-                'noise param':
-                passed_model.likelihood.noise.item(),
-                'lengthscale param':
-                torch.mean(lengthscale).item()
-                if self.use_ard_kernel else lengthscale.item(),
-                'outputscale param':
-                outputscale.item(),
-                'train rmse':
-                train_rmse,
-                'train nll':
-                train_nll,
-                'y_next':
-                y_next,
-                'cos_sim_incum':
-                cos_sim_incum
+                'Num oracle calls': self.task.num_calls - 1,
+                'best reward': train_y.max().item(),
+                'noise param': passed_model.likelihood.noise.item(),
+                'lengthscale param': torch.mean(lengthscale).item() if self.use_ard_kernel else lengthscale.item(),
+                'outputscale param': outputscale.item(),
+                'train rmse': train_rmse,
+                'train nll': train_nll,
+                'y_next': y_next,
+                'cos_sim_incum': cos_sim_incum
+            }
+        elif 'svgp' in self.trainer_type and self.log_diagnostics:
+            log_dict = {
+                'Num oracle calls': self.task.num_calls - 1,
+                'best reward': train_y.max().item(),
+                'final svgp loss': final_loss,
+                'epochs trained': epochs_trained,
+                'noise param': self.model.likelihood.noise.item(),
+                'lengthscale param': torch.mean(lengthscale).item() if self.use_ard_kernel else lengthscale.item(),
+                'outputscale param': outputscale.item(),
+                'train rmse': train_rmse,
+                'train nll': train_nll,
+                'y_next': y_next,
+                'cos_sim_incum': cos_sim_incum,
+                'action_norm': action_norm,
+                'log det K(z, z)': self.calc_log_det_kernel_ips()
             }
         else:
             log_dict = {
-                'Num oracle calls':
-                self.task.num_calls - 1,
-                'best reward':
-                train_y.max().item(),
-                'final svgp loss':
-                final_loss,
-                'epochs trained':
-                epochs_trained,
-                'noise param':
-                self.model.likelihood.noise.item(),
-                'lengthscale param':
-                torch.mean(lengthscale).item()
-                if self.use_ard_kernel else lengthscale.item(),
-                'outputscale param':
-                outputscale.item(),
-                'train rmse':
-                train_rmse,
-                'train nll':
-                train_nll,
-                'y_next':
-                y_next,
-                'cos_sim_incum':
-                cos_sim_incum,
-                'action_norm':
-                action_norm
+                'Num oracle calls': self.task.num_calls - 1,
+                'best reward': train_y.max().item(),
+                'final svgp loss': final_loss,
+                'epochs trained': epochs_trained,
+                'noise param': self.model.likelihood.noise.item(),
+                'lengthscale param': torch.mean(lengthscale).item() if self.use_ard_kernel else lengthscale.item(),
+                'outputscale param': outputscale.item(),
+                'train rmse': train_rmse,
+                'train nll': train_nll,
+                'y_next': y_next,
+                'cos_sim_incum': cos_sim_incum,
+                'action_norm': action_norm
             }
 
         if not self.turn_off_wandb:
             self.tracker.log(log_dict)
 
         if log_to_file:
-            logging.info(', '.join(
-                [f'{key}: {value:.5f}' for key, value in log_dict.items()]))
+            logging.info(', '.join([f'{key}: {value:.5f}' for key, value in log_dict.items()]))
 
     def train_epoch(self, train_loader: DataLoader, mll):
         running_loss = 0.0
@@ -205,17 +206,14 @@ class BaseTrainer(ABC):
 
             loss.backward()
             if self.grad_clip != -1.0:
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(),
-                                               max_norm=self.grad_clip)
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=self.grad_clip)
 
             self.optimizer.step()
 
             running_loss += loss.item()
 
         if self.debug and 'ca_gp' in self.name:
-            print(
-                f'positive kl (want to min): {running_kl:.3f}, positive ll (want to max): {running_ll:.3f}'
-            )
+            print(f'positive kl (want to min): {running_kl:.3f}, positive ll (want to max): {running_ll:.3f}')
         return running_loss
 
     def train_epoch_lbfgs(self, train_loader: DataLoader, mll):
@@ -235,8 +233,7 @@ class BaseTrainer(ABC):
 
                 loss.backward()
                 if self.grad_clip != -1.0:
-                    torch.nn.utils.clip_grad_norm_(self.model.parameters(),
-                                                   max_norm=self.grad_clip)
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=self.grad_clip)
                 return loss
 
             output = self.model(x.to(self.device))
