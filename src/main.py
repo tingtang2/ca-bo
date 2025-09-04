@@ -212,7 +212,7 @@ def main() -> int:
     )
     parser.add_argument(
         '--data_type',
-        default='float32',
+        default='float64',
         type=parse_dtype,
         help=
         'Specify the PyTorch data type. Choose from: float16, float32, float64, etc. (default: float32)'
