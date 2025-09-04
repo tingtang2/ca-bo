@@ -237,7 +237,6 @@ class SVGPTrainer(BaseTrainer):
             cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x,
                                                               train_y=train_y,
                                                               x_next=x_next)
-            print(f'x next dtype', x_next.dtype)
 
             # Evaluate candidates
             y_next = self.task(x_next)
