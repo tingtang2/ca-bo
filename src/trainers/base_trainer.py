@@ -85,12 +85,14 @@ class BaseTrainer(ABC):
         self.tracker = tracker
 
     def compute_nll(self, x, y, exact_mll):
-        output = self.model(x.to(self.device))
+        with torch.no_grad():
+            output = self.model(x.to(self.device))
         return -exact_mll(output, y.to(self.device)).mean().item()
 
     def eval(self, train_x, train_y):
         self.model.eval()
-        preds = self.model(train_x)
+        with torch.no_grad():
+            preds = self.model(train_x)
         return mean_squared_error(preds, train_y.to(self.device), squared=False).mean().item()
 
     def compute_cos_sim_to_incumbent(self, train_x, train_y, x_next):
@@ -118,7 +120,8 @@ class BaseTrainer(ABC):
                           log_to_file: bool = True,
                           y_next: float = -1.0,
                           cos_sim_incum: float = -1.0,
-                          action_norm: float = -1.0):
+                          action_norm: float = -1.0,
+                          x_af_val: float = -1.0):
 
         passed_model = self.model
 
@@ -146,7 +149,8 @@ class BaseTrainer(ABC):
                 'train rmse': train_rmse,
                 'train nll': train_nll,
                 'y_next': y_next,
-                'cos_sim_incum': cos_sim_incum
+                'cos_sim_incum': cos_sim_incum,
+                'x_af_val': x_af_val
             }
         elif 'svgp' in self.trainer_type and self.log_diagnostics:
             log_dict = {
@@ -162,7 +166,8 @@ class BaseTrainer(ABC):
                 'y_next': y_next,
                 'cos_sim_incum': cos_sim_incum,
                 'action_norm': action_norm,
-                'log det K(z, z)': self.calc_log_det_kernel_ips()
+                'log det K(z, z)': self.calc_log_det_kernel_ips(),
+                'x_af_val': x_af_val
             }
         else:
             log_dict = {
@@ -177,7 +182,8 @@ class BaseTrainer(ABC):
                 'train nll': train_nll,
                 'y_next': y_next,
                 'cos_sim_incum': cos_sim_incum,
-                'action_norm': action_norm
+                'action_norm': action_norm,
+                'x_af_val': x_af_val
             }
 
         if not self.turn_off_wandb:
