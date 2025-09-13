@@ -448,7 +448,7 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
 
             x_next_mu, x_next_sigma = self.calc_predictive_mean_and_std(model=self.model, test_point=x_next)
 
-            standardized_optimality_gap = (x_next_mu - torch.max(train_y)) / x_next_sigma
+            standardized_gain = (x_next_mu - torch.max(train_y)) / x_next_sigma
 
             # Evaluate candidates
             y_next = self.task(x_next)
@@ -467,7 +467,7 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                                    action_norm=total_norm,
                                    x_af_val=x_af_val.item(),
                                    x_next_sigma=x_next_sigma.item(),
-                                   standardized_optimality_gap=standardized_optimality_gap.item())
+                                   standardized_gain=standardized_gain.item())
 
             reward.append(train_y.max().item())
 
