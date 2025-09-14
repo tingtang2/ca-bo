@@ -639,3 +639,10 @@ class Med1LogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
 
     def __init__(self, **kwargs):
         super().__init__(molecule='med1', **kwargs)
+
+
+class Med2LogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
+                                        GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='med2', **kwargs)

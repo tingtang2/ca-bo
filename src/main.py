@@ -20,19 +20,21 @@ from trainers.ca_gp_trainer import (
     OsmbLogEICaGPSlidingWindowTrainer, OsmbLogEICaGPTrainer,
     RoverEICaGPEULBOTrainer, RoverEICaGPSlidingWindowTrainer,
     RoverEICaGPTrainer, FexoLogEICaGPSlidingWindowTrainer,
-    Med1LogEICaGPSlidingWindowTrainer)
+    Med1LogEICaGPSlidingWindowTrainer, Med2LogEICaGPSlidingWindowTrainer)
 from trainers.exact_gp_trainer import (
     HartmannEIExactGPTrainer, LassoDNALogEIExactGPTrainer,
     LunarEIExactGPTrainer, OsmbLogEIExactGPTrainer, RoverEIExactGPTrainer,
     LassoDNALogEIExactGPSlidingWindowTrainer,
     OsmbLogEIExactGPSlidingWindowTrainer, RoverEIExactGPSlidingWindowTrainer,
     FexoLogEIExactGPSlidingWindowTrainer, FexoLogEIExactGPTrainer,
-    Med1LogEIExactGPSlidingWindowTrainer, Med1LogEIExactGPTrainer)
+    Med1LogEIExactGPSlidingWindowTrainer, Med1LogEIExactGPTrainer,
+    Med2LogEIExactGPTrainer, Med2LogEIExactGPSlidingWindowTrainer)
 from trainers.svgp_trainer import (
     HartmannEISVGPEULBOTrainer, HartmannEISVGPRetrainTrainer,
     HartmannEISVGPTrainer, LassoDNALogEISVGPTrainer, LunarEISVGPEULBOTrainer,
     LunarEISVGPTrainer, OsmbLogEISVGPTrainer, RoverEISVGPEULBOTrainer,
-    RoverEISVGPTrainer, FexoLogEISVGPTrainer, Med1LogEISVGPTrainer)
+    RoverEISVGPTrainer, FexoLogEISVGPTrainer, Med1LogEISVGPTrainer,
+    Med2LogEISVGPTrainer)
 
 arg_trainer_map = {
     'hartmann_ei_exact_gp': HartmannEIExactGPTrainer,
@@ -79,6 +81,11 @@ arg_trainer_map = {
     Med1LogEIExactGPSlidingWindowTrainer,
     'med1_log_ei_ca_gp_sliding_window': Med1LogEICaGPSlidingWindowTrainer,
     'med1_log_ei_svgp': Med1LogEISVGPTrainer,
+    'med2_log_ei_exact_gp': Med2LogEIExactGPTrainer,
+    'med2_log_ei_exact_gp_sliding_window':
+    Med2LogEIExactGPSlidingWindowTrainer,
+    'med2_log_ei_ca_gp_sliding_window': Med2LogEICaGPSlidingWindowTrainer,
+    'med2_log_ei_svgp': Med2LogEISVGPTrainer,
 }
 arg_optimizer_map = {
     'adamW': AdamW,
