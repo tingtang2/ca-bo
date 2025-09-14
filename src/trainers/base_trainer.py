@@ -10,6 +10,7 @@ import torch
 from gpytorch.metrics import mean_squared_error
 from torch.nn.functional import cosine_similarity
 from torch.utils.data import DataLoader
+from functions.LBFGS import FullBatchLBFGS
 
 from tasks.task import Task
 import matplotlib.pyplot as plt
@@ -370,6 +371,33 @@ class BaseTrainer(ABC):
 
         return running_loss
 
+    def train_epoch_custom_lbfgs(self, train_loader: DataLoader, mll):
+        running_loss = 0.0
+        for i, (x, y) in enumerate(train_loader):
+
+            def closure():
+                self.optimizer.zero_grad()
+
+                output = self.model(x.to(self.device))
+                if 'ca_gp' in self.name:
+                    loss, ll, kl = mll(output, y.to(self.device))
+                    assert kl.item() >= 0
+                    loss = -loss
+                else:
+                    loss = -mll(output, y.to(self.device))
+
+                return loss
+
+            loss = closure()
+            loss.backward()
+
+            # perform step and update curvature
+            options = {'closure': closure, 'current_loss': loss, 'max_ls': 10}
+            loss, _, lr, _, F_eval, G_eval, _, _ = self.optimizer.step(options)
+            running_loss += loss.item()
+
+        return running_loss
+
     def train_model(self, train_loader: DataLoader, mll):
         self.model.train()
         best_loss = 1e+5
@@ -383,6 +411,8 @@ class BaseTrainer(ABC):
         for i in range(self.epochs):
             if isinstance(self.optimizer, torch.optim.LBFGS):
                 loss = self.train_epoch_lbfgs(train_loader, mll)
+            elif isinstance(self.optimizer, FullBatchLBFGS):
+                loss = self.train_epoch_custom_lbfgs(train_loader, mll)
             else:
                 loss = self.train_epoch(train_loader, mll)
 

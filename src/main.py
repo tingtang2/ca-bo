@@ -8,6 +8,7 @@ from datetime import date, datetime
 import torch
 import wandb
 from torch.optim import Adam, AdamW, LBFGS
+from functions.LBFGS import FullBatchLBFGS
 
 from set_seed import set_seed
 from trainers.base_trainer import BaseTrainer
@@ -79,7 +80,12 @@ arg_trainer_map = {
     'med1_log_ei_ca_gp_sliding_window': Med1LogEICaGPSlidingWindowTrainer,
     'med1_log_ei_svgp': Med1LogEISVGPTrainer,
 }
-arg_optimizer_map = {'adamW': AdamW, 'adam': Adam, 'lbfgs': LBFGS}
+arg_optimizer_map = {
+    'adamW': AdamW,
+    'adam': Adam,
+    'lbfgs': LBFGS,
+    'custom_lbfgs': FullBatchLBFGS
+}
 
 # Map string names to torch dtypes
 TORCH_DTYPES = {
@@ -188,6 +194,10 @@ def main() -> int:
         '--log_diagnostics',
         action='store_true',
         help='log diagnostic metrics, will slow down runs slightly')
+    parser.add_argument(
+        '--non_zero_action_init',
+        action='store_true',
+        help='initialize CaGP actions uniformly, away from zero')
     parser.add_argument('--add_actions_by_reinit',
                         action='store_true',
                         help='reinitialize actions when adding')

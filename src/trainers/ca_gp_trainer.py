@@ -11,7 +11,9 @@ from tqdm import trange
 from models.ca_gp import CaGP
 from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
 from trainers.base_trainer import BaseTrainer
-from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer, LassoDNATrainer, LunarTrainer, RoverTrainer)
+from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
+                                    LassoDNATrainer, LunarTrainer,
+                                    RoverTrainer)
 from trainers.svgp_trainer import SVGPEULBOTrainer
 from linear_operator import operators
 
@@ -45,7 +47,8 @@ class CaGPTrainer(BaseTrainer):
         for i in trange(self.max_oracle_calls - self.num_initial_points):
             if self.norm_data:
                 # get normalized train y
-                model_train_y = (train_y - self.train_y_mean) / self.train_y_std
+                model_train_y = (train_y -
+                                 self.train_y_mean) / self.train_y_std
             else:
                 model_train_y = train_y
 
@@ -54,36 +57,45 @@ class CaGPTrainer(BaseTrainer):
             else:
                 proj_dim = int(self.proj_dim_ratio * train_x.size(0))
 
-            self.model = CaGP(train_inputs=train_x,
-                              train_targets=model_train_y.squeeze(),
-                              projection_dim=proj_dim,
-                              likelihood=GaussianLikelihood().to(self.device),
-                              kernel_type=self.kernel_type,
-                              init_mode=self.ca_gp_init_mode,
-                              kernel_likelihood_prior=self.kernel_likelihood_prior,
-                              use_ard_kernel=self.use_ard_kernel).to(self.device)
+            self.model = CaGP(
+                train_inputs=train_x,
+                train_targets=model_train_y.squeeze(),
+                projection_dim=proj_dim,
+                likelihood=GaussianLikelihood().to(self.device),
+                kernel_type=self.kernel_type,
+                init_mode=self.ca_gp_init_mode,
+                kernel_likelihood_prior=self.kernel_likelihood_prior,
+                use_ard_kernel=self.use_ard_kernel).to(self.device)
             # if self.debug:
             #     torch.save(train_x, f'{self.save_dir}models/train_x.pt')
             #     torch.save(model_train_y,
             #                f'{self.save_dir}models/model_train_y.pt')
             #     torch.save(train_y, f'{self.save_dir}models/train_y.pt')
 
-            action_params = [p for name, p in self.model.named_parameters() if 'action' in name]
-            others = [p for name, p in self.model.named_parameters() if 'action' not in name]
+            action_params = [
+                p for name, p in self.model.named_parameters()
+                if 'action' in name
+            ]
+            others = [
+                p for name, p in self.model.named_parameters()
+                if 'action' not in name
+            ]
 
-            self.optimizer = self.optimizer_type([{
-                'params': others
-            },
-                                                  {
-                                                      'params': action_params,
-                                                      'lr': self.ca_gp_actions_learning_rate
-                                                  }],
-                                                 lr=self.learning_rate)
+            self.optimizer = self.optimizer_type(
+                [{
+                    'params': others
+                }, {
+                    'params': action_params,
+                    'lr': self.ca_gp_actions_learning_rate
+                }],
+                lr=self.learning_rate)
 
             mll = ComputationAwareELBO(self.model.likelihood, self.model)
-            exact_mll = ExactMarginalLogLikelihood(self.model.likelihood, self.model)
+            exact_mll = ExactMarginalLogLikelihood(self.model.likelihood,
+                                                   self.model)
 
-            train_loader = self.generate_dataloaders(train_x=train_x, train_y=model_train_y.squeeze())
+            train_loader = self.generate_dataloaders(
+                train_x=train_x, train_y=model_train_y.squeeze())
 
             final_loss, epochs_trained = self.train_model(train_loader, mll)
 
@@ -97,11 +109,16 @@ class CaGPTrainer(BaseTrainer):
             self.model.eval()
 
             train_rmse = self.eval(train_x, model_train_y)
-            train_nll = self.compute_nll(train_x, model_train_y.squeeze(), exact_mll)
+            train_nll = self.compute_nll(train_x, model_train_y.squeeze(),
+                                         exact_mll)
 
-            x_next = self.data_acquisition_iteration(self.model, model_train_y.squeeze(), train_x).to(self.device)
+            x_next = self.data_acquisition_iteration(self.model,
+                                                     model_train_y.squeeze(),
+                                                     train_x).to(self.device)
 
-            cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x, train_y=train_y, x_next=x_next)
+            cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x,
+                                                              train_y=train_y,
+                                                              x_next=x_next)
 
             # Evaluate candidates
             y_next = self.task(x_next)
@@ -121,11 +138,15 @@ class CaGPTrainer(BaseTrainer):
 
             reward.append(train_y.max().item())
 
-        self.save_metrics(metrics=reward, iter=iteration, name=self.trainer_type)
+        self.save_metrics(metrics=reward,
+                          iter=iteration,
+                          name=self.trainer_type)
 
     def generate_dataloaders(self, train_x, train_y):
         train_dataset = TensorDataset(train_x, train_y)
-        train_loader = DataLoader(train_dataset, batch_size=train_x.shape[0], shuffle=False)
+        train_loader = DataLoader(train_dataset,
+                                  batch_size=train_x.shape[0],
+                                  shuffle=False)
         return train_loader
 
 
@@ -157,7 +178,8 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
         for i in trange(self.max_oracle_calls - self.num_initial_points):
             if self.norm_data:
                 # get normalized train y
-                model_train_y = (train_y - self.train_y_mean) / self.train_y_std
+                model_train_y = (train_y -
+                                 self.train_y_mean) / self.train_y_std
             else:
                 model_train_y = train_y
 
@@ -166,29 +188,33 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
             else:
                 proj_dim = int(self.proj_dim_ratio * train_x.size(0))
 
-            self.model = CaGP(train_inputs=train_x,
-                              train_targets=model_train_y.squeeze(),
-                              projection_dim=proj_dim,
-                              likelihood=GaussianLikelihood().to(self.device),
-                              kernel_type=self.kernel_type,
-                              init_mode=self.ca_gp_init_mode,
-                              kernel_likelihood_prior=self.kernel_likelihood_prior,
-                              use_ard_kernel=self.use_ard_kernel).to(self.device)
+            self.model = CaGP(
+                train_inputs=train_x,
+                train_targets=model_train_y.squeeze(),
+                projection_dim=proj_dim,
+                likelihood=GaussianLikelihood().to(self.device),
+                kernel_type=self.kernel_type,
+                init_mode=self.ca_gp_init_mode,
+                kernel_likelihood_prior=self.kernel_likelihood_prior,
+                use_ard_kernel=self.use_ard_kernel).to(self.device)
 
-            self.optimizer = self.optimizer_type([{
-                'params': self.model.parameters(),
-            }],
-                                                 lr=self.learning_rate)
+            self.optimizer = self.optimizer_type(
+                [{
+                    'params': self.model.parameters(),
+                }], lr=self.learning_rate)
 
             mll = ComputationAwareELBO(self.model.likelihood, self.model)
-            exact_mll = ExactMarginalLogLikelihood(self.model.likelihood, self.model)
+            exact_mll = ExactMarginalLogLikelihood(self.model.likelihood,
+                                                   self.model)
 
-            train_loader = self.generate_dataloaders(train_x=train_x, train_y=model_train_y.squeeze())
+            train_loader = self.generate_dataloaders(
+                train_x=train_x, train_y=model_train_y.squeeze())
 
             final_loss, epochs_trained = self.train_model(train_loader, mll)
             self.model.eval()
 
-            x_next = self.data_acquisition_iteration(self.model, model_train_y, train_x)
+            x_next = self.data_acquisition_iteration(self.model, model_train_y,
+                                                     train_x)
 
             # above is warm start
             torch.autograd.set_detect_anomaly(True)
@@ -212,15 +238,19 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
                     n_failures += 1
                     self.learning_rate = self.learning_rate / 10
                     self.x_next_lr = self.x_next_lr / 10
-                    self.model.load_state_dict(copy.deepcopy(model_state_before_update))
+                    self.model.load_state_dict(
+                        copy.deepcopy(model_state_before_update))
             if not success:
                 assert 0, f"\nFailed to complete EULBO model update due to the following error:\n{error_message}"
             self.model.eval()
 
             train_rmse = self.eval(train_x, model_train_y.squeeze())
-            train_nll = self.compute_nll(train_x, model_train_y.squeeze(), exact_mll)
+            train_nll = self.compute_nll(train_x, model_train_y.squeeze(),
+                                         exact_mll)
 
-            cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x, train_y=train_y, x_next=x_next)
+            cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x,
+                                                              train_y=train_y,
+                                                              x_next=x_next)
             # Evaluate candidates
             y_next = self.task(x_next)
 
@@ -238,7 +268,9 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
 
             reward.append(train_y.max().item())
 
-        self.save_metrics(metrics=reward, iter=iteration, name=self.trainer_type)
+        self.save_metrics(metrics=reward,
+                          iter=iteration,
+                          name=self.trainer_type)
 
     def train_model(self, train_loader: DataLoader, mll):
         self.model.train()
@@ -256,7 +288,8 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
 
             loss.backward()
             if self.grad_clip is not None:
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=self.grad_clip)
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(),
+                                               max_norm=self.grad_clip)
 
             self.optimizer.step()
 
@@ -266,7 +299,9 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
 
     def generate_dataloaders(self, train_x, train_y):
         train_dataset = TensorDataset(train_x, train_y)
-        train_loader = DataLoader(train_dataset, batch_size=train_x.shape[0], shuffle=False)
+        train_loader = DataLoader(train_dataset,
+                                  batch_size=train_x.shape[0],
+                                  shuffle=False)
         return train_loader
 
 
@@ -320,14 +355,16 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                           use_ard_kernel=self.use_ard_kernel).to(self.device)
         if self.debug:
             torch.save(train_x, f'{self.save_dir}models/train_x.pt')
-            torch.save(model_train_y, f'{self.save_dir}models/model_train_y.pt')
+            torch.save(model_train_y,
+                       f'{self.save_dir}models/model_train_y.pt')
             torch.save(train_y, f'{self.save_dir}models/train_y.pt')
 
         reward = []
         for i in trange(self.max_oracle_calls - self.num_initial_points):
             if self.norm_data:
                 # get normalized train y
-                model_train_y = (train_y - self.train_y_mean) / self.train_y_std
+                model_train_y = (train_y -
+                                 self.train_y_mean) / self.train_y_std
             else:
                 model_train_y = train_y
 
@@ -338,97 +375,143 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                 update_y = model_train_y.squeeze()[-self.update_train_size:]
 
                 if self.add_actions_by_reinit and train_x.size(0) <= proj_dim:
-                    self.model = CaGP(train_inputs=train_x,
-                                      train_targets=update_y,
-                                      projection_dim=min(update_y.size(0),
-                                                         proj_dim),
-                                      likelihood=GaussianLikelihood().to(self.device),
-                                      kernel_type=self.kernel_type,
-                                      init_mode=self.ca_gp_init_mode,
-                                      kernel_likelihood_prior=self.kernel_likelihood_prior,
-                                      use_ard_kernel=self.use_ard_kernel).to(self.device)
+                    self.model = CaGP(
+                        train_inputs=train_x,
+                        train_targets=update_y,
+                        projection_dim=min(update_y.size(0), proj_dim),
+                        likelihood=GaussianLikelihood().to(self.device),
+                        kernel_type=self.kernel_type,
+                        init_mode=self.ca_gp_init_mode,
+                        kernel_likelihood_prior=self.kernel_likelihood_prior,
+                        use_ard_kernel=self.use_ard_kernel).to(self.device)
                 else:
                     # set projection dim to min of training data size and requested dim size
                     self.model.projection_dim = min(update_y.size(0), proj_dim)
 
                     # sliding window here
                     # Set number of non-zero action entries such that num_non_zero * projection_dim = num_train_targets
-                    self.model.num_non_zero = update_y.size(-1) // self.model.projection_dim
+                    self.model.num_non_zero = update_y.size(
+                        -1) // self.model.projection_dim
 
                     self.model.train_inputs = tuple(
                         tri.unsqueeze(-1) if tri.ndimension() == 1 else tri
-                        for tri in (update_x[0:self.model.num_non_zero * self.model.projection_dim],))
-                    self.model.train_targets = update_y[0:self.model.num_non_zero * self.model.projection_dim]
+                        for tri in (update_x[0:self.model.num_non_zero *
+                                             self.model.projection_dim], ))
+                    self.model.train_targets = update_y[
+                        0:self.model.num_non_zero * self.model.projection_dim]
 
                     # add on a new action if proj_dim >= training data size, else slide window
                     if train_x.size(0) <= proj_dim:
-                        blocks = torch.concat((self.model.actions_op.blocks.data,
-                                               torch.randn(
-                                                   (1,
-                                                    self.model.num_non_zero)).div(math.sqrt(self.model.num_non_zero))))
-                        non_zero_idcs = torch.arange(self.model.num_non_zero * self.model.projection_dim,
-                                                     device=self.device).reshape(self.model.projection_dim,
-                                                                                 -1)
+                        blocks = torch.concat(
+                            (self.model.actions_op.blocks.data,
+                             torch.randn((1, self.model.num_non_zero)).div(
+                                 math.sqrt(self.model.num_non_zero))))
+                        non_zero_idcs = torch.arange(
+                            self.model.num_non_zero *
+                            self.model.projection_dim,
+                            device=self.device).reshape(
+                                self.model.projection_dim, -1)
 
-                        self.model.non_zero_action_entries = torch.nn.Parameter(blocks)
+                        self.model.non_zero_action_entries = torch.nn.Parameter(
+                            blocks)
                         self.model.actions_op = operators.BlockDiagonalSparseLinearOperator(
                             non_zero_idcs=non_zero_idcs,
                             blocks=self.model.non_zero_action_entries,
-                            size_input_dim=self.model.num_non_zero * self.model.projection_dim)
+                            size_input_dim=self.model.num_non_zero *
+                            self.model.projection_dim)
 
                     else:
                         if self.model.num_non_zero == 1:
-                            self.model.actions_op.blocks.data = torch.concat(
-                                (self.model.actions_op.blocks.data[1:],
-                                 torch.randn((1,
-                                              self.model.num_non_zero)).div(math.sqrt(self.model.num_non_zero))))
+                            if self.non_zero_action_init:
+                                new_action = 2 * torch.rand((1, 1)) - 1
+
+                                cast_threshold = 1
+                                new_action = torch.where(
+                                    (new_action > 0) &
+                                    (new_action < cast_threshold),
+                                    cast_threshold, new_action)
+
+                                new_action = torch.where(
+                                    (new_action < 0) &
+                                    (new_action > -cast_threshold),
+                                    -cast_threshold, new_action)
+
+                                self.model.actions_op.blocks.data = torch.concat(
+                                    (self.model.actions_op.blocks.data[1:],
+                                     new_action))
+                            else:
+                                self.model.actions_op.blocks.data = torch.concat(
+                                    (self.model.actions_op.blocks.data[1:],
+                                     torch.randn(
+                                         (1, self.model.num_non_zero)).div(
+                                             math.sqrt(
+                                                 self.model.num_non_zero))))
 
                         else:
                             # roll non zero idcs over 1 to create snaking/platforming effect
-                            self.model.actions_op.non_zero_idcs = self.model.actions_op.non_zero_idcs.roll(1)
+                            self.model.actions_op.non_zero_idcs = self.model.actions_op.non_zero_idcs.roll(
+                                1)
 
                             # reinitialize oldest action entry
                             # doing this in a super janky way to not mess with gradients too much
-                            new_placeholder = torch.Tensor(self.model.actions_op.blocks.data)
-                            new_placeholder[0, 0] = torch.randn((1)).div(math.sqrt(self.model.num_non_zero))
-                            self.model.actions_op.blocks.data.copy_(new_placeholder)
+                            new_placeholder = torch.Tensor(
+                                self.model.actions_op.blocks.data)
+                            new_placeholder[0, 0] = torch.randn(
+                                (1)).div(math.sqrt(self.model.num_non_zero))
+                            self.model.actions_op.blocks.data.copy_(
+                                new_placeholder)
 
             else:
                 update_x = train_x
                 update_y = model_train_y.squeeze()
 
-            action_params = [p for name, p in self.model.named_parameters() if 'action' in name]
-            others = [p for name, p in self.model.named_parameters() if 'action' not in name]
+            action_params = [
+                p for name, p in self.model.named_parameters()
+                if 'action' in name
+            ]
+            others = [
+                p for name, p in self.model.named_parameters()
+                if 'action' not in name
+            ]
 
             if self.debug:
                 # check all params are being optimized
                 assert action_params[0].size(0) == self.model.projection_dim
-                old_final_action = self.model.actions_op.blocks.data[-1].detach().clone()
+                old_final_action = self.model.actions_op.blocks.data[
+                    -1].detach().clone()
 
-            if self.optimizer_type != torch.optim.LBFGS:
-                self.optimizer = self.optimizer_type([{
-                    'params': others
-                },
-                                                      {
-                                                          'params': action_params,
-                                                          'lr': self.ca_gp_actions_learning_rate
-                                                      }],
-                                                     lr=self.learning_rate)
+            if self.optimizer_type == torch.optim.Adam:
+                self.optimizer = self.optimizer_type(
+                    [{
+                        'params': others
+                    }, {
+                        'params': action_params,
+                        'lr': self.ca_gp_actions_learning_rate
+                    }],
+                    lr=self.learning_rate)
+            elif self.optimizer_type == torch.optim.LBFGS:
+                self.optimizer = self.optimizer_type(
+                    self.model.parameters(),
+                    lr=self.learning_rate,
+                    line_search_fn='strong_wolfe')
             else:
                 self.optimizer = self.optimizer_type(self.model.parameters(),
                                                      lr=self.learning_rate,
-                                                     line_search_fn='strong_wolfe')
+                                                     dtype=self.data_type)
 
             mll = ComputationAwareELBO(self.model.likelihood, self.model)
-            exact_mll = ExactMarginalLogLikelihood(self.model.likelihood, self.model)
+            exact_mll = ExactMarginalLogLikelihood(self.model.likelihood,
+                                                   self.model)
 
-            train_loader = self.generate_dataloaders(train_x=update_x, train_y=update_y)
+            train_loader = self.generate_dataloaders(train_x=update_x,
+                                                     train_y=update_y)
 
             final_loss, epochs_trained = self.train_model(train_loader, mll)
 
             if self.debug:
                 # check final action is optimized
-                assert torch.ne(old_final_action, self.model.actions_op.blocks.data[-1])
+                assert torch.ne(old_final_action,
+                                self.model.actions_op.blocks.data[-1])
                 print(old_final_action, self.model.actions_op.blocks.data[-1])
 
             # calc gradients of actions
@@ -440,13 +523,18 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
             self.model.eval()
 
             train_rmse = self.eval(train_x, model_train_y)
-            train_nll = self.compute_nll(train_x, model_train_y.squeeze(), exact_mll)
+            train_nll = self.compute_nll(train_x, model_train_y.squeeze(),
+                                         exact_mll)
 
-            x_next, x_af_val = self.data_acquisition_iteration(self.model, model_train_y.squeeze(), train_x)
+            x_next, x_af_val = self.data_acquisition_iteration(
+                self.model, model_train_y.squeeze(), train_x)
 
-            cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x, train_y=train_y, x_next=x_next)
+            cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x,
+                                                              train_y=train_y,
+                                                              x_next=x_next)
 
-            x_next_mu, x_next_sigma = self.calc_predictive_mean_and_std(model=self.model, test_point=x_next)
+            x_next_mu, x_next_sigma = self.calc_predictive_mean_and_std(
+                model=self.model, test_point=x_next)
 
             standardized_gain = (x_next_mu - torch.max(train_y)) / x_next_sigma
 
@@ -512,7 +600,8 @@ class RoverEICaGPEULBOTrainer(CaGPEULBOTrainer, RoverTrainer, EITrainer):
     pass
 
 
-class RoverEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer, RoverTrainer, EITrainer):
+class RoverEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer, RoverTrainer,
+                                      EITrainer):
     pass
 
 
@@ -520,7 +609,8 @@ class LassoDNALogEICaGPTrainer(CaGPTrainer, LassoDNATrainer, LogEITrainer):
     pass
 
 
-class LassoDNALogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer, LassoDNATrainer, LogEITrainer):
+class LassoDNALogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
+                                            LassoDNATrainer, LogEITrainer):
     pass
 
 
@@ -530,19 +620,22 @@ class OsmbLogEICaGPTrainer(CaGPTrainer, GuacamolTrainer, LogEITrainer):
         super().__init__(molecule='osmb', **kwargs)
 
 
-class OsmbLogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer, GuacamolTrainer, LogEITrainer):
+class OsmbLogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
+                                        GuacamolTrainer, LogEITrainer):
 
     def __init__(self, **kwargs):
         super().__init__(molecule='osmb', **kwargs)
 
 
-class FexoLogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer, GuacamolTrainer, LogEITrainer):
+class FexoLogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
+                                        GuacamolTrainer, LogEITrainer):
 
     def __init__(self, **kwargs):
         super().__init__(molecule='fexo', **kwargs)
 
 
-class Med1LogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer, GuacamolTrainer, LogEITrainer):
+class Med1LogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
+                                        GuacamolTrainer, LogEITrainer):
 
     def __init__(self, **kwargs):
         super().__init__(molecule='med1', **kwargs)
