@@ -266,6 +266,17 @@ class OsmbLogEIExactGPTrainer(ExactGPTrainer, GuacamolTrainer, LogEITrainer):
     def __init__(self, **kwargs):
         super().__init__(molecule='osmb', **kwargs)
 
+class FexoLogEIExactGPTrainer(ExactGPTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='fexo', **kwargs)
+
+
+class Med1LogEIExactGPTrainer(ExactGPTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='med1', **kwargs)
+
 
 class RoverEIExactGPSlidingWindowTrainer(ExactGPSlidingWindowTrainer, RoverTrainer, EITrainer):
     pass
@@ -279,3 +290,14 @@ class OsmbLogEIExactGPSlidingWindowTrainer(ExactGPSlidingWindowTrainer, Guacamol
 
     def __init__(self, **kwargs):
         super().__init__(molecule='osmb', **kwargs)
+
+class FexoLogEIExactGPSlidingWindowTrainer(ExactGPSlidingWindowTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='fexo', **kwargs)
+
+
+class Med1LogEIExactGPSlidingWindowTrainer(ExactGPSlidingWindowTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='med1', **kwargs)
