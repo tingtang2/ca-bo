@@ -28,7 +28,8 @@ from trainers.exact_gp_trainer import (
     OsmbLogEIExactGPSlidingWindowTrainer, RoverEIExactGPSlidingWindowTrainer,
     FexoLogEIExactGPSlidingWindowTrainer, FexoLogEIExactGPTrainer,
     Med1LogEIExactGPSlidingWindowTrainer, Med1LogEIExactGPTrainer,
-    Med2LogEIExactGPTrainer, Med2LogEIExactGPSlidingWindowTrainer)
+    Med2LogEIExactGPTrainer, Med2LogEIExactGPSlidingWindowTrainer,
+    FexoLogEIGPyTorchExactGPSlidingWindowTrainer)
 from trainers.svgp_trainer import (
     HartmannEISVGPEULBOTrainer, HartmannEISVGPRetrainTrainer,
     HartmannEISVGPTrainer, LassoDNALogEISVGPTrainer, LunarEISVGPEULBOTrainer,
@@ -74,6 +75,8 @@ arg_trainer_map = {
     'fexo_log_ei_exact_gp': FexoLogEIExactGPTrainer,
     'fexo_log_ei_exact_gp_sliding_window':
     FexoLogEIExactGPSlidingWindowTrainer,
+    'fexo_log_ei_gpytorch_exact_gp_sliding_window':
+    FexoLogEIGPyTorchExactGPSlidingWindowTrainer,
     'fexo_log_ei_ca_gp_sliding_window': FexoLogEICaGPSlidingWindowTrainer,
     'fexo_log_ei_svgp': FexoLogEISVGPTrainer,
     'med1_log_ei_exact_gp': Med1LogEIExactGPTrainer,
@@ -201,6 +204,9 @@ def main() -> int:
         '--log_diagnostics',
         action='store_true',
         help='log diagnostic metrics, will slow down runs slightly')
+    parser.add_argument('--freeze_actions',
+                        action='store_true',
+                        help='freeze actions to be unit norm, for debugging')
     parser.add_argument(
         '--non_zero_action_init',
         action='store_true',

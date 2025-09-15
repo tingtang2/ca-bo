@@ -353,11 +353,15 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                           init_mode=self.ca_gp_init_mode,
                           kernel_likelihood_prior=self.kernel_likelihood_prior,
                           use_ard_kernel=self.use_ard_kernel).to(self.device)
-        if self.debug:
-            torch.save(train_x, f'{self.save_dir}models/train_x.pt')
-            torch.save(model_train_y,
-                       f'{self.save_dir}models/model_train_y.pt')
-            torch.save(train_y, f'{self.save_dir}models/train_y.pt')
+        # if self.debug:
+        #     torch.save(train_x, f'{self.save_dir}models/train_x.pt')
+        #     torch.save(model_train_y,
+        #                f'{self.save_dir}models/model_train_y.pt')
+        #     torch.save(train_y, f'{self.save_dir}models/train_y.pt')
+        if self.freeze_actions:
+            self.model.actions_op.blocks.data = torch.ones(
+                (train_x.shape[0], self.model.num_non_zero))
+            self.model.actions_op.blocks.requires_grad = False
 
         reward = []
         for i in trange(self.max_oracle_calls - self.num_initial_points):
@@ -421,7 +425,9 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                             self.model.projection_dim)
 
                     else:
-                        if self.model.num_non_zero == 1:
+                        if self.freeze_actions:
+                            pass
+                        elif self.model.num_non_zero == 1:
                             if self.non_zero_action_init:
                                 new_action = 2 * torch.rand((1, 1)) - 1
 
@@ -513,13 +519,19 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                 assert torch.ne(old_final_action,
                                 self.model.actions_op.blocks.data[-1])
                 print(old_final_action, self.model.actions_op.blocks.data[-1])
+            if self.freeze_actions:
+                assert (self.model.actions_op.blocks.data == torch.ones(
+                    (update_x.size(0), 1))).all()
 
             # calc gradients of actions
-            total_norm = 0.0
-            for p in action_params:
-                param_norm = p.grad.detach().data.norm(2)
-                total_norm += param_norm.item()**2
-            total_norm = total_norm**0.5
+            if not self.freeze_actions:
+                total_norm = 0.0
+                for p in action_params:
+                    param_norm = p.grad.detach().data.norm(2)
+                    total_norm += param_norm.item()**2
+                total_norm = total_norm**0.5
+            else:
+                total_norm = -1
             self.model.eval()
 
             train_rmse = self.eval(train_x, model_train_y)
