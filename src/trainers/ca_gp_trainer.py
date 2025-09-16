@@ -505,7 +505,9 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                                                      lr=self.learning_rate,
                                                      dtype=self.data_type)
 
-            mll = ComputationAwareELBO(self.model.likelihood, self.model)
+            mll = ComputationAwareELBO(self.model.likelihood,
+                                       self.model,
+                                       return_elbo_terms=True)
             exact_mll = ExactMarginalLogLikelihood(self.model.likelihood,
                                                    self.model)
 
