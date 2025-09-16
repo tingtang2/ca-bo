@@ -79,7 +79,6 @@ class SVGPModel(ApproximateGP):
                   *args,
                   **kwargs) -> GPyTorchPosterior:
         self.eval()
-        self.likelihood.eval()
-        dist = self.likelihood(self(X))
+        dist = self(X)
 
         return GPyTorchPosterior(dist)

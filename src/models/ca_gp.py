@@ -81,8 +81,7 @@ class CaGP(ComputationAwareGP):
                   *args,
                   **kwargs) -> GPyTorchPosterior:
         self.eval()
-        self.likelihood.eval()
-        dist = self.likelihood(self(X))
+        dist = self(X)
         posterior = GPyTorchPosterior(dist)
 
         if self.outcome_transform:
