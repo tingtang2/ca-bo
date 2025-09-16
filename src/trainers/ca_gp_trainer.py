@@ -16,6 +16,8 @@ from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
                                     RoverTrainer)
 from trainers.svgp_trainer import SVGPEULBOTrainer
 from linear_operator import operators
+from functions.LBFGS import FullBatchLBFGS
+from botorch.fit import fit_gpytorch_mll
 
 
 class CaGPTrainer(BaseTrainer):
@@ -345,14 +347,16 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
         else:
             initial_proj_dim = proj_dim
 
-        self.model = CaGP(train_inputs=train_x,
-                          train_targets=model_train_y.squeeze(),
-                          projection_dim=initial_proj_dim,
-                          likelihood=GaussianLikelihood().to(self.device),
-                          kernel_type=self.kernel_type,
-                          init_mode=self.ca_gp_init_mode,
-                          kernel_likelihood_prior=self.kernel_likelihood_prior,
-                          use_ard_kernel=self.use_ard_kernel).to(self.device)
+        self.model = CaGP(
+            train_inputs=train_x,
+            train_targets=model_train_y.squeeze(),
+            projection_dim=initial_proj_dim,
+            likelihood=GaussianLikelihood().to(self.device),
+            kernel_type=self.kernel_type,
+            init_mode=self.ca_gp_init_mode,
+            kernel_likelihood_prior=self.kernel_likelihood_prior,
+            use_ard_kernel=self.use_ard_kernel,
+            standardize_outputs=self.turn_on_outcome_transform).to(self.device)
         # if self.debug:
         #     torch.save(train_x, f'{self.save_dir}models/train_x.pt')
         #     torch.save(model_train_y,
@@ -387,7 +391,9 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                         kernel_type=self.kernel_type,
                         init_mode=self.ca_gp_init_mode,
                         kernel_likelihood_prior=self.kernel_likelihood_prior,
-                        use_ard_kernel=self.use_ard_kernel).to(self.device)
+                        use_ard_kernel=self.use_ard_kernel,
+                        standardize_outputs=self.turn_on_outcome_transform).to(
+                            self.device)
                 else:
                     # set projection dim to min of training data size and requested dim size
                     self.model.projection_dim = min(update_y.size(0), proj_dim)
@@ -500,21 +506,33 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                     self.model.parameters(),
                     lr=self.learning_rate,
                     line_search_fn='strong_wolfe')
-            else:
+            elif self.optimizer_type == FullBatchLBFGS:
                 self.optimizer = self.optimizer_type(self.model.parameters(),
                                                      lr=self.learning_rate,
                                                      dtype=self.data_type)
+            else:
+                # botorch lbfgs case
+                pass
 
-            mll = ComputationAwareELBO(self.model.likelihood,
-                                       self.model,
-                                       return_elbo_terms=True)
             exact_mll = ExactMarginalLogLikelihood(self.model.likelihood,
                                                    self.model)
 
-            train_loader = self.generate_dataloaders(train_x=update_x,
-                                                     train_y=update_y)
+            if self.optimizer_type == 'botorch_lbfgs':
+                mll = ComputationAwareELBO(self.model.likelihood,
+                                           self.model,
+                                           return_elbo_terms=False)
+                mll = fit_gpytorch_mll(mll)
+                epochs_trained = -1
+                final_loss = -1
+            else:
+                mll = ComputationAwareELBO(self.model.likelihood,
+                                           self.model,
+                                           return_elbo_terms=True)
+                train_loader = self.generate_dataloaders(train_x=update_x,
+                                                         train_y=update_y)
 
-            final_loss, epochs_trained = self.train_model(train_loader, mll)
+                final_loss, epochs_trained = self.train_model(
+                    train_loader, mll)
 
             if self.debug:
                 # check final action is optimized

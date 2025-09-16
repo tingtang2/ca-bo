@@ -94,7 +94,8 @@ arg_optimizer_map = {
     'adamW': AdamW,
     'adam': Adam,
     'lbfgs': LBFGS,
-    'custom_lbfgs': FullBatchLBFGS
+    'custom_lbfgs': FullBatchLBFGS,
+    'botorch_lbfgs': 'botorch_lbfgs'
 }
 
 # Map string names to torch dtypes
@@ -194,6 +195,10 @@ def main() -> int:
         '--use_ard_kernel',
         action='store_true',
         help='fit a separate lengthscale for each input dimension')
+    parser.add_argument(
+        '--turn_on_outcome_transform',
+        action='store_true',
+        help='turn on standardize outcome transform for non exact GPs')
     parser.add_argument('--ca_gp_init_mode',
                         default='random',
                         help='init mode for ca gp')

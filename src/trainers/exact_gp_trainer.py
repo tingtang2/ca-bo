@@ -306,7 +306,7 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
         #                        log_graph=True)
 
         self.name = 'exact_gp_sliding_window'
-        self.debug = True
+        self.debug = False
 
     def run_experiment(self, iteration: int):
         logging.info(self.__dict__)
