@@ -19,6 +19,9 @@ class ExactGPModel(ExactGP):
         covar_x = self.covar_module(x)
         return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
 
+    def transform_inputs(self, X):
+        return X
+
     def posterior(self,
                   X,
                   output_indices=None,

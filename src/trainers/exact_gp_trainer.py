@@ -306,6 +306,7 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
         #                        log_graph=True)
 
         self.name = 'exact_gp_sliding_window'
+        self.debug = True
 
     def run_experiment(self, iteration: int):
         logging.info(self.__dict__)
@@ -418,6 +419,13 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
                                    standardized_gain=standardized_gain.item())
 
             reward.append(train_y.max().item())
+            if self.debug and i == 199:
+                torch.save(
+                    train_x,
+                    f'{self.save_dir}models/train_x_after_200_steps.pt')
+                torch.save(
+                    train_y,
+                    f'{self.save_dir}models/train_y_after_200_steps.pt')
 
         self.save_metrics(metrics=reward,
                           iter=iteration,
