@@ -10,16 +10,15 @@ from botorch.models.utils.gpytorch_modules import (
     get_gaussian_likelihood_with_lognormal_prior,
     get_matern_kernel_with_gamma_prior)
 from gpytorch.mlls import ExactMarginalLogLikelihood
+from torch.utils.data import DataLoader, TensorDataset
 from tqdm import trange
 
-from torch.utils.data import DataLoader, TensorDataset
+from models.exact_gp import ExactGPModel
 from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
 from trainers.base_trainer import BaseTrainer
 from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
                                     LassoDNATrainer, LunarTrainer,
                                     RoverTrainer)
-
-from models.exact_gp import ExactGPModel
 
 
 class ExactGPTrainer(BaseTrainer):

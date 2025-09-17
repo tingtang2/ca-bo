@@ -1,8 +1,9 @@
-import torch
-import numpy as np
-import matplotlib.pyplot as plt
-from functools import reduce
 from copy import deepcopy
+from functools import reduce
+
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
 from torch.optim import Optimizer
 
 

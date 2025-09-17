@@ -7,35 +7,46 @@ from datetime import date, datetime
 
 import torch
 import wandb
-from torch.optim import Adam, AdamW, LBFGS
-from functions.LBFGS import FullBatchLBFGS
+from torch.optim import LBFGS, Adam, AdamW
 
+from functions.LBFGS import FullBatchLBFGS
 from set_seed import set_seed
 from trainers.base_trainer import BaseTrainer
-from trainers.ca_gp_trainer import (
-    HartmannEICaGPEULBOTrainer, HartmannEICaGPTrainer,
-    HartmannLogEICaGPTrainer, LassoDNALogEICaGPSlidingWindowTrainer,
-    LassoDNALogEICaGPTrainer, LunarEICaGPEULBOTrainer, LunarEICaGPTrainer,
-    LunarLogEICaGPEULBOTrainer, LunarLogEICaGPTrainer,
-    OsmbLogEICaGPSlidingWindowTrainer, OsmbLogEICaGPTrainer,
-    RoverEICaGPEULBOTrainer, RoverEICaGPSlidingWindowTrainer,
-    RoverEICaGPTrainer, FexoLogEICaGPSlidingWindowTrainer,
-    Med1LogEICaGPSlidingWindowTrainer, Med2LogEICaGPSlidingWindowTrainer)
+from trainers.ca_gp_trainer import (FexoLogEICaGPSlidingWindowTrainer,
+                                    HartmannEICaGPEULBOTrainer,
+                                    HartmannEICaGPTrainer,
+                                    HartmannLogEICaGPTrainer,
+                                    LassoDNALogEICaGPSlidingWindowTrainer,
+                                    LassoDNALogEICaGPTrainer,
+                                    LunarEICaGPEULBOTrainer,
+                                    LunarEICaGPTrainer,
+                                    LunarLogEICaGPEULBOTrainer,
+                                    LunarLogEICaGPTrainer,
+                                    Med1LogEICaGPSlidingWindowTrainer,
+                                    Med2LogEICaGPSlidingWindowTrainer,
+                                    OsmbLogEICaGPSlidingWindowTrainer,
+                                    OsmbLogEICaGPTrainer,
+                                    RoverEICaGPEULBOTrainer,
+                                    RoverEICaGPSlidingWindowTrainer,
+                                    RoverEICaGPTrainer)
 from trainers.exact_gp_trainer import (
-    HartmannEIExactGPTrainer, LassoDNALogEIExactGPTrainer,
-    LunarEIExactGPTrainer, OsmbLogEIExactGPTrainer, RoverEIExactGPTrainer,
-    LassoDNALogEIExactGPSlidingWindowTrainer,
-    OsmbLogEIExactGPSlidingWindowTrainer, RoverEIExactGPSlidingWindowTrainer,
     FexoLogEIExactGPSlidingWindowTrainer, FexoLogEIExactGPTrainer,
-    Med1LogEIExactGPSlidingWindowTrainer, Med1LogEIExactGPTrainer,
-    Med2LogEIExactGPTrainer, Med2LogEIExactGPSlidingWindowTrainer,
-    FexoLogEIGPyTorchExactGPSlidingWindowTrainer)
-from trainers.svgp_trainer import (
-    HartmannEISVGPEULBOTrainer, HartmannEISVGPRetrainTrainer,
-    HartmannEISVGPTrainer, LassoDNALogEISVGPTrainer, LunarEISVGPEULBOTrainer,
-    LunarEISVGPTrainer, OsmbLogEISVGPTrainer, RoverEISVGPEULBOTrainer,
-    RoverEISVGPTrainer, FexoLogEISVGPTrainer, Med1LogEISVGPTrainer,
-    Med2LogEISVGPTrainer)
+    FexoLogEIGPyTorchExactGPSlidingWindowTrainer, HartmannEIExactGPTrainer,
+    LassoDNALogEIExactGPSlidingWindowTrainer, LassoDNALogEIExactGPTrainer,
+    LunarEIExactGPTrainer, Med1LogEIExactGPSlidingWindowTrainer,
+    Med1LogEIExactGPTrainer, Med2LogEIExactGPSlidingWindowTrainer,
+    Med2LogEIExactGPTrainer, OsmbLogEIExactGPSlidingWindowTrainer,
+    OsmbLogEIExactGPTrainer, RoverEIExactGPSlidingWindowTrainer,
+    RoverEIExactGPTrainer)
+from trainers.svgp_trainer import (FexoLogEISVGPTrainer,
+                                   HartmannEISVGPEULBOTrainer,
+                                   HartmannEISVGPRetrainTrainer,
+                                   HartmannEISVGPTrainer,
+                                   LassoDNALogEISVGPTrainer,
+                                   LunarEISVGPEULBOTrainer, LunarEISVGPTrainer,
+                                   Med1LogEISVGPTrainer, Med2LogEISVGPTrainer,
+                                   OsmbLogEISVGPTrainer,
+                                   RoverEISVGPEULBOTrainer, RoverEISVGPTrainer)
 
 arg_trainer_map = {
     'hartmann_ei_exact_gp': HartmannEIExactGPTrainer,
@@ -60,33 +71,26 @@ arg_trainer_map = {
     'rover_ei_svgp': RoverEISVGPTrainer,
     'rover_ei_svgp_eulbo': RoverEISVGPEULBOTrainer,
     'lasso_dna_log_ei_exact_gp': LassoDNALogEIExactGPTrainer,
-    'lasso_dna_log_ei_exact_gp_sliding_window':
-    LassoDNALogEIExactGPSlidingWindowTrainer,
+    'lasso_dna_log_ei_exact_gp_sliding_window': LassoDNALogEIExactGPSlidingWindowTrainer,
     'lasso_dna_log_ei_ca_gp': LassoDNALogEICaGPTrainer,
-    'lasso_dna_log_ei_ca_gp_sliding_window':
-    LassoDNALogEICaGPSlidingWindowTrainer,
+    'lasso_dna_log_ei_ca_gp_sliding_window': LassoDNALogEICaGPSlidingWindowTrainer,
     'lasso_dna_log_ei_svgp': LassoDNALogEISVGPTrainer,
     'osmb_log_ei_exact_gp': OsmbLogEIExactGPTrainer,
-    'osmb_log_ei_exact_gp_sliding_window':
-    OsmbLogEIExactGPSlidingWindowTrainer,
+    'osmb_log_ei_exact_gp_sliding_window': OsmbLogEIExactGPSlidingWindowTrainer,
     'osmb_log_ei_ca_gp': OsmbLogEICaGPTrainer,
     'osmb_log_ei_ca_gp_sliding_window': OsmbLogEICaGPSlidingWindowTrainer,
     'osmb_log_ei_svgp': OsmbLogEISVGPTrainer,
     'fexo_log_ei_exact_gp': FexoLogEIExactGPTrainer,
-    'fexo_log_ei_exact_gp_sliding_window':
-    FexoLogEIExactGPSlidingWindowTrainer,
-    'fexo_log_ei_gpytorch_exact_gp_sliding_window':
-    FexoLogEIGPyTorchExactGPSlidingWindowTrainer,
+    'fexo_log_ei_exact_gp_sliding_window': FexoLogEIExactGPSlidingWindowTrainer,
+    'fexo_log_ei_gpytorch_exact_gp_sliding_window': FexoLogEIGPyTorchExactGPSlidingWindowTrainer,
     'fexo_log_ei_ca_gp_sliding_window': FexoLogEICaGPSlidingWindowTrainer,
     'fexo_log_ei_svgp': FexoLogEISVGPTrainer,
     'med1_log_ei_exact_gp': Med1LogEIExactGPTrainer,
-    'med1_log_ei_exact_gp_sliding_window':
-    Med1LogEIExactGPSlidingWindowTrainer,
+    'med1_log_ei_exact_gp_sliding_window': Med1LogEIExactGPSlidingWindowTrainer,
     'med1_log_ei_ca_gp_sliding_window': Med1LogEICaGPSlidingWindowTrainer,
     'med1_log_ei_svgp': Med1LogEISVGPTrainer,
     'med2_log_ei_exact_gp': Med2LogEIExactGPTrainer,
-    'med2_log_ei_exact_gp_sliding_window':
-    Med2LogEIExactGPSlidingWindowTrainer,
+    'med2_log_ei_exact_gp_sliding_window': Med2LogEIExactGPSlidingWindowTrainer,
     'med2_log_ei_ca_gp_sliding_window': Med2LogEICaGPSlidingWindowTrainer,
     'med2_log_ei_svgp': Med2LogEISVGPTrainer,
 }
@@ -117,151 +121,78 @@ def handler(self, signum, frame):
 def parse_dtype(dtype_str):
     if dtype_str in TORCH_DTYPES:
         return TORCH_DTYPES[dtype_str]
-    raise argparse.ArgumentTypeError(
-        f"Invalid dtype: '{dtype_str}'. Choose from {list(TORCH_DTYPES.keys())}"
-    )
+    raise argparse.ArgumentTypeError(f"Invalid dtype: '{dtype_str}'. Choose from {list(TORCH_DTYPES.keys())}")
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description='Run computation aware GP based BO')
+    parser = argparse.ArgumentParser(description='Run computation aware GP based BO')
 
-    parser.add_argument('--epochs',
-                        default=30,
-                        type=int,
-                        help='number of epochs to train model')
-    parser.add_argument('--eulbo_epochs',
-                        default=30,
-                        type=int,
-                        help='number of epochs to train model')
-    parser.add_argument('--device',
-                        '-d',
-                        default='cuda',
-                        type=str,
-                        help='cpu or gpu ID to use')
-    parser.add_argument('--batch_size',
-                        default=1,
-                        type=int,
-                        help='acquisition batch size')
-    parser.add_argument('--dropout_prob',
-                        default=0.3,
-                        type=float,
-                        help='probability for dropout layers')
-    parser.add_argument('--grad_clip',
-                        default=2.0,
-                        type=float,
-                        help='probability for dropout layers')
+    parser.add_argument('--epochs', default=30, type=int, help='number of epochs to train model')
+    parser.add_argument('--eulbo_epochs', default=30, type=int, help='number of epochs to train model')
+    parser.add_argument('--device', '-d', default='cuda', type=str, help='cpu or gpu ID to use')
+    parser.add_argument('--batch_size', default=1, type=int, help='acquisition batch size')
+    parser.add_argument('--dropout_prob', default=0.3, type=float, help='probability for dropout layers')
+    parser.add_argument('--grad_clip', default=2.0, type=float, help='probability for dropout layers')
     parser.add_argument('--save_dir', help='path to saved model files')
     parser.add_argument('--data_dir', help='path to data files')
-    parser.add_argument('--optimizer',
-                        default='adam',
-                        help='type of optimizer to use')
-    parser.add_argument('--num_repeats',
-                        default=3,
-                        type=int,
-                        help='number of times to repeat experiment')
-    parser.add_argument('--seed',
-                        default=11202022,
-                        type=int,
-                        help='random seed to be used in numpy and torch')
-    parser.add_argument('--learning_rate',
+    parser.add_argument('--optimizer', default='adam', help='type of optimizer to use')
+    parser.add_argument('--num_repeats', default=3, type=int, help='number of times to repeat experiment')
+    parser.add_argument('--seed', default=11202022, type=int, help='random seed to be used in numpy and torch')
+    parser.add_argument('--learning_rate', default=1e-2, type=float, help='learning rate for optimizer')
+    parser.add_argument('--ca_gp_actions_learning_rate',
                         default=1e-2,
                         type=float,
-                        help='learning rate for optimizer')
-    parser.add_argument(
-        '--ca_gp_actions_learning_rate',
-        default=1e-2,
-        type=float,
-        help='learning rate for CaGP action specific optimizer')
-    parser.add_argument(
-        '--svgp_inducing_point_learning_rate',
-        default=1e-2,
-        type=float,
-        help='learning rate for SVGP inducing point specific optimizer')
-    parser.add_argument('--max_oracle_calls',
-                        default=2000,
-                        type=int,
-                        help='max number of function evals/oracle calls')
-    parser.add_argument('--trainer_type',
-                        default='lunar_ei_ca_gp',
-                        help='type of experiment to run')
-    parser.add_argument('--kernel_type',
-                        default='matern_5_2',
-                        help='kernel type for GP')
-    parser.add_argument('--kernel_likelihood_prior',
-                        default='none',
-                        help='kernel and likelihood prior for GP')
-    parser.add_argument(
-        '--use_ard_kernel',
-        action='store_true',
-        help='fit a separate lengthscale for each input dimension')
-    parser.add_argument(
-        '--turn_on_outcome_transform',
-        action='store_true',
-        help='turn on standardize outcome transform for non exact GPs')
-    parser.add_argument('--ca_gp_init_mode',
-                        default='random',
-                        help='init mode for ca gp')
-    parser.add_argument('--norm_data',
+                        help='learning rate for CaGP action specific optimizer')
+    parser.add_argument('--svgp_inducing_point_learning_rate',
+                        default=1e-2,
+                        type=float,
+                        help='learning rate for SVGP inducing point specific optimizer')
+    parser.add_argument('--max_oracle_calls', default=2000, type=int, help='max number of function evals/oracle calls')
+    parser.add_argument('--trainer_type', default='lunar_ei_ca_gp', help='type of experiment to run')
+    parser.add_argument('--kernel_type', default='matern_5_2', help='kernel type for GP')
+    parser.add_argument('--kernel_likelihood_prior', default='none', help='kernel and likelihood prior for GP')
+    parser.add_argument('--use_ard_kernel',
                         action='store_true',
-                        help='normalize ys')
-    parser.add_argument(
-        '--log_diagnostics',
-        action='store_true',
-        help='log diagnostic metrics, will slow down runs slightly')
-    parser.add_argument('--freeze_actions',
+                        help='fit a separate lengthscale for each input dimension')
+    parser.add_argument('--turn_on_outcome_transform',
                         action='store_true',
-                        help='freeze actions to be unit norm, for debugging')
-    parser.add_argument(
-        '--non_zero_action_init',
-        action='store_true',
-        help='initialize CaGP actions uniformly, away from zero')
-    parser.add_argument('--add_actions_by_reinit',
+                        help='turn on standardize outcome transform for non exact GPs')
+    parser.add_argument('--ca_gp_init_mode', default='random', help='init mode for ca gp')
+    parser.add_argument('--norm_data', action='store_true', help='normalize ys')
+    parser.add_argument('--reinit_hyperparams',
                         action='store_true',
-                        help='reinitialize actions when adding')
-    parser.add_argument('--turn_off_wandb',
+                        help='reinitialize kernel hyperparameters at each step')
+    parser.add_argument('--log_diagnostics',
                         action='store_true',
-                        help='skip wandb logging')
+                        help='log diagnostic metrics, will slow down runs slightly')
+    parser.add_argument('--freeze_actions', action='store_true', help='freeze actions to be unit norm, for debugging')
+    parser.add_argument('--non_zero_action_init',
+                        action='store_true',
+                        help='initialize CaGP actions uniformly, away from zero')
+    parser.add_argument('--add_actions_by_reinit', action='store_true', help='reinitialize actions when adding')
+    parser.add_argument('--turn_off_wandb', action='store_true', help='skip wandb logging')
     parser.add_argument('--notes', default='', help='note on experiment run')
     parser.add_argument('--use_analytic_acq_func',
                         action='store_true',
                         help='use analytic acquisition function instead of MC')
-    parser.add_argument('--enable_raasp',
-                        action='store_true',
-                        help='enable RAASP sampling in AF optimization')
-    parser.add_argument('--early_stopping_threshold',
-                        default=3,
-                        type=int,
-                        help='patience for early stopping')
+    parser.add_argument('--enable_raasp', action='store_true', help='enable RAASP sampling in AF optimization')
+    parser.add_argument('--early_stopping_threshold', default=3, type=int, help='patience for early stopping')
     parser.add_argument('--num_initial_points',
                         default=100,
                         type=int,
                         help='initial number of points to train model on')
-    parser.add_argument('--update_train_size',
-                        default=100,
+    parser.add_argument('--update_train_size', default=100, type=int, help='size of sliding window to update on')
+    parser.add_argument('--num_inducing_points', default=100, type=int, help='number of inducing points for svgp')
+    parser.add_argument('--proj_dim_ratio', default=0.5, type=float, help='ratio for ca gp projection dim')
+    parser.add_argument('--static_proj_dim',
+                        default=-1,
                         type=int,
-                        help='size of sliding window to update on')
-    parser.add_argument('--num_inducing_points',
-                        default=100,
-                        type=int,
-                        help='number of inducing points for svgp')
-    parser.add_argument('--proj_dim_ratio',
-                        default=0.5,
-                        type=float,
-                        help='ratio for ca gp projection dim')
-    parser.add_argument(
-        '--static_proj_dim',
-        default=-1,
-        type=int,
-        help='if not -1, keep ca gp projection dim constant throughout training'
-    )
+                        help='if not -1, keep ca gp projection dim constant throughout training')
     parser.add_argument(
         '--data_type',
         default='float64',
         type=parse_dtype,
-        help=
-        'Specify the PyTorch data type. Choose from: float16, float32, float64, etc. (default: float32)'
-    )
+        help='Specify the PyTorch data type. Choose from: float16, float32, float64, etc. (default: float32)')
 
     args = parser.parse_args()
     configs = args.__dict__
@@ -295,10 +226,9 @@ def main() -> int:
 
     # get trainer
     trainer_type = arg_trainer_map[configs['trainer_type']]
-    trainer: BaseTrainer = trainer_type(
-        optimizer_type=arg_optimizer_map[configs['optimizer']],
-        tracker=tracker,
-        **configs)
+    trainer: BaseTrainer = trainer_type(optimizer_type=arg_optimizer_map[configs['optimizer']],
+                                        tracker=tracker,
+                                        **configs)
 
     signal.signal(signal.SIGINT, handler)
     # perform experiment n times

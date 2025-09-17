@@ -1,12 +1,12 @@
 import gpytorch
 import torch
+from botorch.models.transforms.outcome import Standardize
 from botorch.models.utils.gpytorch_modules import (
     get_covar_module_with_dim_scaled_prior,
     get_gaussian_likelihood_with_gamma_prior,
     get_gaussian_likelihood_with_lognormal_prior,
     get_matern_kernel_with_gamma_prior)
 from botorch.posteriors.gpytorch import GPyTorchPosterior
-from botorch.models.transforms.outcome import Standardize
 from gpytorch import likelihoods
 from gpytorch.models.computation_aware_gp import ComputationAwareGP
 

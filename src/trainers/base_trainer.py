@@ -6,15 +6,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Union
 
+import gpytorch
+import matplotlib.pyplot as plt
 import torch
 from gpytorch.metrics import mean_squared_error
 from torch.nn.functional import cosine_similarity
 from torch.utils.data import DataLoader
-from functions.LBFGS import FullBatchLBFGS
 
+from functions.LBFGS import FullBatchLBFGS
 from tasks.task import Task
-import matplotlib.pyplot as plt
-import gpytorch
 
 
 class BaseTrainer(ABC):

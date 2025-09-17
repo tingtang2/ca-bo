@@ -6,6 +6,7 @@ from botorch.acquisition.analytic import ExpectedImprovement
 from botorch.optim import optimize_acqf
 from botorch.optim.initializers import initialize_q_batch_nonneg
 
+from set_seed import set_seed
 from trainers.base_trainer import BaseTrainer
 from trainers.utils.analytic_log_ei import LogExpectedImprovement
 from trainers.utils.stochastic_sampler import StochasticSampler
@@ -66,6 +67,7 @@ class LogEITrainer(BaseTrainer):
         else:
             options = None
 
+        set_seed(42)
         X_next, acq_val = optimize_acqf(ei,
                                         bounds=torch.stack([lb, ub]).to(
                                             self.device, self.data_type),

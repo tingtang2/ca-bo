@@ -1,6 +1,6 @@
 import gpytorch
-from gpytorch.models import ExactGP
 from botorch.posteriors.gpytorch import GPyTorchPosterior
+from gpytorch.models import ExactGP
 
 
 class ExactGPModel(ExactGP):
