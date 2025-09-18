@@ -431,6 +431,8 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
 
                             covar_module = gpytorch.kernels.ScaleKernel(base_kernel)
                             self.model.covar_module = covar_module
+                        if self.reinit_mean:
+                            self.model.mean_module = gpytorch.means.ConstantMean()
 
             else:
                 update_x = train_x

@@ -162,6 +162,9 @@ def main() -> int:
     parser.add_argument('--reinit_hyperparams',
                         action='store_true',
                         help='reinitialize kernel hyperparameters at each step')
+    parser.add_argument('--reinit_mean',
+                        action='store_true',
+                        help='reinitialize mean hyperparameters at each step')
     parser.add_argument('--log_diagnostics',
                         action='store_true',
                         help='log diagnostic metrics, will slow down runs slightly')
