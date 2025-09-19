@@ -170,7 +170,10 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
         print(f'initial y max: {train_y.max().item()}')
         logging.info(f'initial y max: {train_y.max().item()}')
         if not self.turn_off_wandb:
-            self.tracker.log({'initial y max': train_y.max().item()})
+            self.tracker.log({
+                'initial y max': train_y.max().item(),
+                'best reward': train_y.max().item()
+            })
 
         self.train_y_mean = train_y.mean()
         self.train_y_std = train_y.std()
@@ -324,7 +327,10 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
         print(f'initial y max: {train_y.max().item()}')
         logging.info(f'initial y max: {train_y.max().item()}')
         if not self.turn_off_wandb:
-            self.tracker.log({'initial y max': train_y.max().item()})
+            self.tracker.log({
+                'initial y max': train_y.max().item(),
+                'best reward': train_y.max().item()
+            })
 
         self.train_y_mean = train_y.mean()
         self.train_y_std = train_y.std()
