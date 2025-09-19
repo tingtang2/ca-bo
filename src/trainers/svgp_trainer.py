@@ -237,7 +237,7 @@ class SVGPTrainer(BaseTrainer):
                 for tri in (update_x, ))
             if self.turn_on_outcome_transform:
                 outcome_transform = Standardize(
-                    m=1, batch_shape=self.model.train_inputs.shape[:-2])
+                    m=1, batch_shape=self.model.train_inputs[0].shape[:-2])
                 outcome_transform.train()
                 train_targets, train_Yvar = outcome_transform(
                     Y=update_y.unsqueeze(1),

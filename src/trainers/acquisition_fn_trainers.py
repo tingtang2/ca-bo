@@ -1,7 +1,7 @@
 import copy
 
 import torch
-from botorch.acquisition import qExpectedImprovement
+from botorch.acquisition import qExpectedImprovement, qLogExpectedImprovement
 from botorch.acquisition.analytic import ExpectedImprovement
 from botorch.optim import optimize_acqf
 from botorch.optim.initializers import initialize_q_batch_nonneg
@@ -60,7 +60,10 @@ class LogEITrainer(BaseTrainer):
         lb = self.task.lb * weights
         ub = self.task.ub * weights
 
-        ei = LogExpectedImprovement(model, Y.max().to(self.device))
+        if self.use_analytic_acq_func:
+            ei = LogExpectedImprovement(model, Y.max().to(self.device))
+        else:
+            ei = qLogExpectedImprovement(model, Y.max().to(self.device))
 
         if self.enable_raasp:
             options = {'sample_around_best': True}
