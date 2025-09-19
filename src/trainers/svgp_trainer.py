@@ -7,6 +7,7 @@ from gpytorch.mlls import ExactMarginalLogLikelihood, VariationalELBO
 from torch.autograd import Variable
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import trange
+from botorch.models.transforms.outcome import Standardize
 
 from models.svgp import SVGPModel
 from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
@@ -17,6 +18,8 @@ from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
 from trainers.utils.expected_log_utility import get_expected_log_utility_ei
 from trainers.utils.moss_et_al_inducing_pts_init import \
     GreedyImprovementReduction
+
+import gpytorch
 
 
 class SVGPRetrainTrainer(BaseTrainer):
@@ -214,19 +217,42 @@ class SVGPTrainer(BaseTrainer):
                 update_x = train_x[-self.update_train_size:]
                 # y needs to only have 1 dimension when training in gpytorch
                 update_y = model_train_y.squeeze()[-self.update_train_size:]
+                if self.reinit_hyperparams:
+                    self.model.likelihood = GaussianLikelihood().to(
+                        self.device)
+                    base_kernel = gpytorch.kernels.MaternKernel(
+                        2.5, ard_num_dims=None)
+
+                    covar_module = gpytorch.kernels.ScaleKernel(base_kernel)
+                    self.model.covar_module = covar_module
+                if self.reinit_mean:
+                    self.model.mean_module = gpytorch.means.ConstantMean()
             else:
                 update_x = train_x
                 update_y = model_train_y.squeeze()
+
+            # need this for RAASP sampling
             self.model.train_inputs = tuple(
                 tri.unsqueeze(-1) if tri.ndimension() == 1 else tri
                 for tri in (update_x, ))
+            if self.turn_on_outcome_transform:
+                outcome_transform = Standardize(
+                    m=1, batch_shape=self.model.train_inputs.shape[:-2])
+                outcome_transform.train()
+                train_targets, train_Yvar = outcome_transform(
+                    Y=update_y.unsqueeze(1),
+                    Yvar=None,
+                    X=self.model.train_inputs)
+                self.outcome_transform = outcome_transform
+            else:
+                train_targets = update_y
 
             mll = VariationalELBO(self.model.likelihood,
                                   self.model,
                                   num_data=update_x.size(0))
 
-            train_loader = self.generate_dataloaders(train_x=update_x,
-                                                     train_y=update_y)
+            train_loader = self.generate_dataloaders(
+                train_x=update_x, train_y=train_targets.squeeze())
 
             final_loss, epochs_trained = self.train_model(train_loader, mll)
             self.model.eval()

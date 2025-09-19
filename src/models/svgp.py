@@ -20,7 +20,8 @@ class SVGPModel(ApproximateGP):
                  learn_inducing_locations=True,
                  kernel_type: str = 'matern_5_2',
                  kernel_likelihood_prior: str = None,
-                 use_ard_kernel: bool = False):
+                 use_ard_kernel: bool = False,
+                 standardize_outputs: bool = False):
 
         if use_ard_kernel:
             ard_num_dims = inducing_points.shape[-1]
@@ -66,6 +67,7 @@ class SVGPModel(ApproximateGP):
         # need these attributes for BoTorch to work
         self._has_transformed_inputs = False  # need this for RAASP sampling
         self.num_outputs = 1
+        self.outcome_transform = None
 
     def forward(self, x):
         mean_x = self.mean_module(x)
@@ -80,5 +82,9 @@ class SVGPModel(ApproximateGP):
                   **kwargs) -> GPyTorchPosterior:
         self.eval()
         dist = self(X)
+        posterior = GPyTorchPosterior(dist)
+        if self.outcome_transform:
+            posterior = self.outcome_transform.untransform_posterior(posterior,
+                                                                     X=X)
 
-        return GPyTorchPosterior(dist)
+        return posterior
