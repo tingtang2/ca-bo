@@ -1,13 +1,14 @@
 import copy
 import logging
 
+import gpytorch
 import torch
+from botorch.models.transforms.outcome import Standardize
 from gpytorch.likelihoods import GaussianLikelihood
 from gpytorch.mlls import ExactMarginalLogLikelihood, VariationalELBO
 from torch.autograd import Variable
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import trange
-from botorch.models.transforms.outcome import Standardize
 
 from models.svgp import SVGPModel
 from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
@@ -18,8 +19,6 @@ from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
 from trainers.utils.expected_log_utility import get_expected_log_utility_ei
 from trainers.utils.moss_et_al_inducing_pts_init import \
     GreedyImprovementReduction
-
-import gpytorch
 
 
 class SVGPRetrainTrainer(BaseTrainer):
