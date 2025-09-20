@@ -66,7 +66,9 @@ class SGPR(ExactGP):
         # need these attributes for BoTorch to work
         self._has_transformed_inputs = False  # need this for RAASP sampling
         self.num_outputs = 1
-        self.outcome_transform = None
+
+        if standardize_outputs:
+            self.outcome_transform = outcome_transform
 
     def forward(self, x):
         mean_x = self.mean_module(x)
