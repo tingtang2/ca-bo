@@ -12,15 +12,23 @@ from torch.optim import LBFGS, Adam, AdamW
 from functions.LBFGS import FullBatchLBFGS
 from set_seed import set_seed
 from trainers.base_trainer import BaseTrainer
-from trainers.ca_gp_trainer import (
-    FexoLogEICaGPSlidingWindowTrainer, HartmannEICaGPEULBOTrainer,
-    HartmannEICaGPTrainer, HartmannLogEICaGPTrainer,
-    LassoDNALogEICaGPSlidingWindowTrainer, LassoDNALogEICaGPTrainer,
-    LunarEICaGPEULBOTrainer, LunarEICaGPTrainer, LunarLogEICaGPEULBOTrainer,
-    LunarLogEICaGPTrainer, Med1LogEICaGPSlidingWindowTrainer,
-    Med2LogEICaGPSlidingWindowTrainer, OsmbLogEICaGPSlidingWindowTrainer,
-    OsmbLogEICaGPTrainer, RoverEICaGPEULBOTrainer,
-    RoverEICaGPSlidingWindowTrainer, RoverEICaGPTrainer)
+from trainers.ca_gp_trainer import (FexoLogEICaGPSlidingWindowTrainer,
+                                    HartmannEICaGPEULBOTrainer,
+                                    HartmannEICaGPTrainer,
+                                    HartmannLogEICaGPTrainer,
+                                    LassoDNALogEICaGPSlidingWindowTrainer,
+                                    LassoDNALogEICaGPTrainer,
+                                    LunarEICaGPEULBOTrainer,
+                                    LunarEICaGPTrainer,
+                                    LunarLogEICaGPEULBOTrainer,
+                                    LunarLogEICaGPTrainer,
+                                    Med1LogEICaGPSlidingWindowTrainer,
+                                    Med2LogEICaGPSlidingWindowTrainer,
+                                    OsmbLogEICaGPSlidingWindowTrainer,
+                                    OsmbLogEICaGPTrainer,
+                                    RoverEICaGPEULBOTrainer,
+                                    RoverEICaGPSlidingWindowTrainer,
+                                    RoverEICaGPTrainer)
 from trainers.exact_gp_trainer import (
     FexoLogEIExactGPSlidingWindowTrainer, FexoLogEIExactGPTrainer,
     FexoLogEIGPyTorchExactGPSlidingWindowTrainer, HartmannEIExactGPTrainer,
@@ -30,12 +38,15 @@ from trainers.exact_gp_trainer import (
     Med2LogEIExactGPTrainer, OsmbLogEIExactGPSlidingWindowTrainer,
     OsmbLogEIExactGPTrainer, RoverEIExactGPSlidingWindowTrainer,
     RoverEIExactGPTrainer)
-from trainers.svgp_trainer import (
-    FexoLogEISVGPTrainer, HartmannEISVGPEULBOTrainer,
-    HartmannEISVGPRetrainTrainer, HartmannEISVGPTrainer,
-    LassoDNALogEISVGPTrainer, LunarEISVGPEULBOTrainer, LunarEISVGPTrainer,
-    Med1LogEISVGPTrainer, Med2LogEISVGPTrainer, OsmbLogEISVGPTrainer,
-    RoverEISVGPEULBOTrainer, RoverEISVGPTrainer)
+from trainers.svgp_trainer import (FexoLogEISVGPTrainer,
+                                   HartmannEISVGPEULBOTrainer,
+                                   HartmannEISVGPRetrainTrainer,
+                                   HartmannEISVGPTrainer,
+                                   LassoDNALogEISVGPTrainer,
+                                   LunarEISVGPEULBOTrainer, LunarEISVGPTrainer,
+                                   Med1LogEISVGPTrainer, Med2LogEISVGPTrainer,
+                                   OsmbLogEISVGPTrainer,
+                                   RoverEISVGPEULBOTrainer, RoverEISVGPTrainer)
 
 arg_trainer_map = {
     'hartmann_ei_exact_gp': HartmannEIExactGPTrainer,
