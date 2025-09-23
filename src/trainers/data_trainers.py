@@ -111,6 +111,11 @@ class GuacamolTrainer(BaseTrainer):
         init_train_y = init_train_y.unsqueeze(-1)
         self.task.num_calls = self.num_initial_points
 
+        if self.turn_on_input_transform:
+            init_train_x = init_train_x / self.task.ub
+            self.task.ub = 1
+            self.task.lb = -1
+
         return init_train_x.to(self.device), init_train_y.to(self.device)
 
     def reinitialize_task(self):

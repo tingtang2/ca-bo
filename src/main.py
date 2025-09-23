@@ -210,6 +210,10 @@ def main() -> int:
         '--turn_on_outcome_transform',
         action='store_true',
         help='turn on standardize outcome transform for non exact GPs')
+    parser.add_argument(
+        '--turn_on_input_transform',
+        action='store_true',
+        help='turn on normalize transform for non exact GPs')
     parser.add_argument('--ca_gp_init_mode',
                         default='random',
                         help='init mode for ca gp')
