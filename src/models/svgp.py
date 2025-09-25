@@ -21,7 +21,10 @@ class SVGPModel(ApproximateGP):
                  kernel_type: str = 'matern_5_2',
                  kernel_likelihood_prior: str = None,
                  use_ard_kernel: bool = False,
-                 standardize_outputs: bool = False):
+                 standardize_outputs: bool = False,
+                 add_likelihood: bool = False):
+
+        self.add_likelihood = add_likelihood
 
         if use_ard_kernel:
             ard_num_dims = inducing_points.shape[-1]
@@ -81,8 +84,10 @@ class SVGPModel(ApproximateGP):
                   *args,
                   **kwargs) -> GPyTorchPosterior:
         self.eval()
-        # dist = self.likelihood(self(X))
-        dist = self(X)
+        if self.add_likelihood:
+            dist = self.likelihood(self(X))
+        else:
+            dist = self(X)
         posterior = GPyTorchPosterior(dist)
         if self.outcome_transform:
             posterior = self.outcome_transform.untransform_posterior(posterior,

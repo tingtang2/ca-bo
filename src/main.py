@@ -12,23 +12,15 @@ from torch.optim import LBFGS, Adam, AdamW
 from functions.LBFGS import FullBatchLBFGS
 from set_seed import set_seed
 from trainers.base_trainer import BaseTrainer
-from trainers.ca_gp_trainer import (FexoLogEICaGPSlidingWindowTrainer,
-                                    HartmannEICaGPEULBOTrainer,
-                                    HartmannEICaGPTrainer,
-                                    HartmannLogEICaGPTrainer,
-                                    LassoDNALogEICaGPSlidingWindowTrainer,
-                                    LassoDNALogEICaGPTrainer,
-                                    LunarEICaGPEULBOTrainer,
-                                    LunarEICaGPTrainer,
-                                    LunarLogEICaGPEULBOTrainer,
-                                    LunarLogEICaGPTrainer,
-                                    Med1LogEICaGPSlidingWindowTrainer,
-                                    Med2LogEICaGPSlidingWindowTrainer,
-                                    OsmbLogEICaGPSlidingWindowTrainer,
-                                    OsmbLogEICaGPTrainer,
-                                    RoverEICaGPEULBOTrainer,
-                                    RoverEICaGPSlidingWindowTrainer,
-                                    RoverEICaGPTrainer)
+from trainers.ca_gp_trainer import (
+    FexoLogEICaGPSlidingWindowTrainer, HartmannEICaGPEULBOTrainer,
+    HartmannEICaGPTrainer, HartmannLogEICaGPTrainer,
+    LassoDNALogEICaGPSlidingWindowTrainer, LassoDNALogEICaGPTrainer,
+    LunarEICaGPEULBOTrainer, LunarEICaGPTrainer, LunarLogEICaGPEULBOTrainer,
+    LunarLogEICaGPTrainer, Med1LogEICaGPSlidingWindowTrainer,
+    Med2LogEICaGPSlidingWindowTrainer, OsmbLogEICaGPSlidingWindowTrainer,
+    OsmbLogEICaGPTrainer, RoverEICaGPEULBOTrainer,
+    RoverEICaGPSlidingWindowTrainer, RoverEICaGPTrainer)
 from trainers.exact_gp_trainer import (
     FexoLogEIExactGPSlidingWindowTrainer, FexoLogEIExactGPTrainer,
     FexoLogEIGPyTorchExactGPSlidingWindowTrainer, HartmannEIExactGPTrainer,
@@ -38,15 +30,12 @@ from trainers.exact_gp_trainer import (
     Med2LogEIExactGPTrainer, OsmbLogEIExactGPSlidingWindowTrainer,
     OsmbLogEIExactGPTrainer, RoverEIExactGPSlidingWindowTrainer,
     RoverEIExactGPTrainer)
-from trainers.svgp_trainer import (FexoLogEISVGPTrainer,
-                                   HartmannEISVGPEULBOTrainer,
-                                   HartmannEISVGPRetrainTrainer,
-                                   HartmannEISVGPTrainer,
-                                   LassoDNALogEISVGPTrainer,
-                                   LunarEISVGPEULBOTrainer, LunarEISVGPTrainer,
-                                   Med1LogEISVGPTrainer, Med2LogEISVGPTrainer,
-                                   OsmbLogEISVGPTrainer,
-                                   RoverEISVGPEULBOTrainer, RoverEISVGPTrainer)
+from trainers.svgp_trainer import (
+    FexoLogEISVGPTrainer, HartmannEISVGPEULBOTrainer,
+    HartmannEISVGPRetrainTrainer, HartmannEISVGPTrainer,
+    LassoDNALogEISVGPTrainer, LunarEISVGPEULBOTrainer, LunarEISVGPTrainer,
+    Med1LogEISVGPTrainer, Med2LogEISVGPTrainer, OsmbLogEISVGPTrainer,
+    RoverEISVGPEULBOTrainer, RoverEISVGPTrainer)
 
 arg_trainer_map = {
     'hartmann_ei_exact_gp': HartmannEIExactGPTrainer,
@@ -210,10 +199,9 @@ def main() -> int:
         '--turn_on_outcome_transform',
         action='store_true',
         help='turn on standardize outcome transform for non exact GPs')
-    parser.add_argument(
-        '--turn_on_input_transform',
-        action='store_true',
-        help='turn on normalize transform for non exact GPs')
+    parser.add_argument('--turn_on_input_transform',
+                        action='store_true',
+                        help='turn on normalize transform for non exact GPs')
     parser.add_argument('--ca_gp_init_mode',
                         default='random',
                         help='init mode for ca gp')
@@ -247,6 +235,9 @@ def main() -> int:
     parser.add_argument('--turn_off_wandb',
                         action='store_true',
                         help='skip wandb logging')
+    parser.add_argument('--add_likelihood_to_posterior',
+                        action='store_true',
+                        help='add likelihood to posterior for EI')
     parser.add_argument('--notes', default='', help='note on experiment run')
     parser.add_argument('--use_analytic_acq_func',
                         action='store_true',
