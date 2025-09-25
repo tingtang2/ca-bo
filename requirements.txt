@@ -1,5 +1,6 @@
 pykeops
-botorch>=0.13.0
+# botorch>=0.13.0
+git+https://github.com/tingtang2/botorch.git
 wandb
 multiprocess
 gym
@@ -12,5 +13,6 @@ guacamol
 scipy==1.10
 lightning
 git+https://github.com/ksehic/LassoBench.git
+# git+https://github.com/rfeinman/pytorch-minimize.git
 # git+https://github.com/cornellius-gp/linear_operator.git@sparsity # have to do these at the end customly due to dependency conflicts
 # git+https://github.com/tingtang2/gpytorch.git@computation-aware-gps-v2

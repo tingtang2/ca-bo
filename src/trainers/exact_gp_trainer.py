@@ -104,7 +104,7 @@ class ExactGPTrainer(BaseTrainer):
             # get train rmse
             train_rmse = self.eval(train_x, model_train_y)
             train_nll = self.compute_nll(train_x, model_train_y.squeeze(), mll)
-            x_next, x_af_val = self.data_acquisition_iteration(
+            x_next, x_af_val, origin = self.data_acquisition_iteration(
                 self.model, model_train_y, train_x)
 
             # Evaluate candidates
@@ -127,7 +127,8 @@ class ExactGPTrainer(BaseTrainer):
                                    train_nll=train_nll,
                                    x_af_val=x_af_val.item(),
                                    x_next_sigma=x_next_sigma.item(),
-                                   standardized_gain=standardized_gain.item())
+                                   standardized_gain=standardized_gain.item(),
+                                   candidate_origin=origin)
 
             reward.append(train_y.max().item())
 
@@ -390,7 +391,7 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
             # get train rmse
             train_rmse = self.eval(train_x, model_train_y)
             train_nll = self.compute_nll(train_x, model_train_y.squeeze(), mll)
-            x_next, x_af_val = self.data_acquisition_iteration(
+            x_next, x_af_val, origin = self.data_acquisition_iteration(
                 self.model, model_train_y, train_x)
 
             # Evaluate candidates
@@ -415,7 +416,8 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
                                    train_nll=train_nll,
                                    x_af_val=x_af_val.item(),
                                    x_next_sigma=x_next_sigma.item(),
-                                   standardized_gain=standardized_gain.item())
+                                   standardized_gain=standardized_gain.item(),
+                                   candidate_origin=origin)
 
             reward.append(train_y.max().item())
             if self.debug and i == 199:

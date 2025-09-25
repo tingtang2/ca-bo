@@ -114,7 +114,7 @@ class SGPRTrainer(BaseTrainer):
                     train_loader, mll)
             self.model.eval()
 
-            x_next, x_af_val = self.data_acquisition_iteration(
+            x_next, x_af_val, origin = self.data_acquisition_iteration(
                 self.model, model_train_y, train_x)
 
             cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x,
@@ -141,7 +141,8 @@ class SGPRTrainer(BaseTrainer):
                                    epochs_trained=epochs_trained,
                                    x_af_val=x_af_val.item(),
                                    x_next_sigma=x_next_sigma.item(),
-                                   standardized_gain=standardized_gain.item())
+                                   standardized_gain=standardized_gain.item(),
+                                   candidate_origin=origin)
 
             reward.append(train_y.max().item())
 

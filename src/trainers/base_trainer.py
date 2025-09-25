@@ -144,7 +144,8 @@ class BaseTrainer(ABC):
                           action_norm: float = -1.0,
                           x_af_val: float = -1.0,
                           x_next_sigma: float = -1.0,
-                          standardized_gain: float = -1.0):
+                          standardized_gain: float = -1.0,
+                          candidate_origin: int = -1):
 
         passed_model = self.model
 
@@ -188,7 +189,9 @@ class BaseTrainer(ABC):
                 'x_next_sigma':
                 x_next_sigma,
                 'standardized_gain':
-                standardized_gain
+                standardized_gain,
+                'candidate_origin':
+                candidate_origin
             }
         elif 'svgp' in self.trainer_type and self.log_diagnostics:
             log_dict = {
@@ -224,7 +227,9 @@ class BaseTrainer(ABC):
                 'x_next_sigma':
                 x_next_sigma,
                 'standardized_gain':
-                standardized_gain
+                standardized_gain,
+                'candidate_origin':
+                candidate_origin
             }
         elif 'ca_gp' in self.trainer_type and self.log_diagnostics:
             log_dict = {
@@ -260,7 +265,9 @@ class BaseTrainer(ABC):
                 'x_next_sigma':
                 x_next_sigma,
                 'standardized_gain':
-                standardized_gain
+                standardized_gain,
+                'candidate_origin':
+                candidate_origin
             }
         else:
             log_dict = {
@@ -294,7 +301,9 @@ class BaseTrainer(ABC):
                 'x_next_sigma':
                 x_next_sigma,
                 'standardized_gain':
-                standardized_gain
+                standardized_gain,
+                'candidate_origin':
+                candidate_origin
             }
 
         if not self.turn_off_wandb:

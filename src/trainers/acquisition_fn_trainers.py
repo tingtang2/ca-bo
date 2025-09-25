@@ -36,14 +36,14 @@ class EITrainer(BaseTrainer):
         else:
             options = None
 
-        X_next, acq_val = optimize_acqf(ei,
-                                        bounds=torch.stack([lb, ub
-                                                            ]).to(self.device),
-                                        q=self.batch_size,
-                                        num_restarts=num_restarts,
-                                        raw_samples=raw_samples,
-                                        options=options)
-        return X_next.detach(), acq_val.detach()
+        X_next, acq_val, origin = optimize_acqf(ei,
+                                                bounds=torch.stack(
+                                                    [lb, ub]).to(self.device),
+                                                q=self.batch_size,
+                                                num_restarts=num_restarts,
+                                                raw_samples=raw_samples,
+                                                options=options)
+        return X_next.detach(), acq_val.detach(), origin
 
 
 class LogEITrainer(BaseTrainer):
@@ -70,14 +70,14 @@ class LogEITrainer(BaseTrainer):
         else:
             options = None
 
-        X_next, acq_val = optimize_acqf(ei,
-                                        bounds=torch.stack([lb, ub]).to(
-                                            self.device, self.data_type),
-                                        q=self.batch_size,
-                                        num_restarts=num_restarts,
-                                        raw_samples=raw_samples,
-                                        options=options)
-        return X_next.detach(), acq_val.detach()
+        X_next, acq_val, origin = optimize_acqf(
+            ei,
+            bounds=torch.stack([lb, ub]).to(self.device, self.data_type),
+            q=self.batch_size,
+            num_restarts=num_restarts,
+            raw_samples=raw_samples,
+            options=options)
+        return X_next.detach(), acq_val.detach(), origin
 
 
 class CustomEITrainer(BaseTrainer):
