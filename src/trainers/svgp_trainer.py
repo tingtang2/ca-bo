@@ -1,16 +1,11 @@
 import copy
 import logging
 
-import gpytorch
 import torch
-from botorch.models.transforms.outcome import Standardize
-from gpytorch.likelihoods import GaussianLikelihood
-from gpytorch.mlls import ExactMarginalLogLikelihood, VariationalELBO
+from models.svgp import SVGPModel
 from torch.autograd import Variable
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import trange
-
-from models.svgp import SVGPModel
 from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
 from trainers.base_trainer import BaseTrainer
 from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
@@ -19,6 +14,11 @@ from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
 from trainers.utils.expected_log_utility import get_expected_log_utility_ei
 from trainers.utils.moss_et_al_inducing_pts_init import \
     GreedyImprovementReduction
+
+import gpytorch
+from botorch.models.transforms.outcome import Standardize
+from gpytorch.likelihoods import GaussianLikelihood
+from gpytorch.mlls import ExactMarginalLogLikelihood, VariationalELBO
 
 
 class SVGPRetrainTrainer(BaseTrainer):
@@ -170,7 +170,10 @@ class SVGPTrainer(BaseTrainer):
         print(f'initial y max: {train_y.max().item()}')
         logging.info(f'initial y max: {train_y.max().item()}')
         if not self.turn_off_wandb:
-            self.tracker.log({'initial y max': train_y.max().item()})
+            self.tracker.log({
+                'initial y max': train_y.max().item(),
+                'best reward': train_y.max().item()
+            })
 
         # get inducing points
         inducing_points = train_x[:self.num_inducing_points]

@@ -1,7 +1,16 @@
 import logging
 
-import gpytorch
 import torch
+from models.exact_gp import ExactGPModel
+from torch.utils.data import DataLoader, TensorDataset
+from tqdm import trange
+from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
+from trainers.base_trainer import BaseTrainer
+from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
+                                    LassoDNATrainer, LunarTrainer,
+                                    RoverTrainer)
+
+import gpytorch
 from botorch.fit import fit_gpytorch_mll
 from botorch.models import SingleTaskGP
 from botorch.models.utils.gpytorch_modules import (
@@ -10,15 +19,6 @@ from botorch.models.utils.gpytorch_modules import (
     get_gaussian_likelihood_with_lognormal_prior,
     get_matern_kernel_with_gamma_prior)
 from gpytorch.mlls import ExactMarginalLogLikelihood
-from torch.utils.data import DataLoader, TensorDataset
-from tqdm import trange
-
-from models.exact_gp import ExactGPModel
-from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
-from trainers.base_trainer import BaseTrainer
-from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
-                                    LassoDNATrainer, LunarTrainer,
-                                    RoverTrainer)
 
 
 class ExactGPTrainer(BaseTrainer):
@@ -45,7 +45,10 @@ class ExactGPTrainer(BaseTrainer):
         print(f'initial y max: {train_y.max().item()}')
         logging.info(f'initial y max: {train_y.max().item()}')
         if not self.turn_off_wandb:
-            self.tracker.log({'initial y max': train_y.max().item()})
+            self.tracker.log({
+                'initial y max': train_y.max().item(),
+                'best reward': train_y.max().item()
+            })
 
         reward = []
 
@@ -320,7 +323,10 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
         print(f'initial y max: {train_y.max().item()}')
         logging.info(f'initial y max: {train_y.max().item()}')
         if not self.turn_off_wandb:
-            self.tracker.log({'initial y max': train_y.max().item()})
+            self.tracker.log({
+                'initial y max': train_y.max().item(),
+                'best reward': train_y.max().item()
+            })
 
         reward = []
 
