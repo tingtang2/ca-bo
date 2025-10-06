@@ -1,11 +1,16 @@
-from trainers.base_trainer import BaseTrainer
-from models.sgpr import SGPR
 import logging
-from tqdm import trange
+
 import torch
-import gpytorch
-from botorch.models.transforms.outcome import Standardize
+from models.sgpr import SGPR
 from torch.utils.data import DataLoader, TensorDataset
+from tqdm import trange
+from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
+from trainers.base_trainer import BaseTrainer
+from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
+                                    LassoDNATrainer, LunarTrainer,
+                                    RoverTrainer)
+
+import gpytorch
 from botorch.fit import fit_gpytorch_mll
 
 
@@ -30,13 +35,18 @@ class SGPRTrainer(BaseTrainer):
         print(f'initial y max: {train_y.max().item()}')
         logging.info(f'initial y max: {train_y.max().item()}')
         if not self.turn_off_wandb:
-            self.tracker.log({'initial y max': train_y.max().item()})
+            self.tracker.log({
+                'initial y max': train_y.max().item(),
+                'best reward': train_y.max().item()
+            })
 
         # get inducing points
         inducing_points = train_x[:self.num_inducing_points]
 
         # init model
         self.model = SGPR(
+            train_x=train_x,
+            train_y=train_y,
             inducing_points=inducing_points,
             likelihood=gpytorch.likelihoods.GaussianLikelihood().to(
                 self.device),
@@ -154,3 +164,15 @@ class SGPRTrainer(BaseTrainer):
             shuffle=True,
             generator=torch.Generator(device=self.device))
         return train_loader
+
+
+class OsmbLogEISGPRTrainer(SGPRTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='osmb', **kwargs)
+
+
+class FexoLogEISGPRTrainer(SGPRTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='fexo', **kwargs)

@@ -1,15 +1,15 @@
-from gpytorch.means import ConstantMean
-from gpytorch.kernels import InducingPointKernel
-from gpytorch.distributions import MultivariateNormal
-from gpytorch.models import ExactGP
 import gpytorch
+from botorch.models.transforms.outcome import Standardize
 from botorch.models.utils.gpytorch_modules import (
     get_covar_module_with_dim_scaled_prior,
     get_gaussian_likelihood_with_gamma_prior,
     get_gaussian_likelihood_with_lognormal_prior,
     get_matern_kernel_with_gamma_prior)
 from botorch.posteriors.gpytorch import GPyTorchPosterior
-from botorch.models.transforms.outcome import Standardize
+from gpytorch.distributions import MultivariateNormal
+from gpytorch.kernels import InducingPointKernel
+from gpytorch.means import ConstantMean
+from gpytorch.models import ExactGP
 
 
 class SGPR(ExactGP):
