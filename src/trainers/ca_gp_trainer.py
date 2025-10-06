@@ -2,23 +2,23 @@ import copy
 import logging
 import math
 
-import gpytorch
 import torch
-from botorch.fit import fit_gpytorch_mll
-from gpytorch.likelihoods import GaussianLikelihood
-from gpytorch.mlls import ComputationAwareELBO, ExactMarginalLogLikelihood
-from linear_operator import operators
-from torch.utils.data import DataLoader, TensorDataset
-from tqdm import trange
-
 from functions.LBFGS import FullBatchLBFGS
 from models.ca_gp import CaGP
+from torch.utils.data import DataLoader, TensorDataset
+from tqdm import trange
 from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
 from trainers.base_trainer import BaseTrainer
 from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
                                     LassoDNATrainer, LunarTrainer,
                                     RoverTrainer)
 from trainers.svgp_trainer import SVGPEULBOTrainer
+
+import gpytorch
+from botorch.fit import fit_gpytorch_mll
+from gpytorch.likelihoods import GaussianLikelihood
+from gpytorch.mlls import ComputationAwareELBO, ExactMarginalLogLikelihood
+from linear_operator import operators
 
 
 class CaGPTrainer(BaseTrainer):

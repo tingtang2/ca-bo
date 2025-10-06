@@ -6,15 +6,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Union
 
-import gpytorch
 import matplotlib.pyplot as plt
 import torch
-from gpytorch.metrics import mean_squared_error
+from functions.LBFGS import FullBatchLBFGS
+from tasks.task import Task
 from torch.nn.functional import cosine_similarity
 from torch.utils.data import DataLoader
 
-from functions.LBFGS import FullBatchLBFGS
-from tasks.task import Task
+import gpytorch
+from gpytorch.metrics import mean_squared_error
 
 
 class BaseTrainer(ABC):
@@ -108,7 +108,10 @@ class BaseTrainer(ABC):
         self.model.eval()
 
         # get inducing points
-        ips = self.model.variational_strategy.inducing_points
+        if 'svgp' in self.name:
+            ips = self.model.variational_strategy.inducing_points
+        else:
+            ips = self.model.covar_module.inducing_points
 
         # get K(Z, Z)
         covar_ips_lazy = self.model.covar_module(ips, ips)
@@ -154,6 +157,15 @@ class BaseTrainer(ABC):
             raw_lengthscale = passed_model.covar_module.raw_lengthscale
             constraint = passed_model.covar_module.raw_lengthscale_constraint
             lengthscale = constraint.transform(raw_lengthscale)
+        elif 'sgpr' in self.name:
+            raw_outputscale = passed_model.covar_module.base_kernel.raw_outputscale
+            constraint = passed_model.covar_module.base_kernel.raw_outputscale_constraint
+            outputscale = constraint.transform(raw_outputscale)
+
+            raw_lengthscale = passed_model.covar_module.base_kernel.base_kernel.raw_lengthscale
+            constraint = passed_model.covar_module.base_kernel.base_kernel.raw_lengthscale_constraint
+            lengthscale = constraint.transform(raw_lengthscale)
+
         else:
             raw_outputscale = passed_model.covar_module.raw_outputscale
             constraint = passed_model.covar_module.raw_outputscale_constraint
@@ -193,7 +205,8 @@ class BaseTrainer(ABC):
                 'candidate_origin':
                 candidate_origin
             }
-        elif 'svgp' in self.trainer_type and self.log_diagnostics:
+        elif ('svgp' in self.trainer_type
+              or 'sgpr' in self.trainer_type) and self.log_diagnostics:
             log_dict = {
                 'Num oracle calls':
                 self.task.num_calls - 1,

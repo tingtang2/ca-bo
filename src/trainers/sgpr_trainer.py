@@ -1,6 +1,7 @@
 import logging
 
 import torch
+from functions.LBFGS import FullBatchLBFGS
 from models.sgpr import SGPR
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import trange
@@ -12,6 +13,7 @@ from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
 
 import gpytorch
 from botorch.fit import fit_gpytorch_mll
+from gpytorch.kernels import InducingPointKernel
 
 
 class SGPRTrainer(BaseTrainer):
@@ -43,16 +45,24 @@ class SGPRTrainer(BaseTrainer):
         # get inducing points
         inducing_points = train_x[:self.num_inducing_points]
 
+        if self.norm_data:
+            # get normalized train y
+            model_train_y = (train_y - self.train_y_mean) / self.train_y_std
+        else:
+            model_train_y = train_y
+
         # init model
         self.model = SGPR(
             train_x=train_x,
-            train_y=train_y,
+            train_y=model_train_y.squeeze(),
             inducing_points=inducing_points,
             likelihood=gpytorch.likelihoods.GaussianLikelihood().to(
                 self.device),
             kernel_type=self.kernel_type,
             kernel_likelihood_prior=self.kernel_likelihood_prior,
-            use_ard_kernel=self.use_ard_kernel).to(self.device, self.data_type)
+            use_ard_kernel=self.use_ard_kernel,
+            standardize_outputs=self.turn_on_outcome_transform).to(
+                self.device, self.data_type)
 
         # set custom LR on IP and variational parameters
         variational_params_and_ip = [
@@ -64,14 +74,26 @@ class SGPRTrainer(BaseTrainer):
             if 'variational' not in name
         ]
 
-        self.optimizer = self.optimizer_type(
-            [{
-                'params': others
-            }, {
-                'params': variational_params_and_ip,
-                'lr': self.svgp_inducing_point_learning_rate
-            }],
-            lr=self.learning_rate)
+        if self.optimizer_type == torch.optim.Adam:
+            self.optimizer = self.optimizer_type(
+                [{
+                    'params': others
+                }, {
+                    'params': variational_params_and_ip,
+                    'lr': self.svgp_inducing_point_learning_rate
+                }],
+                lr=self.learning_rate)
+        elif self.optimizer_type == torch.optim.LBFGS:
+            self.optimizer = self.optimizer_type(self.model.parameters(),
+                                                 lr=self.learning_rate,
+                                                 line_search_fn='strong_wolfe')
+        elif self.optimizer_type == FullBatchLBFGS:
+            self.optimizer = self.optimizer_type(self.model.parameters(),
+                                                 lr=self.learning_rate,
+                                                 dtype=self.data_type)
+        else:
+            # botorch lbfgs case
+            pass
 
         reward = []
         for i in trange(self.max_oracle_calls - self.num_initial_points):
@@ -87,6 +109,14 @@ class SGPRTrainer(BaseTrainer):
                 update_x = train_x[-self.update_train_size:]
                 # y needs to only have 1 dimension when training in gpytorch
                 update_y = model_train_y.squeeze()[-self.update_train_size:]
+                if self.turn_on_outcome_transform:
+                    # need to restandardize the outcomes here
+                    self.model.outcome_transform.train()
+                    train_targets, train_Yvar = self.model.outcome_transform(
+                        Y=update_y.unsqueeze(1),
+                        Yvar=None,
+                        X=self.model.train_inputs[0])
+                    self.model.train_targets = train_targets.squeeze()
                 if self.reinit_hyperparams:
                     self.model.likelihood = gpytorch.likelihoods.GaussianLikelihood(
                     ).to(self.device)
@@ -94,7 +124,10 @@ class SGPRTrainer(BaseTrainer):
                         2.5, ard_num_dims=None)
 
                     covar_module = gpytorch.kernels.ScaleKernel(base_kernel)
-                    self.model.covar_module = covar_module
+                    self.model.covar_module = InducingPointKernel(
+                        covar_module,
+                        inducing_points=inducing_points,
+                        likelihood=self.model.likelihood)
                 if self.reinit_mean:
                     self.model.mean_module = gpytorch.means.ConstantMean()
             else:
@@ -115,10 +148,14 @@ class SGPRTrainer(BaseTrainer):
                 epochs_trained = -1
                 final_loss = -1
             else:
-                train_loader = self.generate_dataloaders(
-                    train_x=update_x,
-                    train_y=self.model.outcome_transform(
-                        update_y.unsqueeze(1))[0].squeeze())
+                if self.turn_on_outcome_transform:
+                    train_loader = self.generate_dataloaders(
+                        train_x=update_x,
+                        train_y=self.model.outcome_transform(
+                            update_y.unsqueeze(1))[0].squeeze())
+                else:
+                    train_loader = self.generate_dataloaders(train_x=update_x,
+                                                             train_y=update_y)
 
                 final_loss, epochs_trained = self.train_model(
                     train_loader, mll)
@@ -158,11 +195,9 @@ class SGPRTrainer(BaseTrainer):
 
     def generate_dataloaders(self, train_x, train_y):
         train_dataset = TensorDataset(train_x, train_y)
-        train_loader = DataLoader(
-            train_dataset,
-            batch_size=32,
-            shuffle=True,
-            generator=torch.Generator(device=self.device))
+        train_loader = DataLoader(train_dataset,
+                                  batch_size=train_x.shape[0],
+                                  shuffle=False)
         return train_loader
 
 
