@@ -13,7 +13,6 @@ from gpytorch.models import ExactGP
 
 
 class SGPR(ExactGP):
-
     def __init__(self,
                  train_x,
                  train_y,
@@ -22,7 +21,10 @@ class SGPR(ExactGP):
                  kernel_likelihood_prior: str = None,
                  kernel_type: str = 'matern_5_2',
                  use_ard_kernel: bool = False,
-                 standardize_outputs: bool = False):
+                 standardize_outputs: bool = False,
+                 add_likelihood: bool = False):
+
+        self.add_likelihood = add_likelihood
         if standardize_outputs:
             outcome_transform = Standardize(m=1,
                                             batch_shape=train_x.shape[:-2])
@@ -82,7 +84,10 @@ class SGPR(ExactGP):
                   *args,
                   **kwargs) -> GPyTorchPosterior:
         self.eval()
-        dist = self(X)
+        if self.add_likelihood:
+            dist = self.likelihood(self(X))
+        else:
+            dist = self(X)
         posterior = GPyTorchPosterior(dist)
         if self.outcome_transform:
             posterior = self.outcome_transform.untransform_posterior(posterior,

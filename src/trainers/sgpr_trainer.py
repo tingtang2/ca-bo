@@ -17,7 +17,6 @@ from gpytorch.kernels import InducingPointKernel
 
 
 class SGPRTrainer(BaseTrainer):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -61,7 +60,8 @@ class SGPRTrainer(BaseTrainer):
             kernel_type=self.kernel_type,
             kernel_likelihood_prior=self.kernel_likelihood_prior,
             use_ard_kernel=self.use_ard_kernel,
-            standardize_outputs=self.turn_on_outcome_transform).to(
+            standardize_outputs=self.turn_on_outcome_transform,
+            add_likelihood=self.add_likelihood_to_posterior).to(
                 self.device, self.data_type)
 
         # set custom LR on IP and variational parameters
@@ -202,12 +202,10 @@ class SGPRTrainer(BaseTrainer):
 
 
 class OsmbLogEISGPRTrainer(SGPRTrainer, GuacamolTrainer, LogEITrainer):
-
     def __init__(self, **kwargs):
         super().__init__(molecule='osmb', **kwargs)
 
 
 class FexoLogEISGPRTrainer(SGPRTrainer, GuacamolTrainer, LogEITrainer):
-
     def __init__(self, **kwargs):
         super().__init__(molecule='fexo', **kwargs)
