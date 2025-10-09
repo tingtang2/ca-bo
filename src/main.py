@@ -6,29 +6,19 @@ import sys
 from datetime import date, datetime
 
 import torch
-import wandb
-from torch.optim import LBFGS, Adam, AdamW
-
 from functions.LBFGS import FullBatchLBFGS
 from set_seed import set_seed
+from torch.optim import LBFGS, Adam, AdamW
 from trainers.base_trainer import BaseTrainer
-from trainers.ca_gp_trainer import (FexoLogEICaGPSlidingWindowTrainer,
-                                    HartmannEICaGPEULBOTrainer,
-                                    HartmannEICaGPTrainer,
-                                    HartmannLogEICaGPTrainer,
-                                    LassoDNALogEICaGPSlidingWindowTrainer,
-                                    LassoDNALogEICaGPTrainer,
-                                    LunarEICaGPEULBOTrainer,
-                                    LunarEICaGPTrainer,
-                                    LunarLogEICaGPEULBOTrainer,
-                                    LunarLogEICaGPTrainer,
-                                    Med1LogEICaGPSlidingWindowTrainer,
-                                    Med2LogEICaGPSlidingWindowTrainer,
-                                    OsmbLogEICaGPSlidingWindowTrainer,
-                                    OsmbLogEICaGPTrainer,
-                                    RoverEICaGPEULBOTrainer,
-                                    RoverEICaGPSlidingWindowTrainer,
-                                    RoverEICaGPTrainer)
+from trainers.ca_gp_trainer import (
+    FexoLogEICaGPSlidingWindowTrainer, HartmannEICaGPEULBOTrainer,
+    HartmannEICaGPTrainer, HartmannLogEICaGPTrainer,
+    LassoDNALogEICaGPSlidingWindowTrainer, LassoDNALogEICaGPTrainer,
+    LunarEICaGPEULBOTrainer, LunarEICaGPTrainer, LunarLogEICaGPEULBOTrainer,
+    LunarLogEICaGPTrainer, Med1LogEICaGPSlidingWindowTrainer,
+    Med2LogEICaGPSlidingWindowTrainer, OsmbLogEICaGPSlidingWindowTrainer,
+    OsmbLogEICaGPTrainer, RoverEICaGPEULBOTrainer,
+    RoverEICaGPSlidingWindowTrainer, RoverEICaGPTrainer)
 from trainers.exact_gp_trainer import (
     FexoLogEIExactGPSlidingWindowTrainer, FexoLogEIExactGPTrainer,
     FexoLogEIGPyTorchExactGPSlidingWindowTrainer, HartmannEIExactGPTrainer,
@@ -39,15 +29,14 @@ from trainers.exact_gp_trainer import (
     OsmbLogEIExactGPTrainer, RoverEIExactGPSlidingWindowTrainer,
     RoverEIExactGPTrainer)
 from trainers.sgpr_trainer import FexoLogEISGPRTrainer, OsmbLogEISGPRTrainer
-from trainers.svgp_trainer import (FexoLogEISVGPTrainer,
-                                   HartmannEISVGPEULBOTrainer,
-                                   HartmannEISVGPRetrainTrainer,
-                                   HartmannEISVGPTrainer,
-                                   LassoDNALogEISVGPTrainer,
-                                   LunarEISVGPEULBOTrainer, LunarEISVGPTrainer,
-                                   Med1LogEISVGPTrainer, Med2LogEISVGPTrainer,
-                                   OsmbLogEISVGPTrainer,
-                                   RoverEISVGPEULBOTrainer, RoverEISVGPTrainer)
+from trainers.svgp_trainer import (
+    FexoLogEISVGPTrainer, HartmannEISVGPEULBOTrainer,
+    HartmannEISVGPRetrainTrainer, HartmannEISVGPTrainer,
+    LassoDNALogEISVGPTrainer, LunarEISVGPEULBOTrainer, LunarEISVGPTrainer,
+    Med1LogEISVGPTrainer, Med2LogEISVGPTrainer, OsmbLogEISVGPTrainer,
+    RoverEISVGPEULBOTrainer, RoverEISVGPTrainer)
+
+import wandb
 
 arg_trainer_map = {
     'hartmann_ei_exact_gp': HartmannEIExactGPTrainer,
@@ -259,6 +248,14 @@ def main() -> int:
     parser.add_argument('--enable_raasp',
                         action='store_true',
                         help='enable RAASP sampling in AF optimization')
+    parser.add_argument('--raasp_best_pct',
+                        default=5,
+                        type=float,
+                        help='pct of best points to perturb in RAASP')
+    parser.add_argument('--raasp_sigma',
+                        default=1e-3,
+                        type=float,
+                        help='std of perturbations in RAASP')
     parser.add_argument('--early_stopping_threshold',
                         default=3,
                         type=int,

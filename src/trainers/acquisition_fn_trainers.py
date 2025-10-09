@@ -1,15 +1,15 @@
 import copy
 
 import torch
-from botorch.acquisition import qExpectedImprovement, qLogExpectedImprovement
-from botorch.acquisition.analytic import ExpectedImprovement
-from botorch.optim import optimize_acqf
-from botorch.optim.initializers import initialize_q_batch_nonneg
-
 from set_seed import set_seed
 from trainers.base_trainer import BaseTrainer
 from trainers.utils.analytic_log_ei import LogExpectedImprovement
 from trainers.utils.stochastic_sampler import StochasticSampler
+
+from botorch.acquisition import qExpectedImprovement, qLogExpectedImprovement
+from botorch.acquisition.analytic import ExpectedImprovement
+from botorch.optim import optimize_acqf
+from botorch.optim.initializers import initialize_q_batch_nonneg
 
 
 class EITrainer(BaseTrainer):
@@ -32,7 +32,11 @@ class EITrainer(BaseTrainer):
             ei = qExpectedImprovement(model, Y.max().to(self.device))
 
         if self.enable_raasp:
-            options = {'sample_around_best': True}
+            options = {
+                'sample_around_best': True,
+                'sample_around_best_pct': self.raasp_best_pct,
+                'sample_around_best_sigma': self.raasp_sigma
+            }
         else:
             options = None
 
@@ -66,7 +70,11 @@ class LogEITrainer(BaseTrainer):
             ei = qLogExpectedImprovement(model, Y.max().to(self.device))
 
         if self.enable_raasp:
-            options = {'sample_around_best': True}
+            options = {
+                'sample_around_best': True,
+                'sample_around_best_pct': self.raasp_best_pct,
+                'sample_around_best_sigma': self.raasp_sigma
+            }
         else:
             options = None
 
