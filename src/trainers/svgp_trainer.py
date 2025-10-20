@@ -22,7 +22,6 @@ from gpytorch.mlls import ExactMarginalLogLikelihood, VariationalELBO
 
 
 class SVGPRetrainTrainer(BaseTrainer):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -149,7 +148,6 @@ class SVGPRetrainTrainer(BaseTrainer):
 
 
 class SVGPTrainer(BaseTrainer):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -338,7 +336,6 @@ class HartmannEISVGPRetrainTrainer(SVGPRetrainTrainer, HartmannTrainer,
 
 
 class SVGPEULBOTrainer(SVGPTrainer):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -584,24 +581,35 @@ class LassoDNALogEISVGPTrainer(SVGPTrainer, LassoDNATrainer, LogEITrainer):
 
 
 class OsmbLogEISVGPTrainer(SVGPTrainer, GuacamolTrainer, LogEITrainer):
-
     def __init__(self, **kwargs):
         super().__init__(molecule='osmb', **kwargs)
 
 
 class FexoLogEISVGPTrainer(SVGPTrainer, GuacamolTrainer, LogEITrainer):
-
     def __init__(self, **kwargs):
         super().__init__(molecule='fexo', **kwargs)
 
 
 class Med1LogEISVGPTrainer(SVGPTrainer, GuacamolTrainer, LogEITrainer):
-
     def __init__(self, **kwargs):
         super().__init__(molecule='med1', **kwargs)
 
 
 class Med2LogEISVGPTrainer(SVGPTrainer, GuacamolTrainer, LogEITrainer):
-
     def __init__(self, **kwargs):
         super().__init__(molecule='med2', **kwargs)
+
+
+class PdopLogEISVGPTrainer(SVGPTrainer, GuacamolTrainer, LogEITrainer):
+    def __init__(self, **kwargs):
+        super().__init__(molecule='pdop', **kwargs)
+
+
+class AdipLogEISVGPTrainer(SVGPTrainer, GuacamolTrainer, LogEITrainer):
+    def __init__(self, **kwargs):
+        super().__init__(molecule='adip', **kwargs)
+
+
+class RanoLogEISVGPTrainer(SVGPTrainer, GuacamolTrainer, LogEITrainer):
+    def __init__(self, **kwargs):
+        super().__init__(molecule='rano', **kwargs)

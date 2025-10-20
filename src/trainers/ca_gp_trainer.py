@@ -22,7 +22,6 @@ from linear_operator import operators
 
 
 class CaGPTrainer(BaseTrainer):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -154,7 +153,6 @@ class CaGPTrainer(BaseTrainer):
 
 
 class CaGPEULBOTrainer(SVGPEULBOTrainer):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -312,7 +310,6 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
 
 
 class CaGPSlidingWindowTrainer(CaGPTrainer):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -687,34 +684,47 @@ class LassoDNALogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
 
 
 class OsmbLogEICaGPTrainer(CaGPTrainer, GuacamolTrainer, LogEITrainer):
-
     def __init__(self, **kwargs):
         super().__init__(molecule='osmb', **kwargs)
 
 
 class OsmbLogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
                                         GuacamolTrainer, LogEITrainer):
-
     def __init__(self, **kwargs):
         super().__init__(molecule='osmb', **kwargs)
 
 
 class FexoLogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
                                         GuacamolTrainer, LogEITrainer):
-
     def __init__(self, **kwargs):
         super().__init__(molecule='fexo', **kwargs)
 
 
 class Med1LogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
                                         GuacamolTrainer, LogEITrainer):
-
     def __init__(self, **kwargs):
         super().__init__(molecule='med1', **kwargs)
 
 
 class Med2LogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
                                         GuacamolTrainer, LogEITrainer):
-
     def __init__(self, **kwargs):
         super().__init__(molecule='med2', **kwargs)
+
+
+class PdopLogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
+                                        GuacamolTrainer, LogEITrainer):
+    def __init__(self, **kwargs):
+        super().__init__(molecule='pdop', **kwargs)
+
+
+class AdipLogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
+                                        GuacamolTrainer, LogEITrainer):
+    def __init__(self, **kwargs):
+        super().__init__(molecule='adip', **kwargs)
+
+
+class RanoLogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
+                                        GuacamolTrainer, LogEITrainer):
+    def __init__(self, **kwargs):
+        super().__init__(molecule='rano', **kwargs)
