@@ -426,17 +426,20 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
                                    candidate_origin=origin)
 
             reward.append(train_y.max().item())
-            if self.debug and i == 199:
-                torch.save(
-                    train_x,
-                    f'{self.save_dir}models/train_x_after_200_steps.pt')
-                torch.save(
-                    train_y,
-                    f'{self.save_dir}models/train_y_after_200_steps.pt')
+            # if self.debug and i == 199:
+            #     torch.save(
+            #         train_x,
+            #         f'{self.save_dir}models/train_x_after_200_steps.pt')
+            #     torch.save(
+            #         train_y,
+            #         f'{self.save_dir}models/train_y_after_200_steps.pt')
 
-        self.save_metrics(metrics=reward,
-                          iter=iteration,
-                          name=self.trainer_type)
+        # self.save_metrics(metrics=reward,
+        #                   iter=iteration,
+        #                   name=self.trainer_type)
+        if self.debug:
+            torch.save(train_x, f'{self.save_dir}models/train_x_at_end.pt')
+            torch.save(train_y, f'{self.save_dir}models/train_y_at_end.pt')
 
     # just for debugging purposes
     def generate_dataloaders(self, train_x, train_y):

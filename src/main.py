@@ -11,16 +11,16 @@ from set_seed import set_seed
 from torch.optim import LBFGS, Adam, AdamW
 from trainers.base_trainer import BaseTrainer
 from trainers.ca_gp_trainer import (
-    FexoLogEICaGPSlidingWindowTrainer, HartmannEICaGPEULBOTrainer,
-    HartmannEICaGPTrainer, HartmannLogEICaGPTrainer,
-    LassoDNALogEICaGPSlidingWindowTrainer, LassoDNALogEICaGPTrainer,
-    LunarEICaGPEULBOTrainer, LunarEICaGPTrainer, LunarLogEICaGPEULBOTrainer,
-    LunarLogEICaGPTrainer, Med1LogEICaGPSlidingWindowTrainer,
-    Med2LogEICaGPSlidingWindowTrainer, OsmbLogEICaGPSlidingWindowTrainer,
-    OsmbLogEICaGPTrainer, RoverEICaGPEULBOTrainer,
-    RoverEICaGPSlidingWindowTrainer, RoverEICaGPTrainer,
-    PdopLogEICaGPSlidingWindowTrainer, AdipLogEICaGPSlidingWindowTrainer,
-    RanoLogEICaGPSlidingWindowTrainer)
+    AdipLogEICaGPSlidingWindowTrainer, FexoLogEICaGPSlidingWindowTrainer,
+    HartmannEICaGPEULBOTrainer, HartmannEICaGPTrainer,
+    HartmannLogEICaGPTrainer, LassoDNALogEICaGPSlidingWindowTrainer,
+    LassoDNALogEICaGPTrainer, LunarEICaGPEULBOTrainer, LunarEICaGPTrainer,
+    LunarLogEICaGPEULBOTrainer, LunarLogEICaGPTrainer,
+    Med1LogEICaGPSlidingWindowTrainer, Med2LogEICaGPSlidingWindowTrainer,
+    OsmbLogEICaGPSlidingWindowTrainer, OsmbLogEICaGPTrainer,
+    PdopLogEICaGPSlidingWindowTrainer, RanoLogEICaGPSlidingWindowTrainer,
+    RoverEICaGPEULBOTrainer, RoverEICaGPSlidingWindowTrainer,
+    RoverEICaGPTrainer)
 from trainers.exact_gp_trainer import (
     FexoLogEIExactGPSlidingWindowTrainer, FexoLogEIExactGPTrainer,
     FexoLogEIGPyTorchExactGPSlidingWindowTrainer, HartmannEIExactGPTrainer,
@@ -32,12 +32,12 @@ from trainers.exact_gp_trainer import (
     RoverEIExactGPTrainer)
 from trainers.sgpr_trainer import FexoLogEISGPRTrainer, OsmbLogEISGPRTrainer
 from trainers.svgp_trainer import (
-    FexoLogEISVGPTrainer, HartmannEISVGPEULBOTrainer,
+    AdipLogEISVGPTrainer, FexoLogEISVGPTrainer, HartmannEISVGPEULBOTrainer,
     HartmannEISVGPRetrainTrainer, HartmannEISVGPTrainer,
     LassoDNALogEISVGPTrainer, LunarEISVGPEULBOTrainer, LunarEISVGPTrainer,
     Med1LogEISVGPTrainer, Med2LogEISVGPTrainer, OsmbLogEISVGPTrainer,
-    RoverEISVGPEULBOTrainer, RoverEISVGPTrainer, PdopLogEISVGPTrainer,
-    AdipLogEISVGPTrainer, RanoLogEISVGPTrainer)
+    PdopLogEISVGPTrainer, RanoLogEISVGPTrainer, RoverEISVGPEULBOTrainer,
+    RoverEISVGPTrainer)
 
 import wandb
 
@@ -207,6 +207,9 @@ def main() -> int:
         '--use_ard_kernel',
         action='store_true',
         help='fit a separate lengthscale for each input dimension')
+    parser.add_argument('--use_greedy_decoding',
+                        action='store_true',
+                        help='greedily decode from VAE for mol design tasks')
     parser.add_argument(
         '--turn_on_outcome_transform',
         action='store_true',

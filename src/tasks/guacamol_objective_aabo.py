@@ -6,23 +6,24 @@ import selfies as sf
 # import guacamol
 from guacamol import standard_benchmarks
 from rdkit import Chem
-
 from tasks.utils.selfies_vae.data import SELFIESDataset
 from tasks.utils.selfies_vae.model_positional_unbounded import \
     InfoTransformerVAE
 
-med1 = standard_benchmarks.median_camphor_menthol()    #'Median molecules 1'
-med2 = standard_benchmarks.median_tadalafil_sildenafil()    #'Median molecules 2',
-pdop = standard_benchmarks.perindopril_rings()    # 'Perindopril MPO',
-osmb = standard_benchmarks.hard_osimertinib()    # 'Osimertinib MPO',
-adip = standard_benchmarks.amlodipine_rings()    # 'Amlodipine MPO'
-siga = standard_benchmarks.sitagliptin_replacement()    #'Sitagliptin MPO'
-zale = standard_benchmarks.zaleplon_with_other_formula()    # 'Zaleplon MPO'
-valt = standard_benchmarks.valsartan_smarts()    #'Valsartan SMARTS',
-dhop = standard_benchmarks.decoration_hop()    # 'Deco Hop'
-shop = standard_benchmarks.scaffold_hop()    # Scaffold Hop'
-rano = standard_benchmarks.ranolazine_mpo()    #'Ranolazine MPO'
-fexo = standard_benchmarks.hard_fexofenadine()    # 'Fexofenadine MPO'... 'make fexofenadine less greasy'
+med1 = standard_benchmarks.median_camphor_menthol()  #'Median molecules 1'
+med2 = standard_benchmarks.median_tadalafil_sildenafil(
+)  #'Median molecules 2',
+pdop = standard_benchmarks.perindopril_rings()  # 'Perindopril MPO',
+osmb = standard_benchmarks.hard_osimertinib()  # 'Osimertinib MPO',
+adip = standard_benchmarks.amlodipine_rings()  # 'Amlodipine MPO'
+siga = standard_benchmarks.sitagliptin_replacement()  #'Sitagliptin MPO'
+zale = standard_benchmarks.zaleplon_with_other_formula()  # 'Zaleplon MPO'
+valt = standard_benchmarks.valsartan_smarts()  #'Valsartan SMARTS',
+dhop = standard_benchmarks.decoration_hop()  # 'Deco Hop'
+shop = standard_benchmarks.scaffold_hop()  # Scaffold Hop'
+rano = standard_benchmarks.ranolazine_mpo()  #'Ranolazine MPO'
+fexo = standard_benchmarks.hard_fexofenadine(
+)  # 'Fexofenadine MPO'... 'make fexofenadine less greasy'
 
 guacamol_objs = {
     "med1": med1,
@@ -56,6 +57,7 @@ class GuacamolObjective:
         ub=8,  # based on forwarding 20k guacamol molecules through vae and seeing max of zs 7.2140
         path_to_vae_statedict="src/tasks/utils/selfies_vae/selfies-vae-state-dict.pt",
         max_string_length=128,
+        use_greedy_decoding=False,
         **kwargs,
     ):
         # track total number of times the oracle has been called
@@ -69,6 +71,7 @@ class GuacamolObjective:
         self.path_to_vae_statedict = path_to_vae_statedict
         self.max_string_length = max_string_length
         self.guacamol_obj_func = guacamol_objs[guacamol_task_id].objective
+        self.use_greedy_decoding = use_greedy_decoding
         self.initialize_vae()
 
     def __call__(self, xs):
@@ -139,9 +142,14 @@ class GuacamolObjective:
         self.vae.to(device)
         # sample molecular string form VAE decoder
         with torch.no_grad():
-            sample = self.vae.sample(z=z.reshape(-1, 2, 128))
+            if self.use_greedy_decoding:
+                sample = self.vae.greedy_decode(z=z.reshape(-1, 2, 128))
+            else:
+                sample = self.vae.sample(z=z.reshape(-1, 2, 128))
         # grab decoded selfies strings
-        decoded_selfies = [self.dataobj.decode(sample[i]) for i in range(sample.size(-2))]
+        decoded_selfies = [
+            self.dataobj.decode(sample[i]) for i in range(sample.size(-2))
+        ]
         # decode selfies strings to smiles strings (SMILES is needed format for oracle)
         decoded_smiles = []
         for selfie in decoded_selfies:
