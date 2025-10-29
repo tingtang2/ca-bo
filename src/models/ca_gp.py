@@ -39,14 +39,27 @@ class CaGP(ComputationAwareGP):
             likelihood = get_gaussian_likelihood_with_lognormal_prior()
         else:
             if kernel_type == 'rbf':
-                base_kernel = gpytorch.kernels.RBFKernel(
-                    ard_num_dims=ard_num_dims)
+                if train_inputs.shape[0] > 1024:
+                    base_kernel = gpytorch.kernels.keops.RBFKernel(
+                        ard_num_dims=ard_num_dims)
+                else:
+                    base_kernel = gpytorch.kernels.RBFKernel(
+                        ard_num_dims=ard_num_dims)
             elif kernel_type == 'matern_3_2':
-                base_kernel = gpytorch.kernels.MaternKernel(
-                    1.5, ard_num_dims=ard_num_dims)
+                if train_inputs.shape[0] > 1024:
+                    base_kernel = gpytorch.kernels.keops.MaternKernel(
+                        1.5, ard_num_dims=ard_num_dims)
+                else:
+                    base_kernel = gpytorch.kernels.MaternKernel(
+                        1.5, ard_num_dims=ard_num_dims)
             else:
-                base_kernel = gpytorch.kernels.MaternKernel(
-                    2.5, ard_num_dims=ard_num_dims)
+                if train_inputs.shape[0] > 1024:
+                    base_kernel = gpytorch.kernels.keops.MaternKernel(
+                        2.5, ard_num_dims=ard_num_dims)
+                    print('here')
+                else:
+                    base_kernel = gpytorch.kernels.MaternKernel(
+                        2.5, ard_num_dims=ard_num_dims)
 
             covar_module = gpytorch.kernels.ScaleKernel(base_kernel)
 
