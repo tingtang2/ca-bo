@@ -56,7 +56,6 @@ class CaGP(ComputationAwareGP):
                 if train_inputs.shape[0] > 1024:
                     base_kernel = gpytorch.kernels.keops.MaternKernel(
                         2.5, ard_num_dims=ard_num_dims)
-                    print('here')
                 else:
                     base_kernel = gpytorch.kernels.MaternKernel(
                         2.5, ard_num_dims=ard_num_dims)
