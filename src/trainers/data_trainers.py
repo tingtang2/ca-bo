@@ -92,6 +92,7 @@ class GuacamolTrainer(BaseTrainer):
                  molecule,
                  path_to_selfies_vae_files='src/tasks/utils/selfies_vae/',
                  use_greedy_decoding=False,
+                 turn_on_input_transform=False,
                  **kwargs):
         super().__init__(**kwargs)
 
@@ -121,6 +122,7 @@ class GuacamolTrainer(BaseTrainer):
 
         if self.turn_on_input_transform:
             init_train_x = init_train_x / self.task.ub
+            self.data_original_ub = self.task.ub
             self.task.ub = 1
             self.task.lb = -1
 

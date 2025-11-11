@@ -611,7 +611,10 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
             standardized_gain = (x_next_mu - torch.max(train_y)) / x_next_sigma
 
             # Evaluate candidates
-            y_next = self.task(x_next)
+            if self.turn_on_input_transform:
+                y_next = self.task(x_next * self.data_original_ub)
+            else:
+                y_next = self.task(x_next)
 
             # Update data
             train_x = torch.cat((train_x, x_next), dim=-2)
