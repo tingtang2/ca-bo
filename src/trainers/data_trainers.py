@@ -92,7 +92,6 @@ class GuacamolTrainer(BaseTrainer):
                  molecule,
                  path_to_selfies_vae_files='src/tasks/utils/selfies_vae/',
                  use_greedy_decoding=False,
-                 turn_on_input_transform=False,
                  **kwargs):
         super().__init__(**kwargs)
 
