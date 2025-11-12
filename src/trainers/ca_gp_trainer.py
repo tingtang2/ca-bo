@@ -595,8 +595,9 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
 
             # train_rmse = self.eval(train_x, model_train_y)
             train_rmse = -1
-            train_nll = self.compute_nll(train_x, model_train_y.squeeze(),
-                                         exact_mll)
+            train_nll = -1
+            # train_nll = self.compute_nll(train_x, model_train_y.squeeze(),
+            #                              exact_mll)
 
             x_next, x_af_val, origin = self.data_acquisition_iteration(
                 self.model, model_train_y.squeeze(), train_x)
