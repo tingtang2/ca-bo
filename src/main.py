@@ -4,6 +4,7 @@ import os
 import signal
 import sys
 from datetime import date, datetime
+import botorch
 
 import torch
 from functions.LBFGS import FullBatchLBFGS
@@ -315,6 +316,9 @@ def main() -> int:
                              config=configs,
                              notes=configs['notes'])
         os.environ['WANDB_RUN_GROUP'] = 'experiment-' + configs['trainer_type']
+
+    # set botorch logging to debug
+    botorch.settings.log_level(logging.DEBUG)
 
     # for repeatability
     set_seed(configs['seed'])
