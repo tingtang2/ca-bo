@@ -13,6 +13,7 @@ from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
 import gpytorch
 from botorch.fit import fit_gpytorch_mll
 from botorch.models import SingleTaskGP
+from botorch.models.transforms import Normalize
 from botorch.models.utils.gpytorch_modules import (
     get_covar_module_with_dim_scaled_prior,
     get_gaussian_likelihood_with_gamma_prior,
@@ -381,12 +382,17 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
 
                 assert covar_module.base_kernel.ard_num_dims == ard_num_dims
 
-            self.model = SingleTaskGP(
-                update_x,
-                update_y,
-                covar_module=covar_module,
-                likelihood=likelihood,
-            ).to(self.device)
+            if self.turn_on_botorch_input_transform:
+                input_transform = Normalize(d=update_x.shape[-1])
+            else:
+                input_transform = None
+
+            self.model = SingleTaskGP(update_x,
+                                      update_y,
+                                      covar_module=covar_module,
+                                      likelihood=likelihood,
+                                      input_transform=input_transform).to(
+                                          self.device)
             exact_gp_mll = ExactMarginalLogLikelihood(self.model.likelihood,
                                                       self.model)
 

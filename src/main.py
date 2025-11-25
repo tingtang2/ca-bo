@@ -218,6 +218,9 @@ def main() -> int:
     parser.add_argument('--turn_on_input_transform',
                         action='store_true',
                         help='turn on normalize transform for non exact GPs')
+    parser.add_argument('--turn_on_botorch_input_transform',
+                        action='store_true',
+                        help='turn on normalize transform for inputs of GPs')
     parser.add_argument('--ca_gp_init_mode',
                         default='random',
                         help='init mode for ca gp')
