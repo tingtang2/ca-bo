@@ -21,7 +21,9 @@ from trainers.ca_gp_trainer import (
     OsmbLogEICaGPSlidingWindowTrainer, OsmbLogEICaGPTrainer,
     PdopLogEICaGPSlidingWindowTrainer, RanoLogEICaGPSlidingWindowTrainer,
     RoverEICaGPEULBOTrainer, RoverEICaGPSlidingWindowTrainer,
-    RoverEICaGPTrainer)
+    RoverEICaGPTrainer, SigaLogEICaGPSlidingWindowTrainer,
+    ZaleLogEICaGPSlidingWindowTrainer, ValtLogEICaGPSlidingWindowTrainer,
+    DhopLogEICaGPSlidingWindowTrainer, ShopLogEICaGPSlidingWindowTrainer)
 from trainers.exact_gp_trainer import (
     FexoLogEIExactGPSlidingWindowTrainer, FexoLogEIExactGPTrainer,
     FexoLogEIGPyTorchExactGPSlidingWindowTrainer, HartmannEIExactGPTrainer,
@@ -38,7 +40,8 @@ from trainers.svgp_trainer import (
     LassoDNALogEISVGPTrainer, LunarEISVGPEULBOTrainer, LunarEISVGPTrainer,
     Med1LogEISVGPTrainer, Med2LogEISVGPTrainer, OsmbLogEISVGPTrainer,
     PdopLogEISVGPTrainer, RanoLogEISVGPTrainer, RoverEISVGPEULBOTrainer,
-    RoverEISVGPTrainer)
+    RoverEISVGPTrainer, SigaLogEISVGPTrainer, ZaleLogEISVGPTrainer,
+    ValtLogEISVGPTrainer, DhopLogEISVGPTrainer, ShopLogEISVGPTrainer)
 
 import wandb
 
@@ -102,6 +105,16 @@ arg_trainer_map = {
     'adip_log_ei_svgp': AdipLogEISVGPTrainer,
     'rano_log_ei_ca_gp_sliding_window': RanoLogEICaGPSlidingWindowTrainer,
     'rano_log_ei_svgp': RanoLogEISVGPTrainer,
+    'siga_log_ei_ca_gp_sliding_window': SigaLogEICaGPSlidingWindowTrainer,
+    'siga_log_ei_svgp': SigaLogEISVGPTrainer,
+    'zale_log_ei_ca_gp_sliding_window': ZaleLogEICaGPSlidingWindowTrainer,
+    'zale_log_ei_svgp': ZaleLogEISVGPTrainer,
+    'valt_log_ei_ca_gp_sliding_window': ValtLogEICaGPSlidingWindowTrainer,
+    'valt_log_ei_svgp': ValtLogEISVGPTrainer,
+    'dhop_log_ei_ca_gp_sliding_window': DhopLogEICaGPSlidingWindowTrainer,
+    'dhop_log_ei_svgp': DhopLogEISVGPTrainer,
+    'shop_log_ei_ca_gp_sliding_window': ShopLogEICaGPSlidingWindowTrainer,
+    'shop_log_ei_svgp': ShopLogEISVGPTrainer,
 }
 arg_optimizer_map = {
     'adamW': AdamW,

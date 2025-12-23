@@ -744,3 +744,38 @@ class RanoLogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
 
     def __init__(self, **kwargs):
         super().__init__(molecule='rano', **kwargs)
+
+
+class SigaLogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
+                                        GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='siga', **kwargs)
+
+
+class ZaleLogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
+                                        GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='zale', **kwargs)
+
+
+class ValtLogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
+                                        GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='valt', **kwargs)
+
+
+class DhopLogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
+                                        GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='dhop', **kwargs)
+
+
+class ShopLogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
+                                        GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='shop', **kwargs)
