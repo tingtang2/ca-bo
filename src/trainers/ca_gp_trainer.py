@@ -321,7 +321,10 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
     def run_experiment(self, iteration: int):
         # get all attribute information
         logging.info(self.__dict__)
-        train_x, train_y = self.initialize_data()
+        if self.turn_on_sobol_init:
+            train_x, train_y = self.sobol_initialize_data()
+        else:
+            train_x, train_y = self.initialize_data()
 
         # log initial y_max
         print(f'initial y max: {train_y.max().item()}')
@@ -583,14 +586,14 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                     (update_x.size(0), 1))).all()
 
             # calc gradients of actions
-            if not self.freeze_actions:
-                total_norm = 0.0
-                for p in action_params:
-                    param_norm = p.grad.detach().data.norm(2)
-                    total_norm += param_norm.item()**2
-                total_norm = total_norm**0.5
-            else:
-                total_norm = -1
+            # if not self.freeze_actions:
+            #     total_norm = 0.0
+            #     for p in action_params:
+            #         param_norm = p.grad.detach().data.norm(2)
+            #         total_norm += param_norm.item()**2
+            #     total_norm = total_norm**0.5
+            # else:
+            total_norm = -1
             self.model.eval()
 
             # train_rmse = self.eval(train_x, model_train_y)
@@ -614,6 +617,9 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
             # Evaluate candidates
             if self.turn_on_input_transform:
                 y_next = self.task(x_next * self.data_original_ub)
+            elif self.turn_on_simple_input_transform:
+                y_next = self.task(x_next * (self.task.ub - self.task.lb) +
+                                   self.task.lb)
             else:
                 y_next = self.task(x_next)
 

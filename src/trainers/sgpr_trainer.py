@@ -17,6 +17,7 @@ from gpytorch.kernels import InducingPointKernel
 
 
 class SGPRTrainer(BaseTrainer):
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -25,7 +26,10 @@ class SGPRTrainer(BaseTrainer):
     def run_experiment(self, iteration: int):
         # get all attribute information
         logging.info(self.__dict__)
-        train_x, train_y = self.initialize_data()
+        if self.turn_on_sobol_init:
+            train_x, train_y = self.sobol_initialize_data()
+        else:
+            train_x, train_y = self.initialize_data()
 
         self.train_y_mean = train_y.mean()
         self.train_y_std = train_y.std()
@@ -173,7 +177,11 @@ class SGPRTrainer(BaseTrainer):
             standardized_gain = (x_next_mu - torch.max(train_y)) / x_next_sigma
 
             # Evaluate candidates
-            y_next = self.task(x_next)
+            if self.turn_on_simple_input_transform:
+                y_next = self.task(x_next * (self.task.ub - self.task.lb) +
+                                   self.task.lb)
+            else:
+                y_next = self.task(x_next)
 
             # Update data
             train_x = torch.cat((train_x, x_next), dim=-2)
@@ -202,10 +210,12 @@ class SGPRTrainer(BaseTrainer):
 
 
 class OsmbLogEISGPRTrainer(SGPRTrainer, GuacamolTrainer, LogEITrainer):
+
     def __init__(self, **kwargs):
         super().__init__(molecule='osmb', **kwargs)
 
 
 class FexoLogEISGPRTrainer(SGPRTrainer, GuacamolTrainer, LogEITrainer):
+
     def __init__(self, **kwargs):
         super().__init__(molecule='fexo', **kwargs)

@@ -32,7 +32,8 @@ from trainers.exact_gp_trainer import (
     Med1LogEIExactGPTrainer, Med2LogEIExactGPSlidingWindowTrainer,
     Med2LogEIExactGPTrainer, OsmbLogEIExactGPSlidingWindowTrainer,
     OsmbLogEIExactGPTrainer, RoverEIExactGPSlidingWindowTrainer,
-    RoverEIExactGPTrainer)
+    RoverEIExactGPTrainer, PdopLogEIExactGPSlidingWindowTrainer,
+    AdipLogEIExactGPSlidingWindowTrainer)
 from trainers.sgpr_trainer import FexoLogEISGPRTrainer, OsmbLogEISGPRTrainer
 from trainers.svgp_trainer import (
     AdipLogEISVGPTrainer, FexoLogEISVGPTrainer, HartmannEISVGPEULBOTrainer,
@@ -99,8 +100,12 @@ arg_trainer_map = {
     Med2LogEIExactGPSlidingWindowTrainer,
     'med2_log_ei_ca_gp_sliding_window': Med2LogEICaGPSlidingWindowTrainer,
     'med2_log_ei_svgp': Med2LogEISVGPTrainer,
+    'pdop_log_ei_exact_gp_sliding_window':
+    PdopLogEIExactGPSlidingWindowTrainer,
     'pdop_log_ei_ca_gp_sliding_window': PdopLogEICaGPSlidingWindowTrainer,
     'pdop_log_ei_svgp': PdopLogEISVGPTrainer,
+    'adip_log_ei_exact_gp_sliding_window':
+    AdipLogEIExactGPSlidingWindowTrainer,
     'adip_log_ei_ca_gp_sliding_window': AdipLogEICaGPSlidingWindowTrainer,
     'adip_log_ei_svgp': AdipLogEISVGPTrainer,
     'rano_log_ei_ca_gp_sliding_window': RanoLogEICaGPSlidingWindowTrainer,
@@ -234,6 +239,14 @@ def main() -> int:
     parser.add_argument('--turn_on_botorch_input_transform',
                         action='store_true',
                         help='turn on normalize transform for inputs of GPs')
+    parser.add_argument(
+        '--turn_on_simple_input_transform',
+        action='store_true',
+        help='turn on normalize transform for inputs of GPs to unit cube')
+    parser.add_argument(
+        '--turn_on_sobol_init',
+        action='store_true',
+        help='use scrambled sobol sequences for BO initialization')
     parser.add_argument('--ca_gp_init_mode',
                         default='random',
                         help='init mode for ca gp')

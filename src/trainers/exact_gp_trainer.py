@@ -10,6 +10,7 @@ from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
                                     LassoDNATrainer, LunarTrainer,
                                     RoverTrainer)
 
+from contextlib import ExitStack
 import gpytorch
 from botorch.fit import fit_gpytorch_mll
 from botorch.models import SingleTaskGP
@@ -314,7 +315,10 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
 
     def run_experiment(self, iteration: int):
         logging.info(self.__dict__)
-        train_x, train_y = self.initialize_data()
+        if self.turn_on_sobol_init:
+            train_x, train_y = self.sobol_initialize_data()
+        else:
+            train_x, train_y = self.initialize_data()
         self.train_y_mean = train_y.mean()
         self.train_y_std = train_y.std()
         if self.train_y_std == 0:
@@ -393,21 +397,37 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
                                       likelihood=likelihood,
                                       input_transform=input_transform).to(
                                           self.device)
-            exact_gp_mll = ExactMarginalLogLikelihood(self.model.likelihood,
-                                                      self.model)
+            with ExitStack() as es:
+                es.enter_context(gpytorch.settings.cholesky_max_tries(10))
 
-            # fit model to data
-            mll = fit_gpytorch_mll(exact_gp_mll)
+                es.enter_context(gpytorch.settings.max_cholesky_size(1024))
+                es.enter_context(
+                    gpytorch.settings.fast_computations(
+                        log_prob=False,
+                        covar_root_decomposition=False,
+                        solves=False))
+
+                exact_gp_mll = ExactMarginalLogLikelihood(
+                    self.model.likelihood, self.model)
+
+                # fit model to data
+                mll = fit_gpytorch_mll(exact_gp_mll)
             self.model.eval()
 
             # get train rmse
-            train_rmse = self.eval(train_x, model_train_y)
-            train_nll = self.compute_nll(train_x, model_train_y.squeeze(), mll)
+            # train_rmse = self.eval(train_x, model_train_y)
+            train_rmse = -1
+            # train_nll = self.compute_nll(train_x, model_train_y.squeeze(), mll)
+            train_nll = -1
             x_next, x_af_val, origin = self.data_acquisition_iteration(
                 self.model, model_train_y, train_x)
 
             # Evaluate candidates
-            y_next = self.task(x_next)
+            if self.turn_on_simple_input_transform:
+                y_next = self.task(x_next * (self.task.ub - self.task.lb) +
+                                   self.task.lb)
+            else:
+                y_next = self.task(x_next)
             cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x,
                                                               train_y=train_y,
                                                               x_next=x_next)
@@ -540,3 +560,17 @@ class Med2LogEIExactGPSlidingWindowTrainer(ExactGPSlidingWindowTrainer,
 
     def __init__(self, **kwargs):
         super().__init__(molecule='med2', **kwargs)
+
+
+class AdipLogEIExactGPSlidingWindowTrainer(ExactGPSlidingWindowTrainer,
+                                           GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='adip', **kwargs)
+
+
+class PdopLogEIExactGPSlidingWindowTrainer(ExactGPSlidingWindowTrainer,
+                                           GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='pdop', **kwargs)

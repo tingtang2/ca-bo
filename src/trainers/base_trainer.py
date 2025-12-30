@@ -4,7 +4,7 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import List, Union
+from typing import List, Union, Tuple
 
 import matplotlib.pyplot as plt
 import torch
@@ -233,8 +233,10 @@ class BaseTrainer(ABC):
                 cos_sim_incum,
                 'action_norm':
                 action_norm,
+                # 'log det K(z, z)':
+                # self.calc_log_det_kernel_ips(),
                 'log det K(z, z)':
-                self.calc_log_det_kernel_ips(),
+                -1,
                 'x_af_val':
                 x_af_val,
                 'x_next_sigma':
@@ -271,8 +273,10 @@ class BaseTrainer(ABC):
                 cos_sim_incum,
                 'action_norm':
                 action_norm,
+                # 'S^TK^hatS condition number':
+                # self.calc_cond_num_SKS(),
                 'S^TK^hatS condition number':
-                self.calc_cond_num_SKS(),
+                -1,
                 'x_af_val':
                 x_af_val,
                 'x_next_sigma':
@@ -493,3 +497,18 @@ class BaseTrainer(ABC):
         plt.legend()
         plt.tight_layout()
         plt.savefig(f'{self.name}_.png')
+
+    def sobol_initialize_data(self) -> Tuple[torch.tensor, torch.tensor]:
+        sobol = torch.quasirandom.SobolEngine(dimension=self.task.dim,
+                                              scramble=True,
+                                              seed=self.seed)
+        sobol_draws = sobol.draw(n=self.num_initial_points).to(self.device)
+        if self.turn_on_simple_input_transform:
+            init_train_x = sobol_draws
+        else:
+            init_train_x = sobol_draws * (self.task.ub -
+                                          self.task.lb) + self.task.lb
+        init_train_y = self.task(sobol_draws * (self.task.ub - self.task.lb) +
+                                 self.task.lb)
+
+        return init_train_x, init_train_y

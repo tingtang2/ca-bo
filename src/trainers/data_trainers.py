@@ -3,7 +3,6 @@ from typing import Tuple
 import pandas as pd
 import torch
 from tasks.guacamol_objective_aabo import GuacamolObjective
-# from tasks.hartmannn import Hartmann6D
 from tasks.hartmannn_aabo import Hartmann6D
 from tasks.lasso_dna_aabo import LassoDNA
 from tasks.lunar_lander_aabo import LunarLander
