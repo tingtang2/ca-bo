@@ -21,6 +21,7 @@ from botorch.models.utils.gpytorch_modules import (
     get_gaussian_likelihood_with_lognormal_prior,
     get_matern_kernel_with_gamma_prior)
 from gpytorch.mlls import ExactMarginalLogLikelihood
+from botorch.utils import standardize
 
 
 class ExactGPTrainer(BaseTrainer):
@@ -420,7 +421,7 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
             # train_nll = self.compute_nll(train_x, model_train_y.squeeze(), mll)
             train_nll = -1
             x_next, x_af_val, origin = self.data_acquisition_iteration(
-                self.model, model_train_y, train_x)
+                self.model, standardize(update_y), train_x)
 
             # Evaluate candidates
             if self.turn_on_simple_input_transform:

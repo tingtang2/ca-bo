@@ -426,7 +426,7 @@ class BaseTrainer(ABC):
 
     def train_model(self, train_loader: DataLoader, mll):
         self.model.train()
-        best_loss = 1e+5
+        best_loss = torch.inf
         early_stopping_counter = 0
         best_model_state = None
 

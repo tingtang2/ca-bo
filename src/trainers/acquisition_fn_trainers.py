@@ -10,7 +10,6 @@ from botorch.acquisition import qExpectedImprovement, qLogExpectedImprovement
 from botorch.acquisition.analytic import ExpectedImprovement
 from botorch.optim import optimize_acqf
 from botorch.optim.initializers import initialize_q_batch_nonneg
-from botorch.utils import standardize
 
 
 class EITrainer(BaseTrainer):
@@ -32,11 +31,9 @@ class EITrainer(BaseTrainer):
             ub = self.task.ub * weights
 
         if self.use_analytic_acq_func:
-            ei = ExpectedImprovement(model,
-                                     standardize(Y).max().to(self.device))
+            ei = ExpectedImprovement(model, Y.max().to(self.device))
         else:
-            ei = qExpectedImprovement(model,
-                                      standardize(Y).max().to(self.device))
+            ei = qExpectedImprovement(model, Y.max().to(self.device))
 
         if self.enable_raasp:
             options = {
@@ -76,11 +73,9 @@ class LogEITrainer(BaseTrainer):
             ub = self.task.ub * weights
 
         if self.use_analytic_acq_func:
-            ei = LogExpectedImprovement(model,
-                                        standardize(Y).max().to(self.device))
+            ei = LogExpectedImprovement(model, Y.max().to(self.device))
         else:
-            ei = qLogExpectedImprovement(model,
-                                         standardize(Y).max().to(self.device))
+            ei = qLogExpectedImprovement(model, Y.max().to(self.device))
 
         if self.enable_raasp:
             options = {
