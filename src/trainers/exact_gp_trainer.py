@@ -99,7 +99,7 @@ class ExactGPTrainer(BaseTrainer):
                 likelihood = gpytorch.likelihoods.GaussianLikelihood().to(
                     self.device)
 
-            assert covar_module.base_kernel.ard_num_dims == ard_num_dims
+                assert covar_module.base_kernel.ard_num_dims == ard_num_dims
 
             self.model = SingleTaskGP(
                 train_x,
@@ -126,8 +126,10 @@ class ExactGPTrainer(BaseTrainer):
             self.model.eval()
 
             # get train rmse
-            train_rmse = self.eval(train_x, model_train_y)
-            train_nll = self.compute_nll(train_x, model_train_y.squeeze(), mll)
+            # train_rmse = self.eval(train_x, model_train_y)
+            train_rmse = -1
+            # train_nll = self.compute_nll(train_x, model_train_y.squeeze(), mll)
+            train_nll = -1
             x_next, x_af_val, origin = self.data_acquisition_iteration(
                 self.model, model_train_y, train_x)
 
