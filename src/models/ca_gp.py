@@ -9,6 +9,7 @@ from botorch.models.utils.gpytorch_modules import (
 from botorch.posteriors.gpytorch import GPyTorchPosterior
 from gpytorch import likelihoods
 from gpytorch.models.computation_aware_gp import ComputationAwareGP
+from models.kernels.spherical_linear import SphericalLinearKernel
 
 
 class CaGP(ComputationAwareGP):
@@ -29,7 +30,10 @@ class CaGP(ComputationAwareGP):
         else:
             ard_num_dims = None
 
-        if kernel_likelihood_prior == 'gamma':
+        if kernel_type == 'spherical_linear':
+            covar_module = SphericalLinearKernel(ard_num_dims=ard_num_dims)
+            likelihood = get_gaussian_likelihood_with_lognormal_prior()
+        elif kernel_likelihood_prior == 'gamma':
             covar_module = get_matern_kernel_with_gamma_prior(
                 ard_num_dims=ard_num_dims)
             likelihood = get_gaussian_likelihood_with_gamma_prior()
@@ -62,7 +66,7 @@ class CaGP(ComputationAwareGP):
 
             covar_module = gpytorch.kernels.ScaleKernel(base_kernel)
 
-        assert covar_module.base_kernel.ard_num_dims == ard_num_dims
+            assert covar_module.base_kernel.ard_num_dims == ard_num_dims
         mean_module = gpytorch.means.ConstantMean()
         if standardize_outputs:
             outcome_transform = Standardize(
