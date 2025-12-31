@@ -33,7 +33,8 @@ from trainers.exact_gp_trainer import (
     Med2LogEIExactGPTrainer, OsmbLogEIExactGPSlidingWindowTrainer,
     OsmbLogEIExactGPTrainer, RoverEIExactGPSlidingWindowTrainer,
     RoverEIExactGPTrainer, PdopLogEIExactGPSlidingWindowTrainer,
-    AdipLogEIExactGPSlidingWindowTrainer)
+    AdipLogEIExactGPSlidingWindowTrainer, PdopLogEIExactGPTrainer,
+    AdipLogEIExactGPTrainer)
 from trainers.sgpr_trainer import FexoLogEISGPRTrainer, OsmbLogEISGPRTrainer
 from trainers.svgp_trainer import (
     AdipLogEISVGPTrainer, FexoLogEISVGPTrainer, HartmannEISVGPEULBOTrainer,
@@ -102,8 +103,10 @@ arg_trainer_map = {
     'med2_log_ei_svgp': Med2LogEISVGPTrainer,
     'pdop_log_ei_exact_gp_sliding_window':
     PdopLogEIExactGPSlidingWindowTrainer,
+    'pdop_log_ei_exact_gp': PdopLogEIExactGPTrainer,
     'pdop_log_ei_ca_gp_sliding_window': PdopLogEICaGPSlidingWindowTrainer,
     'pdop_log_ei_svgp': PdopLogEISVGPTrainer,
+    'adip_log_ei_exact_gp': AdipLogEIExactGPTrainer,
     'adip_log_ei_exact_gp_sliding_window':
     AdipLogEIExactGPSlidingWindowTrainer,
     'adip_log_ei_ca_gp_sliding_window': AdipLogEICaGPSlidingWindowTrainer,

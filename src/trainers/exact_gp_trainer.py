@@ -543,6 +543,18 @@ class Med2LogEIExactGPTrainer(ExactGPTrainer, GuacamolTrainer, LogEITrainer):
         super().__init__(molecule='med2', **kwargs)
 
 
+class AdipLogEIExactGPTrainer(ExactGPTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='adip', **kwargs)
+
+
+class PdopLogEIExactGPTrainer(ExactGPTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='pdop', **kwargs)
+
+
 class RoverEIExactGPSlidingWindowTrainer(ExactGPSlidingWindowTrainer,
                                          RoverTrainer, EITrainer):
     pass
