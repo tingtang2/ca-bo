@@ -22,6 +22,7 @@ from botorch.models.utils.gpytorch_modules import (
     get_matern_kernel_with_gamma_prior)
 from gpytorch.mlls import ExactMarginalLogLikelihood
 from botorch.utils import standardize
+from models.kernels.spherical_linear import SphericalLinearKernel
 
 
 class ExactGPTrainer(BaseTrainer):
@@ -38,7 +39,10 @@ class ExactGPTrainer(BaseTrainer):
 
     def run_experiment(self, iteration: int):
         logging.info(self.__dict__)
-        train_x, train_y = self.initialize_data()
+        if self.turn_on_sobol_init:
+            train_x, train_y = self.sobol_initialize_data()
+        else:
+            train_x, train_y = self.initialize_data()
         self.train_y_mean = train_y.mean()
         self.train_y_std = train_y.std()
         if self.train_y_std == 0:
@@ -69,7 +73,10 @@ class ExactGPTrainer(BaseTrainer):
             else:
                 ard_num_dims = None
 
-            if self.kernel_likelihood_prior == 'gamma':
+            if self.kernel_type == 'spherical_linear':
+                covar_module = SphericalLinearKernel(ard_num_dims=ard_num_dims)
+                likelihood = get_gaussian_likelihood_with_lognormal_prior()
+            elif self.kernel_likelihood_prior == 'gamma':
                 covar_module = get_matern_kernel_with_gamma_prior(
                     ard_num_dims=ard_num_dims)
                 likelihood = get_gaussian_likelihood_with_gamma_prior()
@@ -100,11 +107,22 @@ class ExactGPTrainer(BaseTrainer):
                 covar_module=covar_module,
                 likelihood=likelihood,
             ).to(self.device)
-            exact_gp_mll = ExactMarginalLogLikelihood(self.model.likelihood,
-                                                      self.model)
+            with ExitStack() as es:
+                es.enter_context(gpytorch.settings.cholesky_max_tries(10))
 
-            # fit model to data
-            mll = fit_gpytorch_mll(exact_gp_mll)
+                es.enter_context(gpytorch.settings.max_cholesky_size(1024))
+                es.enter_context(
+                    gpytorch.settings.fast_computations(
+                        log_prob=False,
+                        covar_root_decomposition=False,
+                        solves=False))
+
+                exact_gp_mll = ExactMarginalLogLikelihood(
+                    self.model.likelihood, self.model)
+
+                # fit model to data
+                mll = fit_gpytorch_mll(exact_gp_mll)
+
             self.model.eval()
 
             # get train rmse
@@ -114,7 +132,11 @@ class ExactGPTrainer(BaseTrainer):
                 self.model, model_train_y, train_x)
 
             # Evaluate candidates
-            y_next = self.task(x_next)
+            if self.turn_on_simple_input_transform:
+                y_next = self.task(x_next * (self.task.ub - self.task.lb) +
+                                   self.task.lb)
+            else:
+                y_next = self.task(x_next)
             cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x,
                                                               train_y=train_y,
                                                               x_next=x_next)
@@ -358,7 +380,10 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
             else:
                 ard_num_dims = None
 
-            if self.kernel_likelihood_prior == 'gamma':
+            if self.kernel_type == 'spherical_linear':
+                covar_module = SphericalLinearKernel(ard_num_dims=ard_num_dims)
+                likelihood = get_gaussian_likelihood_with_lognormal_prior()
+            elif self.kernel_likelihood_prior == 'gamma':
                 covar_module = get_matern_kernel_with_gamma_prior(
                     ard_num_dims=ard_num_dims)
                 likelihood = get_gaussian_likelihood_with_gamma_prior()
