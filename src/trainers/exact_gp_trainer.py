@@ -383,7 +383,8 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
                 ard_num_dims = None
 
             if self.kernel_type == 'spherical_linear':
-                covar_module = SphericalLinearKernel(ard_num_dims=ard_num_dims)
+                covar_module = SphericalLinearKernel(
+                    data_dims=train_x.shape[-1], ard_num_dims=ard_num_dims)
                 likelihood = get_gaussian_likelihood_with_lognormal_prior()
             elif self.kernel_likelihood_prior == 'gamma':
                 covar_module = get_matern_kernel_with_gamma_prior(
