@@ -73,13 +73,11 @@ class SphericalLinearKernel(gpytorch.kernels.RBFKernel):
                     loc=math.sqrt(2.0) + math.log(1) * 0.5,
                     scale=math.sqrt(3.0))  # DSP-like but no scaling by D
                 lengthscale_constraint = GreaterThan(
-                    2.5e-2,
-                    transform=None,
-                    initial_value=lengthscale_prior.mode)
+                    2.5e-2, initial_value=lengthscale_prior.mode)
             case "gamma_3_6":
                 lengthscale_prior = GammaPrior(3.0, 6.0)
                 lengthscale_constraint = GreaterThan(
-                    1e-2, transform=None, initial_value=lengthscale_prior.mode)
+                    1e-2, initial_value=lengthscale_prior.mode)
 
         super().__init__(
             ard_num_dims=ard_num_dims,
@@ -121,11 +119,11 @@ class SphericalLinearKernel(gpytorch.kernels.RBFKernel):
                 **params):  # noqa: D102
         x1_equal_x2 = torch.equal(x1, x2)
 
-        # Make sure that we're within bounds
-        assert torch.all(x1 <= self._maxs)
-        assert torch.all(x1 >= self._mins)
-        assert torch.all(x2 <= self._maxs)
-        assert torch.all(x2 >= self._mins)
+        # Clamp inputs to stay inside the configured bounds. Learned inducing
+        # locations can otherwise drift slightly outside [min, max], tripping
+        # hard assertions and causing training to crash.
+        x1 = torch.clamp(x1, min=self._mins, max=self._maxs)
+        x2 = torch.clamp(x2, min=self._mins, max=self._maxs)
 
         # Get constants
         lengthscale: Float[Tensor, "... 1 D"] = self.lengthscale
@@ -156,6 +154,16 @@ class SphericalLinearKernel(gpytorch.kernels.RBFKernel):
         x1_ = torch.cat([x1_ * term1_sqrt,
                          term0_sqrt.expand_as(x1_[..., :1])],
                         dim=-1)
+        if diag:
+            # When only the diagonal is requested return the per-point inner product
+            # instead of a full LinearOperator to avoid shape mismatches inside
+            # gpytorch's diag pathways.
+            if x1_equal_x2:
+                return x1_.square().sum(dim=-1)
+            x2_ = torch.cat(
+                [x2_ * term1_sqrt,
+                 term0_sqrt.expand_as(x2_[..., :1])], dim=-1)
+            return (x1_ * x2_).sum(dim=-1)
         if x1_equal_x2:
             kernel = maybe_low_rank_root_lo(x1_)
         else:
