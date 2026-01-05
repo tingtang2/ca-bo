@@ -72,6 +72,8 @@ class LogEITrainer(BaseTrainer):
             lb = self.task.lb * weights
             ub = self.task.ub * weights
 
+        assert Y.max() == self.model.train_targets.max()
+
         if self.use_analytic_acq_func:
             ei = LogExpectedImprovement(model, Y.max().to(self.device))
         else:
