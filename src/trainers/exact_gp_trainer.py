@@ -74,7 +74,8 @@ class ExactGPTrainer(BaseTrainer):
                 ard_num_dims = None
 
             if self.kernel_type == 'spherical_linear':
-                covar_module = SphericalLinearKernel(ard_num_dims=ard_num_dims)
+                covar_module = SphericalLinearKernel(
+                    ard_num_dims=ard_num_dims, data_dims=train_x.shape[-1])
                 likelihood = get_gaussian_likelihood_with_lognormal_prior()
             elif self.kernel_likelihood_prior == 'gamma':
                 covar_module = get_matern_kernel_with_gamma_prior(
@@ -131,7 +132,7 @@ class ExactGPTrainer(BaseTrainer):
             # train_nll = self.compute_nll(train_x, model_train_y.squeeze(), mll)
             train_nll = -1
             x_next, x_af_val, origin = self.data_acquisition_iteration(
-                self.model, model_train_y, train_x)
+                self.model, standardize(model_train_y), train_x)
 
             # Evaluate candidates
             if self.turn_on_simple_input_transform:
