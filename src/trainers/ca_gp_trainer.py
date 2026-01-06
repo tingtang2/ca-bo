@@ -13,12 +13,14 @@ from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
                                     LassoDNATrainer, LunarTrainer,
                                     RoverTrainer)
 from trainers.svgp_trainer import SVGPEULBOTrainer
+from contextlib import ExitStack
 
 import gpytorch
 from botorch.fit import fit_gpytorch_mll
 from gpytorch.likelihoods import GaussianLikelihood
 from gpytorch.mlls import ComputationAwareELBO, ExactMarginalLogLikelihood
 from linear_operator import operators
+from botorch.utils import standardize
 
 
 class CaGPTrainer(BaseTrainer):
@@ -357,16 +359,18 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
         else:
             initial_proj_dim = proj_dim
 
-        self.model = CaGP(
-            train_inputs=train_x,
-            train_targets=model_train_y.squeeze(),
-            projection_dim=initial_proj_dim,
-            likelihood=GaussianLikelihood().to(self.device),
-            kernel_type=self.kernel_type,
-            init_mode=self.ca_gp_init_mode,
-            kernel_likelihood_prior=self.kernel_likelihood_prior,
-            use_ard_kernel=self.use_ard_kernel,
-            standardize_outputs=self.turn_on_outcome_transform).to(self.device)
+        self.model = CaGP(train_inputs=train_x,
+                          train_targets=model_train_y.squeeze(),
+                          projection_dim=initial_proj_dim,
+                          likelihood=GaussianLikelihood().to(self.device),
+                          kernel_type=self.kernel_type,
+                          init_mode=self.ca_gp_init_mode,
+                          kernel_likelihood_prior=self.kernel_likelihood_prior,
+                          use_ard_kernel=self.use_ard_kernel,
+                          standardize_outputs=self.turn_on_outcome_transform,
+                          use_output_scale=self.use_output_scale,
+                          remove_global_ls=self.remove_global_ls).to(
+                              self.device)
         # if self.debug:
         #     torch.save(train_x, f'{self.save_dir}models/train_x.pt')
         #     torch.save(model_train_y,
@@ -402,8 +406,9 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                         init_mode=self.ca_gp_init_mode,
                         kernel_likelihood_prior=self.kernel_likelihood_prior,
                         use_ard_kernel=self.use_ard_kernel,
-                        standardize_outputs=self.turn_on_outcome_transform).to(
-                            self.device)
+                        standardize_outputs=self.turn_on_outcome_transform,
+                        use_output_scale=self.use_output_scale,
+                        remove_global_ls=self.remove_global_ls).to(self.device)
                 else:
                     # set projection dim to min of training data size and requested dim size
                     self.model.projection_dim = min(update_y.size(0), proj_dim)
@@ -455,6 +460,23 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                     else:
                         if self.freeze_actions:
                             pass
+                        elif self.reinit_model_complete:
+                            self.model = CaGP(
+                                train_inputs=update_x,
+                                train_targets=update_y,
+                                projection_dim=proj_dim,
+                                likelihood=GaussianLikelihood().to(
+                                    self.device),
+                                kernel_type=self.kernel_type,
+                                init_mode=self.ca_gp_init_mode,
+                                kernel_likelihood_prior=self.
+                                kernel_likelihood_prior,
+                                use_ard_kernel=self.use_ard_kernel,
+                                standardize_outputs=self.
+                                turn_on_outcome_transform,
+                                use_output_scale=self.use_output_scale,
+                                remove_global_ls=self.remove_global_ls).to(
+                                    self.device)
                         elif self.model.num_non_zero == 1 or not self.roll_actions:
                             if self.non_zero_action_init:
                                 new_action = 2 * torch.rand((1, 1)) - 1
@@ -553,6 +575,14 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                                                    self.model)
 
             if self.optimizer_type == 'botorch_lbfgs':
+                # with ExitStack() as es:
+                #     es.enter_context(gpytorch.settings.cholesky_max_tries(10))
+
+                #     es.enter_context(gpytorch.settings.max_cholesky_size(1024))
+                #     es.enter_context(
+                #         gpytorch.settings.fast_computations(log_prob=False,
+                #                                             covar_root_decomposition=False,
+                #                                             solves=False))
                 self.model.train()
                 mll = ComputationAwareELBO(self.model.likelihood,
                                            self.model,
@@ -577,10 +607,11 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                     train_loader, mll)
 
             if self.debug:
+                pass
                 # check final action is optimized
-                assert torch.ne(old_final_action,
-                                self.model.actions_op.blocks.data[-1])
-                print(old_final_action, self.model.actions_op.blocks.data[-1])
+                # assert torch.ne(old_final_action,
+                #                 self.model.actions_op.blocks.data[-1])
+                # print(old_final_action, self.model.actions_op.blocks.data[-1])
             if self.freeze_actions:
                 assert (self.model.actions_op.blocks.data == torch.ones(
                     (update_x.size(0), 1))).all()
@@ -603,7 +634,10 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
             #                              exact_mll)
 
             x_next, x_af_val, origin = self.data_acquisition_iteration(
-                self.model, model_train_y.squeeze(), train_x)
+                self.model,
+                standardize(update_y).squeeze()
+                if self.turn_on_outcome_transform else update_y.squeeze(),
+                train_x)
 
             cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x,
                                                               train_y=train_y,

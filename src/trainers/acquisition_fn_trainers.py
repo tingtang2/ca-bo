@@ -88,6 +88,8 @@ class LogEITrainer(BaseTrainer):
         else:
             options = None
 
+        if self.debug:
+            set_seed(self.seed)
         X_next, acq_val, origin = optimize_acqf(
             ei,
             bounds=torch.stack([lb, ub]).to(self.device, self.data_type),

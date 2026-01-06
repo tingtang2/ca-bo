@@ -23,7 +23,9 @@ class CaGP(ComputationAwareGP):
                  init_mode: str,
                  kernel_likelihood_prior: str = None,
                  use_ard_kernel: bool = False,
-                 standardize_outputs: bool = False):
+                 standardize_outputs: bool = False,
+                 use_output_scale: bool = False,
+                 remove_global_ls: bool = True):
 
         if use_ard_kernel:
             ard_num_dims = train_inputs.shape[-1]
@@ -32,7 +34,11 @@ class CaGP(ComputationAwareGP):
 
         if kernel_type == 'spherical_linear':
             covar_module = SphericalLinearKernel(
-                data_dims=train_inputs.shape[-1], ard_num_dims=ard_num_dims)
+                data_dims=train_inputs.shape[-1],
+                ard_num_dims=ard_num_dims,
+                remove_global_ls=remove_global_ls)
+            if use_output_scale:
+                covar_module = gpytorch.kernels.ScaleKernel(covar_module)
             likelihood = get_gaussian_likelihood_with_lognormal_prior()
         elif kernel_likelihood_prior == 'gamma':
             covar_module = get_matern_kernel_with_gamma_prior(

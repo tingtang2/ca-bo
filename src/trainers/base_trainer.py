@@ -152,7 +152,9 @@ class BaseTrainer(ABC):
 
         passed_model = self.model
 
-        if self.kernel_likelihood_prior == 'lognormal' or self.kernel_type == 'spherical_linear':
+        if self.kernel_likelihood_prior == 'lognormal' or (
+                self.kernel_type == 'spherical_linear'
+                and not self.use_output_scale):
             outputscale = torch.tensor([1])
             raw_lengthscale = passed_model.covar_module.raw_lengthscale
             constraint = passed_model.covar_module.raw_lengthscale_constraint

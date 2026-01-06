@@ -337,7 +337,6 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
         #                        log_graph=True)
 
         self.name = 'exact_gp_sliding_window'
-        self.debug = False
 
     def run_experiment(self, iteration: int):
         logging.info(self.__dict__)
@@ -385,7 +384,11 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
 
             if self.kernel_type == 'spherical_linear':
                 covar_module = SphericalLinearKernel(
-                    data_dims=train_x.shape[-1], ard_num_dims=ard_num_dims)
+                    data_dims=train_x.shape[-1],
+                    ard_num_dims=ard_num_dims,
+                    remove_global_ls=self.remove_global_ls)
+                if self.use_output_scale:
+                    covar_module = gpytorch.kernels.ScaleKernel(covar_module)
                 likelihood = get_gaussian_likelihood_with_lognormal_prior()
             elif self.kernel_likelihood_prior == 'gamma':
                 covar_module = get_matern_kernel_with_gamma_prior(
@@ -489,6 +492,9 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
             #     torch.save(
             #         train_y,
             #         f'{self.save_dir}models/train_y_after_200_steps.pt')
+            if self.debug:
+                torch.save(train_x, f'{self.save_dir}models/train_x_129.pt')
+                torch.save(train_y, f'{self.save_dir}models/train_y_129.pt')
 
         # self.save_metrics(metrics=reward,
         #                   iter=iteration,

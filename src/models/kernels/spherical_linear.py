@@ -51,16 +51,15 @@ class SphericalLinearKernel(gpytorch.kernels.RBFKernel):
 
     has_lengthscale = True
 
-    def __init__(
-            self,
-            *,
-            data_dims: int,
-            ard_num_dims: int,
-            prior: str = "dsp_unscaled",
-            bounds: tuple[float, float]
-        | Sequence[tuple[float, float]] = (0.0, 1.0),
-            batch_shape: torch.Size = torch.Size([]),
-    ):
+    def __init__(self,
+                 *,
+                 data_dims: int,
+                 ard_num_dims: int,
+                 prior: str = "dsp_unscaled",
+                 bounds: tuple[float, float]
+                 | Sequence[tuple[float, float]] = (0.0, 1.0),
+                 batch_shape: torch.Size = torch.Size([]),
+                 remove_global_ls: bool = True):
         # if ard_num_dims == 1:
         #     raise ValueError(
         #         f"ard_num_dims must be equal to the dimensionality of the input data. Got {ard_num_dims}."
@@ -101,9 +100,13 @@ class SphericalLinearKernel(gpytorch.kernels.RBFKernel):
         coeffs = torch.zeros(2, dtype=_dtype)
         self.register_parameter("raw_coeffs", torch.nn.Parameter(coeffs))
 
-        # Global lengthscale "a"
-        glob_ls = torch.zeros(1, dtype=_dtype)
-        self.register_parameter("raw_glob_ls", torch.nn.Parameter(glob_ls))
+        if remove_global_ls:
+            self.remove_global_ls = True
+        else:
+            # Global lengthscale "a"
+            glob_ls = torch.zeros(1, dtype=_dtype)
+            self.register_parameter("raw_glob_ls", torch.nn.Parameter(glob_ls))
+            self.remove_global_ls = False
 
     @property
     def coeffs(self) -> torch.Tensor:
@@ -130,21 +133,23 @@ class SphericalLinearKernel(gpytorch.kernels.RBFKernel):
 
         # Get constants
         lengthscale: Float[Tensor, "... 1 D"] = self.lengthscale
-        max_sq_norm: Float[Tensor, "... 1 1"] = (
-            (self._maxs - self._mins)[..., None, :]  # Shape: (..., 1, D)
-            .div(2.0 * lengthscale).square().sum(
-                dim=-1, keepdim=True)  # Shape: (..., 1, 1)
-        )
-        glob_ls: Float[Tensor, "... 1 1"] = torch.sqrt(
-            self.glob_ls * max_sq_norm)  # O(\sqrt{D}) init
+        if not self.remove_global_ls:
+            max_sq_norm: Float[Tensor, "... 1 1"] = (
+                (self._maxs - self._mins)[..., None, :]  # Shape: (..., 1, D)
+                .div(2.0 * lengthscale).square().sum(
+                    dim=-1, keepdim=True)  # Shape: (..., 1, 1)
+            )
+            glob_ls: Float[Tensor, "... 1 1"] = torch.sqrt(
+                self.glob_ls * max_sq_norm)  # O(\sqrt{D}) init
 
         # Center and scale inputs
         x1 = x1.sub(self._centers).div(lengthscale)
         x2 = x1 if x1_equal_x2 else x2.sub(self._centers).div(lengthscale)
 
-        # Apply global lengthscale
-        x1 = x1.div(glob_ls)
-        x2 = x2.div(glob_ls)
+        if not self.remove_global_ls:
+            # Apply global lengthscale
+            x1 = x1.div(glob_ls)
+            x2 = x2.div(glob_ls)
 
         # Project the inputs onto the sphere
         x1_ = project_onto_unit_sphere(x1)

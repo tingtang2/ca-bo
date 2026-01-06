@@ -250,6 +250,12 @@ def main() -> int:
         '--turn_on_sobol_init',
         action='store_true',
         help='use scrambled sobol sequences for BO initialization')
+    parser.add_argument('--use_output_scale',
+                        action='store_true',
+                        help='use outputscale with spherical linear kernel')
+    parser.add_argument('--remove_global_ls',
+                        action='store_true',
+                        help='turn off global ls in spherical linear kernel')
     parser.add_argument('--ca_gp_init_mode',
                         default='random',
                         help='init mode for ca gp')
@@ -260,6 +266,9 @@ def main() -> int:
         '--reinit_hyperparams',
         action='store_true',
         help='reinitialize kernel hyperparameters at each step')
+    parser.add_argument('--reinit_model_complete',
+                        action='store_true',
+                        help='reinitialize entire CaGP model at each step')
     parser.add_argument('--roll_actions',
                         action='store_true',
                         help='platform/roll actions')
@@ -287,6 +296,7 @@ def main() -> int:
                         action='store_true',
                         help='add likelihood to posterior for EI')
     parser.add_argument('--notes', default='', help='note on experiment run')
+    parser.add_argument('--debug', action='store_true', help='debug')
     parser.add_argument('--use_analytic_acq_func',
                         action='store_true',
                         help='use analytic acquisition function instead of MC')
