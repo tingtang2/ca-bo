@@ -34,7 +34,9 @@ class SVGPModel(ApproximateGP):
 
         if kernel_type == 'spherical_linear':
             covar_module = SphericalLinearKernel(
-                data_dims=inducing_points.shape[-1], ard_num_dims=ard_num_dims)
+                data_dims=inducing_points.shape[-1],
+                ard_num_dims=ard_num_dims,
+                enable_constraint_transform=True)
             likelihood = get_gaussian_likelihood_with_lognormal_prior()
         elif kernel_likelihood_prior == 'gamma':
             covar_module = get_matern_kernel_with_gamma_prior(

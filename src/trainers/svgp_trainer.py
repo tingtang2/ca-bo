@@ -19,6 +19,7 @@ import gpytorch
 from botorch.models.transforms.outcome import Standardize
 from gpytorch.likelihoods import GaussianLikelihood
 from gpytorch.mlls import ExactMarginalLogLikelihood, VariationalELBO
+from botorch.utils import standardize
 
 
 class SVGPRetrainTrainer(BaseTrainer):
@@ -265,7 +266,10 @@ class SVGPTrainer(BaseTrainer):
             self.model.eval()
 
             x_next, x_af_val, origin = self.data_acquisition_iteration(
-                self.model, model_train_y, train_x)
+                self.model,
+                standardize(update_y).squeeze()
+                if self.turn_on_outcome_transform else update_y.squeeze(),
+                train_x)
 
             cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x,
                                                               train_y=train_y,

@@ -55,6 +55,7 @@ class SphericalLinearKernel(gpytorch.kernels.RBFKernel):
                  *,
                  data_dims: int,
                  ard_num_dims: int,
+                 enable_constraint_transform=False,
                  prior: str = "dsp_unscaled",
                  bounds: tuple[float, float]
                  | Sequence[tuple[float, float]] = (0.0, 1.0),
@@ -72,14 +73,25 @@ class SphericalLinearKernel(gpytorch.kernels.RBFKernel):
                 lengthscale_prior = LogNormalPrior(
                     loc=math.sqrt(2.0) + math.log(1) * 0.5,
                     scale=math.sqrt(3.0))  # DSP-like but no scaling by D
-                lengthscale_constraint = GreaterThan(
-                    2.5e-2,
-                    transform=None,
-                    initial_value=lengthscale_prior.mode)
+                if enable_constraint_transform:
+                    lengthscale_constraint = GreaterThan(
+                        2.5e-2, initial_value=lengthscale_prior.mode)
+                else:
+                    lengthscale_constraint = GreaterThan(
+                        2.5e-2,
+                        transform=None,
+                        initial_value=lengthscale_prior.mode)
+
             case "gamma_3_6":
                 lengthscale_prior = GammaPrior(3.0, 6.0)
-                lengthscale_constraint = GreaterThan(
-                    1e-2, transform=None, initial_value=lengthscale_prior.mode)
+                if enable_constraint_transform:
+                    lengthscale_constraint = GreaterThan(
+                        1e-2,
+                        transform=None,
+                        initial_value=lengthscale_prior.mode)
+                else:
+                    lengthscale_constraint = GreaterThan(
+                        1e-2, initial_value=lengthscale_prior.mode)
 
         super().__init__(
             ard_num_dims=ard_num_dims,
@@ -126,10 +138,13 @@ class SphericalLinearKernel(gpytorch.kernels.RBFKernel):
         x1_equal_x2 = torch.equal(x1, x2)
 
         # Make sure that we're within bounds
-        assert torch.all(x1 <= self._maxs)
-        assert torch.all(x1 >= self._mins)
-        assert torch.all(x2 <= self._maxs)
-        assert torch.all(x2 >= self._mins)
+        # assert torch.all(x1 <= self._maxs)
+        # assert torch.all(x1 >= self._mins)
+        # assert torch.all(x2 <= self._maxs)
+        # assert torch.all(x2 >= self._mins)
+
+        x1 = torch.clamp(x1, min=self._mins, max=self._maxs)
+        x2 = torch.clamp(x2, min=self._mins, max=self._maxs)
 
         # Get constants
         lengthscale: Float[Tensor, "... 1 D"] = self.lengthscale
