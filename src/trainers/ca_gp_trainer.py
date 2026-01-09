@@ -583,10 +583,22 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                 #         gpytorch.settings.fast_computations(log_prob=False,
                 #                                             covar_root_decomposition=False,
                 #                                             solves=False))
+
                 self.model.train()
                 mll = ComputationAwareELBO(self.model.likelihood,
                                            self.model,
                                            return_elbo_terms=False)
+
+                if self.debug:
+                    torch.autograd.set_detect_anomaly(True)
+                    for n, p in self.model.covar_module.named_parameters():
+                        p.register_hook(lambda g, n=n: print(
+                            f"{n} grad norm={g.norm().item():.3e}"))
+                    for n, p in self.model.named_parameters():
+                        if "action" in n:
+                            p.register_hook(lambda g, n=n: print(
+                                f"{n} grad norm={g.norm().item():.3e}"))
+
                 mll = fit_gpytorch_mll(mll)
                 epochs_trained = -1
                 final_loss = -1
@@ -602,6 +614,15 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                 else:
                     train_loader = self.generate_dataloaders(train_x=update_x,
                                                              train_y=update_y)
+
+                # torch.autograd.set_detect_anomaly(True)
+                # for n, p in self.model.covar_module.named_parameters():
+                #     p.register_hook(lambda g, n=n: print(
+                #         f"{n} grad norm={g.norm().item():.3e}"))
+                # for n, p in self.model.named_parameters():
+                #     if "action" in n:
+                #         p.register_hook(lambda g, n=n: print(
+                #             f"{n} grad norm={g.norm().item():.3e}"))
 
                 final_loss, epochs_trained = self.train_model(
                     train_loader, mll)
