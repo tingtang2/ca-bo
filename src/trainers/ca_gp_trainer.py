@@ -607,10 +607,14 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                                            self.model,
                                            return_elbo_terms=True)
                 if self.turn_on_outcome_transform:
+                    self.model.outcome_transform.eval()
                     train_loader = self.generate_dataloaders(
-                        train_x=update_x,
+                        train_x=update_x[-self.model.num_non_zero *
+                                         self.model.projection_dim:],
                         train_y=self.model.outcome_transform(
-                            update_y.unsqueeze(1))[0].squeeze())
+                            update_y[-self.model.num_non_zero *
+                                     self.model.projection_dim:].unsqueeze(
+                                         1))[0].squeeze())
                 else:
                     train_loader = self.generate_dataloaders(train_x=update_x,
                                                              train_y=update_y)
