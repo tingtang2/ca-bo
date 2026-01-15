@@ -62,8 +62,7 @@ class LogEITrainer(BaseTrainer):
                                    X,
                                    num_restarts: int = 10,
                                    raw_samples: int = 256):
-        x_center = copy.deepcopy(X[Y.argmax(), :])
-        weights = torch.ones_like(x_center)
+        weights = torch.ones(X.shape[-1])
 
         if self.turn_on_simple_input_transform:
             lb = 0 * weights
@@ -97,6 +96,7 @@ class LogEITrainer(BaseTrainer):
             q=self.batch_size,
             num_restarts=num_restarts,
             raw_samples=raw_samples,
+            retry_on_optimization_warning=False,
             options=options)
         return X_next.detach(), acq_val.detach(), origin
 

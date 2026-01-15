@@ -60,7 +60,7 @@ class SphericalLinearKernel(gpytorch.kernels.RBFKernel):
                  bounds: tuple[float, float]
                  | Sequence[tuple[float, float]] = (0.0, 1.0),
                  batch_shape: torch.Size = torch.Size([]),
-                 remove_global_ls: bool = True):
+                 remove_global_ls: bool = False):
         # if ard_num_dims == 1:
         #     raise ValueError(
         #         f"ard_num_dims must be equal to the dimensionality of the input data. Got {ard_num_dims}."

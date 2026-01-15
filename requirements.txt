@@ -9,9 +9,10 @@ pytest
 yapf
 rdkit
 selfies 
-guacamol 
-scipy==1.10
+guacamol[rdkit] @ git+https://github.com/DonneyF/guacamol.git@0d2e225ce2d96a4b60922f8ba18ce02b12ae5ba6
+scipy==1.17
 lightning
+torch
 git+https://github.com/ksehic/LassoBench.git
 # git+https://github.com/rfeinman/pytorch-minimize.git
 # git+https://github.com/cornellius-gp/linear_operator.git@sparsity # have to do these at the end customly due to dependency conflicts
