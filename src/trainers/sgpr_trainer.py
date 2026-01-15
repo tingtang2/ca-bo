@@ -14,6 +14,7 @@ from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
 import gpytorch
 from botorch.fit import fit_gpytorch_mll
 from gpytorch.kernels import InducingPointKernel
+from botorch.utils import standardize
 
 
 class SGPRTrainer(BaseTrainer):
@@ -57,14 +58,14 @@ class SGPRTrainer(BaseTrainer):
         # init model
         self.model = SGPR(
             train_x=train_x,
-            train_y=model_train_y.squeeze(),
+            train_y=standardize(model_train_y.squeeze())
+            if self.turn_on_outcome_transform else model_train_y.squeeze(),
             inducing_points=inducing_points,
             likelihood=gpytorch.likelihoods.GaussianLikelihood().to(
                 self.device),
             kernel_type=self.kernel_type,
             kernel_likelihood_prior=self.kernel_likelihood_prior,
             use_ard_kernel=self.use_ard_kernel,
-            standardize_outputs=self.turn_on_outcome_transform,
             add_likelihood=self.add_likelihood_to_posterior).to(
                 self.device, self.data_type)
 
@@ -113,14 +114,10 @@ class SGPRTrainer(BaseTrainer):
                 update_x = train_x[-self.update_train_size:]
                 # y needs to only have 1 dimension when training in gpytorch
                 update_y = model_train_y.squeeze()[-self.update_train_size:]
+
                 if self.turn_on_outcome_transform:
-                    # need to restandardize the outcomes here
-                    self.model.outcome_transform.train()
-                    train_targets, train_Yvar = self.model.outcome_transform(
-                        Y=update_y.unsqueeze(1),
-                        Yvar=None,
-                        X=self.model.train_inputs[0])
-                    self.model.train_targets = train_targets.squeeze()
+                    update_y = standardize(update_y)
+
                 if self.reinit_hyperparams:
                     self.model.likelihood = gpytorch.likelihoods.GaussianLikelihood(
                     ).to(self.device)
@@ -152,30 +149,19 @@ class SGPRTrainer(BaseTrainer):
                 epochs_trained = -1
                 final_loss = -1
             else:
-                if self.turn_on_outcome_transform:
-                    train_loader = self.generate_dataloaders(
-                        train_x=update_x,
-                        train_y=self.model.outcome_transform(
-                            update_y.unsqueeze(1))[0].squeeze())
-                else:
-                    train_loader = self.generate_dataloaders(train_x=update_x,
-                                                             train_y=update_y)
+                train_loader = self.generate_dataloaders(train_x=update_x,
+                                                         train_y=update_y)
 
                 final_loss, epochs_trained = self.train_model(
                     train_loader, mll)
             self.model.eval()
 
             x_next, x_af_val, origin = self.data_acquisition_iteration(
-                self.model, model_train_y, train_x)
+                self.model, update_y, update_x)
 
             cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x,
                                                               train_y=train_y,
                                                               x_next=x_next)
-            x_next_mu, x_next_sigma = self.calc_predictive_mean_and_std(
-                model=self.model, test_point=x_next)
-
-            standardized_gain = (x_next_mu - torch.max(train_y)) / x_next_sigma
-
             # Evaluate candidates
             if self.turn_on_simple_input_transform:
                 y_next = self.task(x_next * (self.task.ub - self.task.lb) +
@@ -195,8 +181,8 @@ class SGPRTrainer(BaseTrainer):
                                    cos_sim_incum=cos_sim_incum,
                                    epochs_trained=epochs_trained,
                                    x_af_val=x_af_val.item(),
-                                   x_next_sigma=x_next_sigma.item(),
-                                   standardized_gain=standardized_gain.item(),
+                                   x_next_sigma=0,
+                                   standardized_gain=0,
                                    candidate_origin=origin)
 
             reward.append(train_y.max().item())
