@@ -72,7 +72,7 @@ class LogEITrainer(BaseTrainer):
             ub = self.task.ub * weights
 
         if 'svgp' not in self.name:
-            assert Y.max() == self.model.train_targets.max()
+            assert torch.equal(Y.max(), self.model.train_targets.max())
 
         if self.use_analytic_acq_func:
             ei = LogExpectedImprovement(model, Y.max().to(self.device))

@@ -147,11 +147,8 @@ class ExactGPTrainer(BaseTrainer):
             cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x,
                                                               train_y=train_y,
                                                               x_next=x_next)
-            # x_next_mu, x_next_sigma = self.calc_predictive_mean_and_std(
-            #     model=self.model, test_point=x_next)
 
             x_next_sigma = torch.Tensor([0])
-            # standardized_gain = (x_next_mu - torch.max(train_y)) / x_next_sigma
             standardized_gain = torch.Tensor([0])
 
             # Update data
@@ -397,7 +394,6 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
                     enable_constraint_transform=True)
                 if self.use_output_scale:
                     covar_module = gpytorch.kernels.ScaleKernel(covar_module)
-                # likelihood = get_gaussian_likelihood_with_lognormal_prior()
                 likelihood = custom_get_gaussian_likelihood_with_lognormal_prior(
                 )
             elif self.kernel_likelihood_prior == 'gamma':
@@ -435,18 +431,19 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
                 input_transform = None
 
             self.model = SingleTaskGP(update_x,
-                                      update_y,
+                                      standardize(update_y),
                                       covar_module=covar_module,
                                       likelihood=likelihood,
-                                      input_transform=input_transform).to(
-                                          self.device)
+                                      input_transform=input_transform,
+                                      outcome_transform=None).to(self.device)
+            self.model.train()
             with ExitStack() as es:
                 es.enter_context(gpytorch.settings.cholesky_max_tries(10))
 
-                es.enter_context(gpytorch.settings.max_cholesky_size(1024))
+                es.enter_context(gpytorch.settings.max_cholesky_size(4096))
                 es.enter_context(
                     gpytorch.settings.fast_computations(
-                        log_prob=False,
+                        log_prob=True,
                         covar_root_decomposition=False,
                         solves=False))
 
@@ -457,10 +454,7 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
                 mll = fit_gpytorch_mll(exact_gp_mll)
             self.model.eval()
 
-            # get train rmse
-            # train_rmse = self.eval(train_x, model_train_y)
             train_rmse = -1
-            # train_nll = self.compute_nll(train_x, model_train_y.squeeze(), mll)
             train_nll = -1
             x_next, x_af_val, origin = self.data_acquisition_iteration(
                 self.model, standardize(update_y), train_x)
@@ -475,10 +469,8 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
                                                               train_y=train_y,
                                                               x_next=x_next)
 
-            x_next_mu, x_next_sigma = self.calc_predictive_mean_and_std(
-                model=self.model, test_point=x_next)
-
-            standardized_gain = (x_next_mu - torch.max(train_y)) / x_next_sigma
+            x_next_sigma = torch.Tensor([0])
+            standardized_gain = torch.Tensor([0])
 
             # Update data
             train_x = torch.cat((train_x, x_next), dim=-2)

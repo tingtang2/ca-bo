@@ -359,18 +359,18 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
         else:
             initial_proj_dim = proj_dim
 
-        self.model = CaGP(train_inputs=train_x,
-                          train_targets=model_train_y.squeeze(),
-                          projection_dim=initial_proj_dim,
-                          likelihood=GaussianLikelihood().to(self.device),
-                          kernel_type=self.kernel_type,
-                          init_mode=self.ca_gp_init_mode,
-                          kernel_likelihood_prior=self.kernel_likelihood_prior,
-                          use_ard_kernel=self.use_ard_kernel,
-                          standardize_outputs=self.turn_on_outcome_transform,
-                          use_output_scale=self.use_output_scale,
-                          remove_global_ls=self.remove_global_ls).to(
-                              self.device)
+        self.model = CaGP(
+            train_inputs=train_x,
+            train_targets=standardize(model_train_y.squeeze())
+            if self.turn_on_outcome_transform else model_train_y.squeeze(),
+            projection_dim=initial_proj_dim,
+            likelihood=GaussianLikelihood().to(self.device),
+            kernel_type=self.kernel_type,
+            init_mode=self.ca_gp_init_mode,
+            kernel_likelihood_prior=self.kernel_likelihood_prior,
+            use_ard_kernel=self.use_ard_kernel,
+            use_output_scale=self.use_output_scale,
+            remove_global_ls=self.remove_global_ls).to(self.device)
         # if self.debug:
         #     torch.save(train_x, f'{self.save_dir}models/train_x.pt')
         #     torch.save(model_train_y,
@@ -395,6 +395,8 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                 update_x = train_x[-self.update_train_size:]
                 # y needs to only have 1 dimension when training in gpytorch
                 update_y = model_train_y.squeeze()[-self.update_train_size:]
+                if self.turn_on_outcome_transform:
+                    update_y = standardize(update_y)
 
                 if self.add_actions_by_reinit and train_x.size(0) <= proj_dim:
                     self.model = CaGP(
@@ -406,7 +408,6 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                         init_mode=self.ca_gp_init_mode,
                         kernel_likelihood_prior=self.kernel_likelihood_prior,
                         use_ard_kernel=self.use_ard_kernel,
-                        standardize_outputs=self.turn_on_outcome_transform,
                         use_output_scale=self.use_output_scale,
                         remove_global_ls=self.remove_global_ls).to(self.device)
                 else:
@@ -423,19 +424,8 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                         for tri in (update_x[0:self.model.num_non_zero *
                                              self.model.projection_dim], ))
 
-                    if self.turn_on_outcome_transform:
-                        # need to restandardize the outcomes here
-                        self.model.outcome_transform.train()
-                        train_targets, train_Yvar = self.model.outcome_transform(
-                            Y=update_y[0:self.model.num_non_zero *
-                                       self.model.projection_dim].unsqueeze(1),
-                            Yvar=None,
-                            X=self.model.train_inputs[0])
-                        self.model.train_targets = train_targets.squeeze()
-                    else:
-                        self.model.train_targets = update_y[
-                            0:self.model.num_non_zero *
-                            self.model.projection_dim]
+                    self.model.train_targets = update_y[
+                        0:self.model.num_non_zero * self.model.projection_dim]
 
                     # add on a new action if proj_dim >= training data size, else slide window
                     if train_x.size(0) <= proj_dim:
@@ -472,8 +462,6 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                                 kernel_likelihood_prior=self.
                                 kernel_likelihood_prior,
                                 use_ard_kernel=self.use_ard_kernel,
-                                standardize_outputs=self.
-                                turn_on_outcome_transform,
                                 use_output_scale=self.use_output_scale,
                                 remove_global_ls=self.remove_global_ls).to(
                                     self.device)
@@ -533,6 +521,8 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
             else:
                 update_x = train_x
                 update_y = model_train_y.squeeze()
+                if self.turn_on_outcome_transform:
+                    update_y = standardize(update_y)
 
             action_params = [
                 p for name, p in self.model.named_parameters()
@@ -606,18 +596,11 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                 mll = ComputationAwareELBO(self.model.likelihood,
                                            self.model,
                                            return_elbo_terms=True)
-                if self.turn_on_outcome_transform:
-                    self.model.outcome_transform.eval()
-                    train_loader = self.generate_dataloaders(
-                        train_x=update_x[-self.model.num_non_zero *
-                                         self.model.projection_dim:],
-                        train_y=self.model.outcome_transform(
-                            update_y[-self.model.num_non_zero *
-                                     self.model.projection_dim:].unsqueeze(
-                                         1))[0].squeeze())
-                else:
-                    train_loader = self.generate_dataloaders(train_x=update_x,
-                                                             train_y=update_y)
+                train_loader = self.generate_dataloaders(
+                    train_x=update_x[-self.model.num_non_zero *
+                                     self.model.projection_dim:],
+                    train_y=update_y[-self.model.num_non_zero *
+                                     self.model.projection_dim:])
 
                 # torch.autograd.set_detect_anomaly(True)
                 # for n, p in self.model.covar_module.named_parameters():
@@ -659,19 +642,11 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
             #                              exact_mll)
 
             x_next, x_af_val, origin = self.data_acquisition_iteration(
-                self.model,
-                standardize(update_y).squeeze()
-                if self.turn_on_outcome_transform else update_y.squeeze(),
-                train_x)
+                self.model, update_y.squeeze(), train_x)
 
             cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x,
                                                               train_y=train_y,
                                                               x_next=x_next)
-
-            x_next_mu, x_next_sigma = self.calc_predictive_mean_and_std(
-                model=self.model, test_point=x_next)
-
-            standardized_gain = (x_next_mu - torch.max(train_y)) / x_next_sigma
 
             # Evaluate candidates
             if self.turn_on_input_transform:
@@ -695,8 +670,8 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                                    epochs_trained=epochs_trained,
                                    action_norm=total_norm,
                                    x_af_val=x_af_val.item(),
-                                   x_next_sigma=x_next_sigma.item(),
-                                   standardized_gain=standardized_gain.item(),
+                                   x_next_sigma=0,
+                                   standardized_gain=0,
                                    candidate_origin=origin)
 
             reward.append(train_y.max().item())

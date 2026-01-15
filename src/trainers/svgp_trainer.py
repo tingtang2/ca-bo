@@ -244,14 +244,7 @@ class SVGPTrainer(BaseTrainer):
                 tri.unsqueeze(-1) if tri.ndimension() == 1 else tri
                 for tri in (update_x, ))
             if self.turn_on_outcome_transform:
-                outcome_transform = Standardize(
-                    m=1, batch_shape=self.model.train_inputs[0].shape[:-2])
-                outcome_transform.train()
-                train_targets, train_Yvar = outcome_transform(
-                    Y=update_y.unsqueeze(1),
-                    Yvar=None,
-                    X=self.model.train_inputs)
-                self.outcome_transform = outcome_transform
+                train_targets = standardize(update_y)
             else:
                 train_targets = update_y
 
@@ -274,10 +267,6 @@ class SVGPTrainer(BaseTrainer):
             cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x,
                                                               train_y=train_y,
                                                               x_next=x_next)
-            x_next_mu, x_next_sigma = self.calc_predictive_mean_and_std(
-                model=self.model, test_point=x_next)
-
-            standardized_gain = (x_next_mu - torch.max(train_y)) / x_next_sigma
 
             # Evaluate candidates
             if self.turn_on_simple_input_transform:
@@ -298,8 +287,8 @@ class SVGPTrainer(BaseTrainer):
                                    cos_sim_incum=cos_sim_incum,
                                    epochs_trained=epochs_trained,
                                    x_af_val=x_af_val.item(),
-                                   x_next_sigma=x_next_sigma.item(),
-                                   standardized_gain=standardized_gain.item(),
+                                   x_next_sigma=0,
+                                   standardized_gain=0,
                                    candidate_origin=origin)
 
             reward.append(train_y.max().item())
