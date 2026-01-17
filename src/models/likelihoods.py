@@ -12,11 +12,11 @@ def get_gaussian_likelihood_with_gamma_prior(
     batch_shape = torch.Size() if batch_shape is None else batch_shape
     noise_prior = GammaPrior(1.1, 0.05)
     noise_prior_mode = (noise_prior.concentration - 1) / noise_prior.rate
-    return GaussianLikelihood(
-        noise_prior=noise_prior,
-        batch_shape=batch_shape,
-        noise_constraint=GreaterThan(MIN_INFERRED_NOISE_LEVEL,
-                                     initial_value=noise_prior_mode))
+    return GaussianLikelihood(noise_prior=noise_prior,
+                              batch_shape=batch_shape,
+                              noise_constraint=GreaterThan(
+                                  MIN_INFERRED_NOISE_LEVEL,
+                                  initial_value=noise_prior_mode))
 
 
 def get_gaussian_likelihood_with_lognormal_prior(
@@ -24,8 +24,8 @@ def get_gaussian_likelihood_with_lognormal_prior(
     """Gaussian likelihood with LogNormal(-4.0, 1.0) prior and softplus constraint."""
     batch_shape = torch.Size() if batch_shape is None else batch_shape
     noise_prior = LogNormalPrior(loc=-4.0, scale=1.0)
-    return GaussianLikelihood(
-        noise_prior=noise_prior,
-        batch_shape=batch_shape,
-        noise_constraint=GreaterThan(MIN_INFERRED_NOISE_LEVEL,
-                                     initial_value=noise_prior.mode))
+    return GaussianLikelihood(noise_prior=noise_prior,
+                              batch_shape=batch_shape,
+                              noise_constraint=GreaterThan(
+                                  MIN_INFERRED_NOISE_LEVEL,
+                                  initial_value=noise_prior.mode))
