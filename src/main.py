@@ -292,6 +292,9 @@ def main() -> int:
     parser.add_argument('--turn_off_wandb',
                         action='store_true',
                         help='skip wandb logging')
+    parser.add_argument('--turn_off_prior',
+                        action='store_true',
+                        help='turn off priors in spherical linear settings')
     parser.add_argument('--add_likelihood_to_posterior',
                         action='store_true',
                         help='add likelihood to posterior for EI')

@@ -370,7 +370,8 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
             kernel_likelihood_prior=self.kernel_likelihood_prior,
             use_ard_kernel=self.use_ard_kernel,
             use_output_scale=self.use_output_scale,
-            remove_global_ls=self.remove_global_ls).to(self.device)
+            remove_global_ls=self.remove_global_ls,
+            turn_off_prior=self.turn_off_prior).to(self.device)
         # if self.debug:
         #     torch.save(train_x, f'{self.save_dir}models/train_x.pt')
         #     torch.save(model_train_y,
@@ -409,7 +410,8 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                         kernel_likelihood_prior=self.kernel_likelihood_prior,
                         use_ard_kernel=self.use_ard_kernel,
                         use_output_scale=self.use_output_scale,
-                        remove_global_ls=self.remove_global_ls).to(self.device)
+                        remove_global_ls=self.remove_global_ls,
+                        turn_off_prior=self.turn_off_prior).to(self.device)
                 else:
                     # set projection dim to min of training data size and requested dim size
                     self.model.projection_dim = min(update_y.size(0), proj_dim)
@@ -463,7 +465,8 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                                 kernel_likelihood_prior,
                                 use_ard_kernel=self.use_ard_kernel,
                                 use_output_scale=self.use_output_scale,
-                                remove_global_ls=self.remove_global_ls).to(
+                                remove_global_ls=self.remove_global_ls,
+                                turn_off_prior=self.turn_off_prior).to(
                                     self.device)
                         elif self.model.num_non_zero == 1 or not self.roll_actions:
                             if self.non_zero_action_init:
@@ -624,22 +627,11 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                 assert (self.model.actions_op.blocks.data == torch.ones(
                     (update_x.size(0), 1))).all()
 
-            # calc gradients of actions
-            # if not self.freeze_actions:
-            #     total_norm = 0.0
-            #     for p in action_params:
-            #         param_norm = p.grad.detach().data.norm(2)
-            #         total_norm += param_norm.item()**2
-            #     total_norm = total_norm**0.5
-            # else:
             total_norm = -1
             self.model.eval()
 
-            # train_rmse = self.eval(train_x, model_train_y)
             train_rmse = -1
             train_nll = -1
-            # train_nll = self.compute_nll(train_x, model_train_y.squeeze(),
-            #                              exact_mll)
 
             x_next, x_af_val, origin = self.data_acquisition_iteration(
                 self.model, update_y.squeeze(), train_x)
@@ -675,10 +667,6 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                                    candidate_origin=origin)
 
             reward.append(train_y.max().item())
-
-        # self.save_metrics(metrics=reward,
-        #                   iter=iteration,
-        #                   name=self.trainer_type)
 
 
 class HartmannEICaGPTrainer(CaGPTrainer, HartmannTrainer, EITrainer):

@@ -27,7 +27,8 @@ class CaGP(ComputationAwareGP):
                  use_ard_kernel: bool = False,
                  standardize_outputs: bool = False,
                  use_output_scale: bool = False,
-                 remove_global_ls: bool = True):
+                 remove_global_ls: bool = True,
+                 turn_off_prior: bool = False):
 
         if use_ard_kernel:
             ard_num_dims = train_inputs.shape[-1]
@@ -39,10 +40,16 @@ class CaGP(ComputationAwareGP):
                 data_dims=train_inputs.shape[-1],
                 ard_num_dims=ard_num_dims,
                 enable_constraint_transform=True,
-                remove_global_ls=remove_global_ls)
+                remove_global_ls=remove_global_ls,
+                turn_off_prior=turn_off_prior)
             if use_output_scale:
                 covar_module = gpytorch.kernels.ScaleKernel(covar_module)
-            likelihood = custom_get_gaussian_likeliood_with_lognormal_prior()
+
+            if turn_off_prior:
+                likelihood = gpytorch.likelihoods.GaussianLikelihood()
+            else:
+                likelihood = custom_get_gaussian_likeliood_with_lognormal_prior(
+                )
         elif kernel_likelihood_prior == 'gamma':
             covar_module = get_matern_kernel_with_gamma_prior(
                 ard_num_dims=ard_num_dims)
