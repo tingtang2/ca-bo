@@ -10,7 +10,7 @@ yapf
 rdkit
 selfies 
 guacamol[rdkit] @ git+https://github.com/DonneyF/guacamol.git@0d2e225ce2d96a4b60922f8ba18ce02b12ae5ba6
-scipy==1.17
+scipy==1.15.3
 lightning
 torch
 git+https://github.com/ksehic/LassoBench.git
