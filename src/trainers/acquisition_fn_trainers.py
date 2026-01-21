@@ -10,6 +10,8 @@ from botorch.acquisition import qExpectedImprovement, qLogExpectedImprovement
 from botorch.acquisition.analytic import ExpectedImprovement
 from botorch.optim import optimize_acqf
 from botorch.optim.initializers import initialize_q_batch_nonneg
+from botorch.generation import gen_candidates_scipy
+from functools import partial
 
 
 class EITrainer(BaseTrainer):
@@ -96,6 +98,8 @@ class LogEITrainer(BaseTrainer):
             q=self.batch_size,
             num_restarts=num_restarts,
             raw_samples=raw_samples,
+            gen_candidates=partial(gen_candidates_scipy,
+                                   use_parallel_mode=self.use_parallel_mode),
             retry_on_optimization_warning=False,
             options=options)
         return X_next.detach(), acq_val.detach(), origin

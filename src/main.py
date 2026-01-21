@@ -306,6 +306,9 @@ def main() -> int:
     parser.add_argument('--enable_raasp',
                         action='store_true',
                         help='enable RAASP sampling in AF optimization')
+    parser.add_argument('--use_parallel_mode',
+                        action='store_true',
+                        help='enable custom batched lbfgs in AF optimization')
     parser.add_argument('--raasp_best_pct',
                         default=5,
                         type=float,
