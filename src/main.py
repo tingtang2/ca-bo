@@ -23,7 +23,8 @@ from trainers.ca_gp_trainer import (
     RoverEICaGPEULBOTrainer, RoverEICaGPSlidingWindowTrainer,
     RoverEICaGPTrainer, SigaLogEICaGPSlidingWindowTrainer,
     ZaleLogEICaGPSlidingWindowTrainer, ValtLogEICaGPSlidingWindowTrainer,
-    DhopLogEICaGPSlidingWindowTrainer, ShopLogEICaGPSlidingWindowTrainer)
+    DhopLogEICaGPSlidingWindowTrainer, ShopLogEICaGPSlidingWindowTrainer,
+    RoverLogEICaGPSlidingWindowTrainer)
 from trainers.exact_gp_trainer import (
     FexoLogEIExactGPSlidingWindowTrainer, FexoLogEIExactGPTrainer,
     FexoLogEIGPyTorchExactGPSlidingWindowTrainer, HartmannEIExactGPTrainer,
@@ -34,7 +35,8 @@ from trainers.exact_gp_trainer import (
     OsmbLogEIExactGPTrainer, RoverEIExactGPSlidingWindowTrainer,
     RoverEIExactGPTrainer, PdopLogEIExactGPSlidingWindowTrainer,
     AdipLogEIExactGPSlidingWindowTrainer, PdopLogEIExactGPTrainer,
-    AdipLogEIExactGPTrainer)
+    AdipLogEIExactGPTrainer, RoverLogEIExactGPTrainer,
+    RoverLogEIExactGPSlidingWindowTrainer)
 from trainers.sgpr_trainer import FexoLogEISGPRTrainer, OsmbLogEISGPRTrainer
 from trainers.svgp_trainer import (
     AdipLogEISVGPTrainer, FexoLogEISVGPTrainer, HartmannEISVGPEULBOTrainer,
@@ -43,7 +45,8 @@ from trainers.svgp_trainer import (
     Med1LogEISVGPTrainer, Med2LogEISVGPTrainer, OsmbLogEISVGPTrainer,
     PdopLogEISVGPTrainer, RanoLogEISVGPTrainer, RoverEISVGPEULBOTrainer,
     RoverEISVGPTrainer, SigaLogEISVGPTrainer, ZaleLogEISVGPTrainer,
-    ValtLogEISVGPTrainer, DhopLogEISVGPTrainer, ShopLogEISVGPTrainer)
+    ValtLogEISVGPTrainer, DhopLogEISVGPTrainer, ShopLogEISVGPTrainer,
+    RoverLogEISVGPTrainer)
 
 import wandb
 
@@ -63,11 +66,16 @@ arg_trainer_map = {
     'lunar_ei_ca_gp_eulbo': LunarEICaGPEULBOTrainer,
     'lunar_log_ei_ca_gp_eulbo': LunarLogEICaGPEULBOTrainer,
     'rover_ei_exact_gp': RoverEIExactGPTrainer,
+    'rover_log_ei_exact_gp': RoverLogEIExactGPTrainer,
     'rover_ei_exact_gp_sliding_window': RoverEIExactGPSlidingWindowTrainer,
+    'rover_log_ei_exact_gp_sliding_window':
+    RoverLogEIExactGPSlidingWindowTrainer,
     'rover_ei_ca_gp': RoverEICaGPTrainer,
     'rover_ei_ca_gp_eulbo': RoverEICaGPEULBOTrainer,
     'rover_ei_ca_gp_sliding_window': RoverEICaGPSlidingWindowTrainer,
+    'rover_log_ei_ca_gp_sliding_window': RoverLogEICaGPSlidingWindowTrainer,
     'rover_ei_svgp': RoverEISVGPTrainer,
+    'rover_log_ei_svgp': RoverLogEISVGPTrainer,
     'rover_ei_svgp_eulbo': RoverEISVGPEULBOTrainer,
     'lasso_dna_log_ei_exact_gp': LassoDNALogEIExactGPTrainer,
     'lasso_dna_log_ei_exact_gp_sliding_window':

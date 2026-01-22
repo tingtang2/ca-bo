@@ -332,6 +332,10 @@ class RoverEISVGPTrainer(SVGPTrainer, RoverTrainer, EITrainer):
     pass
 
 
+class RoverLogEISVGPTrainer(SVGPTrainer, RoverTrainer, LogEITrainer):
+    pass
+
+
 class HartmannEISVGPRetrainTrainer(SVGPRetrainTrainer, HartmannTrainer,
                                    EITrainer):
     pass

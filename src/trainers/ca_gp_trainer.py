@@ -705,6 +705,11 @@ class RoverEICaGPEULBOTrainer(CaGPEULBOTrainer, RoverTrainer, EITrainer):
     pass
 
 
+class RoverLogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
+                                         RoverTrainer, LogEITrainer):
+    pass
+
+
 class RoverEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer, RoverTrainer,
                                       EITrainer):
     pass

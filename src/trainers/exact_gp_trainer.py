@@ -526,6 +526,10 @@ class RoverEIExactGPTrainer(ExactGPTrainer, RoverTrainer, EITrainer):
     pass
 
 
+class RoverLogEIExactGPTrainer(ExactGPTrainer, RoverTrainer, LogEITrainer):
+    pass
+
+
 class LassoDNALogEIExactGPTrainer(ExactGPTrainer, LassoDNATrainer,
                                   LogEITrainer):
     pass
@@ -569,6 +573,11 @@ class PdopLogEIExactGPTrainer(ExactGPTrainer, GuacamolTrainer, LogEITrainer):
 
 class RoverEIExactGPSlidingWindowTrainer(ExactGPSlidingWindowTrainer,
                                          RoverTrainer, EITrainer):
+    pass
+
+
+class RoverLogEIExactGPSlidingWindowTrainer(ExactGPSlidingWindowTrainer,
+                                            RoverTrainer, LogEITrainer):
     pass
 
 
