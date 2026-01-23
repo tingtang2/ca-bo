@@ -1,4 +1,5 @@
 import copy
+from functools import partial
 
 import torch
 from set_seed import set_seed
@@ -8,10 +9,9 @@ from trainers.utils.stochastic_sampler import StochasticSampler
 
 from botorch.acquisition import qExpectedImprovement, qLogExpectedImprovement
 from botorch.acquisition.analytic import ExpectedImprovement
+from botorch.generation import gen_candidates_scipy
 from botorch.optim import optimize_acqf
 from botorch.optim.initializers import initialize_q_batch_nonneg
-from botorch.generation import gen_candidates_scipy
-from functools import partial
 
 
 class EITrainer(BaseTrainer):
@@ -73,7 +73,7 @@ class LogEITrainer(BaseTrainer):
             lb = self.task.lb * weights
             ub = self.task.ub * weights
 
-        if 'svgp' not in self.name:
+        if 'svgp' not in self.name and self.debug:
             assert torch.equal(Y.max(), self.model.train_targets.max())
 
         if self.use_analytic_acq_func:

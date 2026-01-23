@@ -16,7 +16,6 @@ class HartmannTrainer(BaseTrainer):
         super().__init__(**kwargs)
 
         self.task = Hartmann6D()
-        self.num_initial_points = 100
 
     def initialize_data(self) -> Tuple[torch.tensor, torch.tensor]:
         init_train_x = torch.rand((self.num_initial_points, self.task.dim)).to(
@@ -54,7 +53,6 @@ class RoverTrainer(BaseTrainer):
         super().__init__(**kwargs)
 
         self.task = RoverObjective()
-        self.num_initial_points = 100
 
     def initialize_data(self) -> Tuple[torch.tensor, torch.tensor]:
         init_train_x = torch.rand((self.num_initial_points, self.task.dim)).to(
