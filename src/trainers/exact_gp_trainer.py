@@ -1,7 +1,12 @@
 import logging
+from contextlib import ExitStack
 
 import torch
 from models.exact_gp import ExactGPModel
+from models.kernels.spherical_linear import SphericalLinearKernel
+from models.likelihoods import \
+    get_gaussian_likelihood_with_lognormal_prior as \
+    custom_get_gaussian_likelihood_with_lognormal_prior
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import trange
 from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
@@ -10,7 +15,6 @@ from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
                                     LassoDNATrainer, LunarTrainer,
                                     RoverTrainer)
 
-from contextlib import ExitStack
 import gpytorch
 from botorch.fit import fit_gpytorch_mll
 from botorch.models import SingleTaskGP
@@ -20,11 +24,8 @@ from botorch.models.utils.gpytorch_modules import (
     get_gaussian_likelihood_with_gamma_prior,
     get_gaussian_likelihood_with_lognormal_prior,
     get_matern_kernel_with_gamma_prior)
-
-from models.likelihoods import get_gaussian_likelihood_with_lognormal_prior as custom_get_gaussian_likelihood_with_lognormal_prior
-from gpytorch.mlls import ExactMarginalLogLikelihood
 from botorch.utils import standardize
-from models.kernels.spherical_linear import SphericalLinearKernel
+from gpytorch.mlls import ExactMarginalLogLikelihood
 
 
 class ExactGPTrainer(BaseTrainer):
@@ -571,6 +572,12 @@ class PdopLogEIExactGPTrainer(ExactGPTrainer, GuacamolTrainer, LogEITrainer):
         super().__init__(molecule='pdop', **kwargs)
 
 
+class RanoLogEIExactGPTrainer(ExactGPTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='rano', **kwargs)
+
+
 class RoverEIExactGPSlidingWindowTrainer(ExactGPSlidingWindowTrainer,
                                          RoverTrainer, EITrainer):
     pass
@@ -633,3 +640,10 @@ class PdopLogEIExactGPSlidingWindowTrainer(ExactGPSlidingWindowTrainer,
 
     def __init__(self, **kwargs):
         super().__init__(molecule='pdop', **kwargs)
+
+
+class RanoLogEIExactGPSlidingWindowTrainer(ExactGPSlidingWindowTrainer,
+                                           GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='rano', **kwargs)

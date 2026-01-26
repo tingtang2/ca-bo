@@ -4,7 +4,6 @@ import os
 import signal
 import sys
 from datetime import date, datetime
-import botorch
 
 import torch
 from functions.LBFGS import FullBatchLBFGS
@@ -12,42 +11,44 @@ from set_seed import set_seed
 from torch.optim import LBFGS, Adam, AdamW
 from trainers.base_trainer import BaseTrainer
 from trainers.ca_gp_trainer import (
-    AdipLogEICaGPSlidingWindowTrainer, FexoLogEICaGPSlidingWindowTrainer,
-    HartmannEICaGPEULBOTrainer, HartmannEICaGPTrainer,
-    HartmannLogEICaGPTrainer, LassoDNALogEICaGPSlidingWindowTrainer,
-    LassoDNALogEICaGPTrainer, LunarEICaGPEULBOTrainer, LunarEICaGPTrainer,
-    LunarLogEICaGPEULBOTrainer, LunarLogEICaGPTrainer,
-    Med1LogEICaGPSlidingWindowTrainer, Med2LogEICaGPSlidingWindowTrainer,
-    OsmbLogEICaGPSlidingWindowTrainer, OsmbLogEICaGPTrainer,
-    PdopLogEICaGPSlidingWindowTrainer, RanoLogEICaGPSlidingWindowTrainer,
-    RoverEICaGPEULBOTrainer, RoverEICaGPSlidingWindowTrainer,
-    RoverEICaGPTrainer, SigaLogEICaGPSlidingWindowTrainer,
-    ZaleLogEICaGPSlidingWindowTrainer, ValtLogEICaGPSlidingWindowTrainer,
-    DhopLogEICaGPSlidingWindowTrainer, ShopLogEICaGPSlidingWindowTrainer,
-    RoverLogEICaGPSlidingWindowTrainer)
+    AdipLogEICaGPSlidingWindowTrainer, DhopLogEICaGPSlidingWindowTrainer,
+    FexoLogEICaGPSlidingWindowTrainer, HartmannEICaGPEULBOTrainer,
+    HartmannEICaGPTrainer, HartmannLogEICaGPTrainer,
+    LassoDNALogEICaGPSlidingWindowTrainer, LassoDNALogEICaGPTrainer,
+    LunarEICaGPEULBOTrainer, LunarEICaGPTrainer, LunarLogEICaGPEULBOTrainer,
+    LunarLogEICaGPTrainer, Med1LogEICaGPSlidingWindowTrainer,
+    Med2LogEICaGPSlidingWindowTrainer, OsmbLogEICaGPSlidingWindowTrainer,
+    OsmbLogEICaGPTrainer, PdopLogEICaGPSlidingWindowTrainer,
+    RanoLogEICaGPSlidingWindowTrainer, RoverEICaGPEULBOTrainer,
+    RoverEICaGPSlidingWindowTrainer, RoverEICaGPTrainer,
+    RoverLogEICaGPSlidingWindowTrainer, ShopLogEICaGPSlidingWindowTrainer,
+    SigaLogEICaGPSlidingWindowTrainer, ValtLogEICaGPSlidingWindowTrainer,
+    ZaleLogEICaGPSlidingWindowTrainer)
 from trainers.exact_gp_trainer import (
+    AdipLogEIExactGPSlidingWindowTrainer, AdipLogEIExactGPTrainer,
     FexoLogEIExactGPSlidingWindowTrainer, FexoLogEIExactGPTrainer,
     FexoLogEIGPyTorchExactGPSlidingWindowTrainer, HartmannEIExactGPTrainer,
     LassoDNALogEIExactGPSlidingWindowTrainer, LassoDNALogEIExactGPTrainer,
     LunarEIExactGPTrainer, Med1LogEIExactGPSlidingWindowTrainer,
     Med1LogEIExactGPTrainer, Med2LogEIExactGPSlidingWindowTrainer,
     Med2LogEIExactGPTrainer, OsmbLogEIExactGPSlidingWindowTrainer,
-    OsmbLogEIExactGPTrainer, RoverEIExactGPSlidingWindowTrainer,
-    RoverEIExactGPTrainer, PdopLogEIExactGPSlidingWindowTrainer,
-    AdipLogEIExactGPSlidingWindowTrainer, PdopLogEIExactGPTrainer,
-    AdipLogEIExactGPTrainer, RoverLogEIExactGPTrainer,
-    RoverLogEIExactGPSlidingWindowTrainer)
+    OsmbLogEIExactGPTrainer, PdopLogEIExactGPSlidingWindowTrainer,
+    PdopLogEIExactGPTrainer, RanoLogEIExactGPSlidingWindowTrainer,
+    RanoLogEIExactGPTrainer, RoverEIExactGPSlidingWindowTrainer,
+    RoverEIExactGPTrainer, RoverLogEIExactGPSlidingWindowTrainer,
+    RoverLogEIExactGPTrainer)
 from trainers.sgpr_trainer import FexoLogEISGPRTrainer, OsmbLogEISGPRTrainer
 from trainers.svgp_trainer import (
-    AdipLogEISVGPTrainer, FexoLogEISVGPTrainer, HartmannEISVGPEULBOTrainer,
-    HartmannEISVGPRetrainTrainer, HartmannEISVGPTrainer,
-    LassoDNALogEISVGPTrainer, LunarEISVGPEULBOTrainer, LunarEISVGPTrainer,
-    Med1LogEISVGPTrainer, Med2LogEISVGPTrainer, OsmbLogEISVGPTrainer,
-    PdopLogEISVGPTrainer, RanoLogEISVGPTrainer, RoverEISVGPEULBOTrainer,
-    RoverEISVGPTrainer, SigaLogEISVGPTrainer, ZaleLogEISVGPTrainer,
-    ValtLogEISVGPTrainer, DhopLogEISVGPTrainer, ShopLogEISVGPTrainer,
-    RoverLogEISVGPTrainer)
+    AdipLogEISVGPTrainer, DhopLogEISVGPTrainer, FexoLogEISVGPTrainer,
+    HartmannEISVGPEULBOTrainer, HartmannEISVGPRetrainTrainer,
+    HartmannEISVGPTrainer, LassoDNALogEISVGPTrainer, LunarEISVGPEULBOTrainer,
+    LunarEISVGPTrainer, Med1LogEISVGPTrainer, Med2LogEISVGPTrainer,
+    OsmbLogEISVGPTrainer, PdopLogEISVGPTrainer, RanoLogEISVGPTrainer,
+    RoverEISVGPEULBOTrainer, RoverEISVGPTrainer, RoverLogEISVGPTrainer,
+    ShopLogEISVGPTrainer, SigaLogEISVGPTrainer, ValtLogEISVGPTrainer,
+    ZaleLogEISVGPTrainer)
 
+import botorch
 import wandb
 
 arg_trainer_map = {
@@ -119,6 +120,9 @@ arg_trainer_map = {
     AdipLogEIExactGPSlidingWindowTrainer,
     'adip_log_ei_ca_gp_sliding_window': AdipLogEICaGPSlidingWindowTrainer,
     'adip_log_ei_svgp': AdipLogEISVGPTrainer,
+    'rano_log_ei_exact_gp': RanoLogEIExactGPTrainer,
+    'rano_log_ei_exact_gp_sliding_window':
+    RanoLogEIExactGPSlidingWindowTrainer,
     'rano_log_ei_ca_gp_sliding_window': RanoLogEICaGPSlidingWindowTrainer,
     'rano_log_ei_svgp': RanoLogEISVGPTrainer,
     'siga_log_ei_ca_gp_sliding_window': SigaLogEICaGPSlidingWindowTrainer,
