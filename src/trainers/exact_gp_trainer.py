@@ -390,9 +390,11 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
             if self.kernel_type == 'spherical_linear':
                 covar_module = SphericalLinearKernel(
                     data_dims=train_x.shape[-1],
+                    prior=self.self.spherical_linear_lengthscale_prior,
                     ard_num_dims=ard_num_dims,
                     remove_global_ls=self.remove_global_ls,
-                    enable_constraint_transform=True)
+                    enable_constraint_transform=True,
+                    turn_off_prior=self.turn_off_prior)
                 if self.use_output_scale:
                     covar_module = gpytorch.kernels.ScaleKernel(covar_module)
                 likelihood = custom_get_gaussian_likelihood_with_lognormal_prior(
