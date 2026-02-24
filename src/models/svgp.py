@@ -11,7 +11,7 @@ from gpytorch.models import ApproximateGP
 from gpytorch.variational import (CholeskyVariationalDistribution,
                                   VariationalStrategy)
 from models.kernels.spherical_linear import SphericalLinearKernel
-from models.likelihoods import get_gaussian_likelihood_with_lognormal_prior as custom_get_gaussian_likelihood_with_lognormal_prior
+from models.likelihoods import get_gaussian_likelihood_with_lognormal_prior as custom_get_gaussian_likeliood_with_lognormal_prior
 
 
 class SVGPModel(ApproximateGP):
@@ -24,7 +24,9 @@ class SVGPModel(ApproximateGP):
                  kernel_likelihood_prior: str = None,
                  use_ard_kernel: bool = False,
                  standardize_outputs: bool = False,
-                 add_likelihood: bool = False):
+                 add_likelihood: bool = False,
+                 turn_off_prior: bool = False,
+                 spherical_linear_lengthscale_prior: str = 'dsp_unscaled'):
 
         self.add_likelihood = add_likelihood
 
@@ -37,8 +39,13 @@ class SVGPModel(ApproximateGP):
             covar_module = SphericalLinearKernel(
                 data_dims=inducing_points.shape[-1],
                 ard_num_dims=ard_num_dims,
-                enable_constraint_transform=True)
-            likelihood = custom_get_gaussian_likelihood_with_lognormal_prior()
+                prior=spherical_linear_lengthscale_prior,
+                enable_constraint_transform=True,
+                turn_off_prior=turn_off_prior)
+            if turn_off_prior:
+                likelihood = gpytorch.likelihoods.GaussianLikelihood()
+            else:
+                likelihood = custom_get_gaussian_likeliood_with_lognormal_prior()
         elif kernel_likelihood_prior == 'gamma':
             covar_module = get_matern_kernel_with_gamma_prior(
                 ard_num_dims=ard_num_dims)

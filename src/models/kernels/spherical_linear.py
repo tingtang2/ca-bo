@@ -82,6 +82,18 @@ class SphericalLinearKernel(gpytorch.kernels.RBFKernel):
                         2.5e-2,
                         transform=None,
                         initial_value=lengthscale_prior.mode)
+            case "dsp_scaled":
+                lengthscale_prior = LogNormalPrior(
+                    loc=math.sqrt(2.0) + math.log(data_dims) * 0.5,
+                    scale=math.sqrt(3.0))
+                if enable_constraint_transform:
+                    lengthscale_constraint = GreaterThan(
+                        2.5e-2, initial_value=lengthscale_prior.mode)
+                else:
+                    lengthscale_constraint = GreaterThan(
+                        2.5e-2,
+                        transform=None,
+                        initial_value=lengthscale_prior.mode)
 
             case "gamma_3_6":
                 lengthscale_prior = GammaPrior(3.0, 6.0)

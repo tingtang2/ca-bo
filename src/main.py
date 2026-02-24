@@ -237,6 +237,9 @@ def main() -> int:
     parser.add_argument('--kernel_likelihood_prior',
                         default='none',
                         help='kernel and likelihood prior for GP')
+    parser.add_argument('--spherical_linear_lengthscale_prior',
+                        default='dsp_unscaled',
+                        help='lengthscale prior for spherical linear kernel')
     parser.add_argument(
         '--use_ard_kernel',
         action='store_true',
