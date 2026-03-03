@@ -2,6 +2,7 @@ import logging
 from contextlib import ExitStack
 
 import torch
+from functions.LBFGS import FullBatchLBFGS
 from models.exact_gp import ExactGPModel
 from models.kernels.spherical_linear import SphericalLinearKernel
 from models.likelihoods import \
@@ -390,7 +391,7 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
             if self.kernel_type == 'spherical_linear':
                 covar_module = SphericalLinearKernel(
                     data_dims=train_x.shape[-1],
-                    prior=self.self.spherical_linear_lengthscale_prior,
+                    prior=self.spherical_linear_lengthscale_prior,
                     ard_num_dims=ard_num_dims,
                     remove_global_ls=self.remove_global_ls,
                     enable_constraint_transform=True,
@@ -440,6 +441,7 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
                                       input_transform=input_transform,
                                       outcome_transform=None).to(self.device)
             self.model.train()
+            self.model.likelihood.train()
             with ExitStack() as es:
                 es.enter_context(gpytorch.settings.cholesky_max_tries(10))
 
@@ -453,9 +455,31 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
                 exact_gp_mll = ExactMarginalLogLikelihood(
                     self.model.likelihood, self.model)
 
-                # fit model to data
-                mll = fit_gpytorch_mll(exact_gp_mll)
+                if self.optimizer_type == torch.optim.Adam:
+                    self.optimizer = self.optimizer_type(
+                        self.model.parameters(), lr=self.learning_rate)
+                elif self.optimizer_type == torch.optim.LBFGS:
+                    self.optimizer = self.optimizer_type(
+                        self.model.parameters(),
+                        lr=self.learning_rate,
+                        line_search_fn='strong_wolfe')
+                elif self.optimizer_type == FullBatchLBFGS:
+                    self.optimizer = self.optimizer_type(
+                        self.model.parameters(),
+                        lr=self.learning_rate,
+                        dtype=self.data_type)
+                else:
+                    self.optimizer = None
+
+                if self.optimizer is None:
+                    # fit model to data with botorch LBFGS
+                    mll = fit_gpytorch_mll(exact_gp_mll)
+                else:
+                    train_loader = self.generate_dataloaders(
+                        train_x=update_x, train_y=standardize(update_y))
+                    self.train_model(train_loader, exact_gp_mll)
             self.model.eval()
+            self.model.likelihood.eval()
 
             train_rmse = -1
             train_nll = -1

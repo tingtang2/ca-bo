@@ -349,6 +349,8 @@ class BaseTrainer(ABC):
                 running_ll += ll.item()
             else:
                 loss = -mll(output, y.to(self.device))
+                if loss.numel() > 1:
+                    loss = loss.mean()
 
             loss.backward()
             if self.grad_clip != -1.0:
@@ -379,6 +381,8 @@ class BaseTrainer(ABC):
                     loss = -loss
                 else:
                     loss = -mll(output, y.to(self.device))
+                    if loss.numel() > 1:
+                        loss = loss.mean()
 
                 loss.backward()
                 if self.grad_clip != -1.0:
@@ -393,6 +397,8 @@ class BaseTrainer(ABC):
                 loss = -loss
             else:
                 loss = -mll(output, y.to(self.device))
+                if loss.numel() > 1:
+                    loss = loss.mean()
             running_loss += -loss.item()
 
             self.optimizer.step(closure)
@@ -413,6 +419,8 @@ class BaseTrainer(ABC):
                     loss = -loss
                 else:
                     loss = -mll(output, y.to(self.device))
+                    if loss.numel() > 1:
+                        loss = loss.mean()
 
                 return loss
 
