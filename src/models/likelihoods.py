@@ -20,10 +20,11 @@ def get_gaussian_likelihood_with_gamma_prior(
 
 
 def get_gaussian_likelihood_with_lognormal_prior(
-        batch_shape: torch.Size | None = None) -> GaussianLikelihood:
+        batch_shape: torch.Size | None = None,
+        loc: float = -4.0) -> GaussianLikelihood:
     """Gaussian likelihood with LogNormal(-4.0, 1.0) prior and softplus constraint."""
     batch_shape = torch.Size() if batch_shape is None else batch_shape
-    noise_prior = LogNormalPrior(loc=-4.0, scale=1.0)
+    noise_prior = LogNormalPrior(loc=loc, scale=1.0)
     return GaussianLikelihood(noise_prior=noise_prior,
                               batch_shape=batch_shape,
                               noise_constraint=GreaterThan(

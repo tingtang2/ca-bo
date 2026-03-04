@@ -332,6 +332,10 @@ def main() -> int:
                         default=1e-3,
                         type=float,
                         help='std of perturbations in RAASP')
+    parser.add_argument('--ln_noise_prior_loc',
+                        default=-4.0,
+                        type=float,
+                        help='std of perturbations in RAASP')
     parser.add_argument('--early_stopping_threshold',
                         default=3,
                         type=int,

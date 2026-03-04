@@ -82,7 +82,7 @@ class ExactGPTrainer(BaseTrainer):
                     data_dims=train_x.shape[-1],
                     ard_num_dims=ard_num_dims,
                     remove_global_ls=self.remove_global_ls)
-                likelihood = custom_get_gaussian_likelihood_with_lognormal_prior(
+                likelihood = custom_get_gaussian_likelihood_with_lognormal_prior(loc=self.ln_noise_prior_loc
                 )
             elif self.kernel_likelihood_prior == 'gamma':
                 covar_module = get_matern_kernel_with_gamma_prior(
@@ -398,7 +398,7 @@ class ExactGPSlidingWindowTrainer(BaseTrainer):
                     turn_off_prior=self.turn_off_prior)
                 if self.use_output_scale:
                     covar_module = gpytorch.kernels.ScaleKernel(covar_module)
-                likelihood = custom_get_gaussian_likelihood_with_lognormal_prior(
+                likelihood = custom_get_gaussian_likelihood_with_lognormal_prior(loc=self.ln_noise_prior_loc
                 )
             elif self.kernel_likelihood_prior == 'gamma':
                 covar_module = get_matern_kernel_with_gamma_prior(
