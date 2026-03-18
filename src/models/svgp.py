@@ -26,6 +26,7 @@ class SVGPModel(ApproximateGP):
                  standardize_outputs: bool = False,
                  add_likelihood: bool = False,
                  turn_off_prior: bool = False,
+                 ln_noise_prior_loc: float = -4.0,
                  spherical_linear_lengthscale_prior: str = 'dsp_unscaled'):
 
         self.add_likelihood = add_likelihood
@@ -45,7 +46,7 @@ class SVGPModel(ApproximateGP):
             if turn_off_prior:
                 likelihood = gpytorch.likelihoods.GaussianLikelihood()
             else:
-                likelihood = custom_get_gaussian_likeliood_with_lognormal_prior()
+                likelihood = custom_get_gaussian_likeliood_with_lognormal_prior(loc=ln_noise_prior_loc)
         elif kernel_likelihood_prior == 'gamma':
             covar_module = get_matern_kernel_with_gamma_prior(
                 ard_num_dims=ard_num_dims)
