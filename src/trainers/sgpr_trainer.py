@@ -66,7 +66,10 @@ class SGPRTrainer(BaseTrainer):
             kernel_type=self.kernel_type,
             kernel_likelihood_prior=self.kernel_likelihood_prior,
             use_ard_kernel=self.use_ard_kernel,
-            add_likelihood=self.add_likelihood_to_posterior).to(
+            add_likelihood=self.add_likelihood_to_posterior,
+            turn_off_prior=self.turn_off_prior,
+            ln_noise_prior_loc=self.ln_noise_prior_loc,
+            spherical_linear_lengthscale_prior=self.spherical_linear_lengthscale_prior).to(
                 self.device, self.data_type)
 
         # set custom LR on IP and variational parameters

@@ -80,6 +80,7 @@ class ExactGPTrainer(BaseTrainer):
             if self.kernel_type == 'spherical_linear':
                 covar_module = SphericalLinearKernel(
                     data_dims=train_x.shape[-1],
+                    prior=self.spherical_linear_lengthscale_prior,
                     ard_num_dims=ard_num_dims,
                     remove_global_ls=self.remove_global_ls)
                 likelihood = custom_get_gaussian_likelihood_with_lognormal_prior(loc=self.ln_noise_prior_loc

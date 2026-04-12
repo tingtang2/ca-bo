@@ -371,7 +371,9 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
             use_ard_kernel=self.use_ard_kernel,
             use_output_scale=self.use_output_scale,
             remove_global_ls=self.remove_global_ls,
-            turn_off_prior=self.turn_off_prior).to(self.device)
+            turn_off_prior=self.turn_off_prior,
+            spherical_linear_lengthscale_prior=self.spherical_linear_lengthscale_prior,
+            ln_noise_prior_loc=self.ln_noise_prior_loc).to(self.device)
         # if self.debug:
         #     torch.save(train_x, f'{self.save_dir}models/train_x.pt')
         #     torch.save(model_train_y,
@@ -411,7 +413,10 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                         use_ard_kernel=self.use_ard_kernel,
                         use_output_scale=self.use_output_scale,
                         remove_global_ls=self.remove_global_ls,
-                        turn_off_prior=self.turn_off_prior).to(self.device)
+                        turn_off_prior=self.turn_off_prior,
+                        spherical_linear_lengthscale_prior=self.spherical_linear_lengthscale_prior,
+                        ln_noise_prior_loc=self.ln_noise_prior_loc).to(
+                            self.device)
                 else:
                     # set projection dim to min of training data size and requested dim size
                     self.model.projection_dim = min(update_y.size(0), proj_dim)
@@ -466,7 +471,9 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                                 use_ard_kernel=self.use_ard_kernel,
                                 use_output_scale=self.use_output_scale,
                                 remove_global_ls=self.remove_global_ls,
-                                turn_off_prior=self.turn_off_prior).to(
+                                turn_off_prior=self.turn_off_prior,
+                                spherical_linear_lengthscale_prior=self.spherical_linear_lengthscale_prior,
+                                ln_noise_prior_loc=self.ln_noise_prior_loc).to(
                                     self.device)
                         elif self.model.num_non_zero == 1 or not self.roll_actions:
                             if self.non_zero_action_init:
