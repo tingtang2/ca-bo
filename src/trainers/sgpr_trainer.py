@@ -47,7 +47,9 @@ class SGPRTrainer(BaseTrainer):
             })
 
         # get inducing points
-        inducing_points = train_x[:self.num_inducing_points]
+        # Clone so learned inducing-point updates do not mutate the ExactGP
+        # training inputs through shared storage.
+        inducing_points = train_x[:self.num_inducing_points].clone()
 
         if self.norm_data:
             # get normalized train y
@@ -130,18 +132,21 @@ class SGPRTrainer(BaseTrainer):
                     covar_module = gpytorch.kernels.ScaleKernel(base_kernel)
                     self.model.covar_module = InducingPointKernel(
                         covar_module,
-                        inducing_points=inducing_points,
+                        inducing_points=inducing_points.clone(),
                         likelihood=self.model.likelihood)
                 if self.reinit_mean:
                     self.model.mean_module = gpytorch.means.ConstantMean()
             else:
                 update_x = train_x
                 update_y = model_train_y.squeeze()
+                if self.turn_on_outcome_transform:
+                    update_y = standardize(update_y)
 
-            # need this for RAASP sampling
-            self.model.train_inputs = tuple(
-                tri.unsqueeze(-1) if tri.ndimension() == 1 else tri
-                for tri in (update_x, ))
+            # Update the ExactGP training data through the model API so cached
+            # prediction state stays consistent across BO iterations.
+            self.model.set_train_data(inputs=update_x,
+                                      targets=update_y,
+                                      strict=False)
 
             mll = gpytorch.mlls.ExactMarginalLogLikelihood(
                 self.model.likelihood, self.model)
@@ -160,7 +165,7 @@ class SGPRTrainer(BaseTrainer):
             self.model.eval()
 
             x_next, x_af_val, origin = self.data_acquisition_iteration(
-                self.model, update_y, update_x)
+                self.model, update_y, train_x)
 
             cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x,
                                                               train_y=train_y,

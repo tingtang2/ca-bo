@@ -26,17 +26,25 @@ from trainers.ca_gp_trainer import (
     ZaleLogEICaGPSlidingWindowTrainer)
 from trainers.exact_gp_trainer import (
     AdipLogEIExactGPSlidingWindowTrainer, AdipLogEIExactGPTrainer,
+    AdipLogEIExactGPTurboTrainer,
     FexoLogEIExactGPSlidingWindowTrainer, FexoLogEIExactGPTrainer,
+    FexoLogEIExactGPTurboTrainer,
     FexoLogEIGPyTorchExactGPSlidingWindowTrainer, HartmannEIExactGPTrainer,
+    HartmannEIExactGPTurboTrainer,
     LassoDNALogEIExactGPSlidingWindowTrainer, LassoDNALogEIExactGPTrainer,
+    LassoDNALogEIExactGPTurboTrainer,
     LunarEIExactGPTrainer, Med1LogEIExactGPSlidingWindowTrainer,
-    Med1LogEIExactGPTrainer, Med2LogEIExactGPSlidingWindowTrainer,
-    Med2LogEIExactGPTrainer, OsmbLogEIExactGPSlidingWindowTrainer,
-    OsmbLogEIExactGPTrainer, PdopLogEIExactGPSlidingWindowTrainer,
-    PdopLogEIExactGPTrainer, RanoLogEIExactGPSlidingWindowTrainer,
-    RanoLogEIExactGPTrainer, RoverEIExactGPSlidingWindowTrainer,
-    RoverEIExactGPTrainer, RoverLogEIExactGPSlidingWindowTrainer,
-    RoverLogEIExactGPTrainer)
+    LunarEIExactGPTurboTrainer, Med1LogEIExactGPTrainer,
+    Med1LogEIExactGPTurboTrainer, Med2LogEIExactGPSlidingWindowTrainer,
+    Med2LogEIExactGPTrainer, Med2LogEIExactGPTurboTrainer,
+    OsmbLogEIExactGPSlidingWindowTrainer, OsmbLogEIExactGPTrainer,
+    OsmbLogEIExactGPTurboTrainer, PdopLogEIExactGPSlidingWindowTrainer,
+    PdopLogEIExactGPTrainer, PdopLogEIExactGPTurboTrainer,
+    RanoLogEIExactGPSlidingWindowTrainer, RanoLogEIExactGPTrainer,
+    RanoLogEIExactGPTurboTrainer, RoverEIExactGPSlidingWindowTrainer,
+    RoverEIExactGPTrainer, RoverEIExactGPTurboTrainer,
+    RoverLogEIExactGPSlidingWindowTrainer, RoverLogEIExactGPTrainer,
+    RoverLogEIExactGPTurboTrainer)
 from trainers.sgpr_trainer import FexoLogEISGPRTrainer, OsmbLogEISGPRTrainer
 from trainers.svgp_trainer import (
     AdipLogEISVGPTrainer, DhopLogEISVGPTrainer, FexoLogEISVGPTrainer,
@@ -53,6 +61,7 @@ import wandb
 
 arg_trainer_map = {
     'hartmann_ei_exact_gp': HartmannEIExactGPTrainer,
+    'hartmann_ei_exact_gp_turbo': HartmannEIExactGPTurboTrainer,
     'hartmann_ei_svgp': HartmannEISVGPTrainer,
     'hartmann_ei_svgp_eulbo': HartmannEISVGPEULBOTrainer,
     'hartmann_ei_svgp_retrain': HartmannEISVGPRetrainTrainer,
@@ -60,6 +69,7 @@ arg_trainer_map = {
     'hartmann_ei_ca_gp_eulbo': HartmannEICaGPEULBOTrainer,
     'hartmann_log_ei_ca_gp': HartmannLogEICaGPTrainer,
     'lunar_ei_exact_gp': LunarEIExactGPTrainer,
+    'lunar_ei_exact_gp_turbo': LunarEIExactGPTurboTrainer,
     'lunar_ei_ca_gp': LunarEICaGPTrainer,
     'lunar_log_ei_ca_gp': LunarLogEICaGPTrainer,
     'lunar_ei_svgp': LunarEISVGPTrainer,
@@ -67,7 +77,9 @@ arg_trainer_map = {
     'lunar_ei_ca_gp_eulbo': LunarEICaGPEULBOTrainer,
     'lunar_log_ei_ca_gp_eulbo': LunarLogEICaGPEULBOTrainer,
     'rover_ei_exact_gp': RoverEIExactGPTrainer,
+    'rover_ei_exact_gp_turbo': RoverEIExactGPTurboTrainer,
     'rover_log_ei_exact_gp': RoverLogEIExactGPTrainer,
+    'rover_log_ei_exact_gp_turbo': RoverLogEIExactGPTurboTrainer,
     'rover_ei_exact_gp_sliding_window': RoverEIExactGPSlidingWindowTrainer,
     'rover_log_ei_exact_gp_sliding_window':
     RoverLogEIExactGPSlidingWindowTrainer,
@@ -79,6 +91,7 @@ arg_trainer_map = {
     'rover_log_ei_svgp': RoverLogEISVGPTrainer,
     'rover_ei_svgp_eulbo': RoverEISVGPEULBOTrainer,
     'lasso_dna_log_ei_exact_gp': LassoDNALogEIExactGPTrainer,
+    'lasso_dna_log_ei_exact_gp_turbo': LassoDNALogEIExactGPTurboTrainer,
     'lasso_dna_log_ei_exact_gp_sliding_window':
     LassoDNALogEIExactGPSlidingWindowTrainer,
     'lasso_dna_log_ei_ca_gp': LassoDNALogEICaGPTrainer,
@@ -86,6 +99,7 @@ arg_trainer_map = {
     LassoDNALogEICaGPSlidingWindowTrainer,
     'lasso_dna_log_ei_svgp': LassoDNALogEISVGPTrainer,
     'osmb_log_ei_exact_gp': OsmbLogEIExactGPTrainer,
+    'osmb_log_ei_exact_gp_turbo': OsmbLogEIExactGPTurboTrainer,
     'osmb_log_ei_exact_gp_sliding_window':
     OsmbLogEIExactGPSlidingWindowTrainer,
     'osmb_log_ei_ca_gp': OsmbLogEICaGPTrainer,
@@ -93,6 +107,7 @@ arg_trainer_map = {
     'osmb_log_ei_svgp': OsmbLogEISVGPTrainer,
     'osmb_log_ei_sgpr': OsmbLogEISGPRTrainer,
     'fexo_log_ei_exact_gp': FexoLogEIExactGPTrainer,
+    'fexo_log_ei_exact_gp_turbo': FexoLogEIExactGPTurboTrainer,
     'fexo_log_ei_exact_gp_sliding_window':
     FexoLogEIExactGPSlidingWindowTrainer,
     'fexo_log_ei_gpytorch_exact_gp_sliding_window':
@@ -101,11 +116,13 @@ arg_trainer_map = {
     'fexo_log_ei_svgp': FexoLogEISVGPTrainer,
     'fexo_log_ei_sgpr': FexoLogEISGPRTrainer,
     'med1_log_ei_exact_gp': Med1LogEIExactGPTrainer,
+    'med1_log_ei_exact_gp_turbo': Med1LogEIExactGPTurboTrainer,
     'med1_log_ei_exact_gp_sliding_window':
     Med1LogEIExactGPSlidingWindowTrainer,
     'med1_log_ei_ca_gp_sliding_window': Med1LogEICaGPSlidingWindowTrainer,
     'med1_log_ei_svgp': Med1LogEISVGPTrainer,
     'med2_log_ei_exact_gp': Med2LogEIExactGPTrainer,
+    'med2_log_ei_exact_gp_turbo': Med2LogEIExactGPTurboTrainer,
     'med2_log_ei_exact_gp_sliding_window':
     Med2LogEIExactGPSlidingWindowTrainer,
     'med2_log_ei_ca_gp_sliding_window': Med2LogEICaGPSlidingWindowTrainer,
@@ -113,14 +130,17 @@ arg_trainer_map = {
     'pdop_log_ei_exact_gp_sliding_window':
     PdopLogEIExactGPSlidingWindowTrainer,
     'pdop_log_ei_exact_gp': PdopLogEIExactGPTrainer,
+    'pdop_log_ei_exact_gp_turbo': PdopLogEIExactGPTurboTrainer,
     'pdop_log_ei_ca_gp_sliding_window': PdopLogEICaGPSlidingWindowTrainer,
     'pdop_log_ei_svgp': PdopLogEISVGPTrainer,
     'adip_log_ei_exact_gp': AdipLogEIExactGPTrainer,
+    'adip_log_ei_exact_gp_turbo': AdipLogEIExactGPTurboTrainer,
     'adip_log_ei_exact_gp_sliding_window':
     AdipLogEIExactGPSlidingWindowTrainer,
     'adip_log_ei_ca_gp_sliding_window': AdipLogEICaGPSlidingWindowTrainer,
     'adip_log_ei_svgp': AdipLogEISVGPTrainer,
     'rano_log_ei_exact_gp': RanoLogEIExactGPTrainer,
+    'rano_log_ei_exact_gp_turbo': RanoLogEIExactGPTurboTrainer,
     'rano_log_ei_exact_gp_sliding_window':
     RanoLogEIExactGPSlidingWindowTrainer,
     'rano_log_ei_ca_gp_sliding_window': RanoLogEICaGPSlidingWindowTrainer,
@@ -265,6 +285,12 @@ def main() -> int:
         '--turn_on_sobol_init',
         action='store_true',
         help='use scrambled sobol sequences for BO initialization')
+    parser.add_argument(
+        '--use_faithful_turbo_restart',
+        action='store_true',
+        help=
+        'for TurBO exact GPs, restart with a fresh local initial design instead of only resetting the trust-region state'
+    )
     parser.add_argument('--use_output_scale',
                         action='store_true',
                         help='use outputscale with spherical linear kernel')

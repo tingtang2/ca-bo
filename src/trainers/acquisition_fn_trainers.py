@@ -1,4 +1,5 @@
 import copy
+import logging
 from functools import partial
 
 import torch
@@ -16,35 +17,45 @@ from botorch.optim.initializers import initialize_q_batch_nonneg
 
 class EITrainer(BaseTrainer):
 
+    def get_acq_options(self):
+        if getattr(self, 'enable_raasp', False):
+            if 'turbo' in getattr(self, 'name', ''):
+                logging.warning(
+                    'RAASP is disabled for TurBO trainers because its initializer can generate points outside the trust-region bounds.'
+                )
+                return None
+            return {
+                'sample_around_best': True,
+                'sample_around_best_pct': self.raasp_best_pct,
+                'sample_around_best_sigma': self.raasp_sigma
+            }
+        return None
+
+    def get_acq_bounds(self, model, Y: torch.Tensor, X):
+        if self.turn_on_simple_input_transform:
+            weights = torch.ones(X.shape[-1], device=X.device, dtype=X.dtype)
+            lb = 0 * weights
+            ub = 1 * weights
+        else:
+            weights = torch.ones(X.shape[-1], device=X.device, dtype=X.dtype)
+            lb = self.task.lb.to(X.device, X.dtype) * weights
+            ub = self.task.ub.to(X.device, X.dtype) * weights
+        return lb, ub
+
     def data_acquisition_iteration(self,
                                    model,
                                    Y: torch.Tensor,
                                    X,
                                    num_restarts: int = 10,
                                    raw_samples: int = 256):
-        x_center = copy.deepcopy(X[Y.argmax(), :])
-        weights = torch.ones_like(x_center)
-
-        if self.turn_on_simple_input_transform:
-            lb = 0 * weights
-            ub = 1 * weights
-        else:
-            lb = self.task.lb * weights
-            ub = self.task.ub * weights
+        lb, ub = self.get_acq_bounds(model=model, Y=Y, X=X)
 
         if self.use_analytic_acq_func:
             ei = ExpectedImprovement(model, Y.max().to(self.device))
         else:
             ei = qExpectedImprovement(model, Y.max().to(self.device))
 
-        if self.enable_raasp:
-            options = {
-                'sample_around_best': True,
-                'sample_around_best_pct': self.raasp_best_pct,
-                'sample_around_best_sigma': self.raasp_sigma
-            }
-        else:
-            options = None
+        options = self.get_acq_options()
 
         X_next, acq_val, origin = optimize_acqf(ei,
                                                 bounds=torch.stack(
@@ -58,20 +69,38 @@ class EITrainer(BaseTrainer):
 
 class LogEITrainer(BaseTrainer):
 
+    def get_acq_options(self):
+        if getattr(self, 'enable_raasp', False):
+            if 'turbo' in getattr(self, 'name', ''):
+                logging.warning(
+                    'RAASP is disabled for TurBO trainers because its initializer can generate points outside the trust-region bounds.'
+                )
+                return None
+            return {
+                'sample_around_best': True,
+                'sample_around_best_pct': self.raasp_best_pct,
+                'sample_around_best_sigma': self.raasp_sigma
+            }
+        return None
+
+    def get_acq_bounds(self, model, Y: torch.Tensor, X):
+        if self.turn_on_simple_input_transform:
+            weights = torch.ones(X.shape[-1], device=X.device, dtype=X.dtype)
+            lb = 0 * weights
+            ub = 1 * weights
+        else:
+            weights = torch.ones(X.shape[-1], device=X.device, dtype=X.dtype)
+            lb = self.task.lb.to(X.device, X.dtype) * weights
+            ub = self.task.ub.to(X.device, X.dtype) * weights
+        return lb, ub
+
     def data_acquisition_iteration(self,
                                    model,
                                    Y: torch.Tensor,
                                    X,
                                    num_restarts: int = 10,
                                    raw_samples: int = 256):
-        weights = torch.ones(X.shape[-1])
-
-        if self.turn_on_simple_input_transform:
-            lb = 0 * weights
-            ub = 1 * weights
-        else:
-            lb = self.task.lb * weights
-            ub = self.task.ub * weights
+        lb, ub = self.get_acq_bounds(model=model, Y=Y, X=X)
 
         if 'svgp' not in self.name and self.debug:
             assert torch.equal(Y.max(), self.model.train_targets.max())
@@ -81,14 +110,7 @@ class LogEITrainer(BaseTrainer):
         else:
             ei = qLogExpectedImprovement(model, Y.max().to(self.device))
 
-        if self.enable_raasp:
-            options = {
-                'sample_around_best': True,
-                'sample_around_best_pct': self.raasp_best_pct,
-                'sample_around_best_sigma': self.raasp_sigma
-            }
-        else:
-            options = None
+        options = self.get_acq_options()
 
         if self.debug:
             set_seed(self.seed)

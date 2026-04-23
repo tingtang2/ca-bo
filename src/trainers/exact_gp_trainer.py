@@ -9,12 +9,13 @@ from models.likelihoods import \
     get_gaussian_likelihood_with_lognormal_prior as \
     custom_get_gaussian_likelihood_with_lognormal_prior
 from torch.utils.data import DataLoader, TensorDataset
-from tqdm import trange
+from tqdm import tqdm, trange
 from trainers.acquisition_fn_trainers import EITrainer, LogEITrainer
 from trainers.base_trainer import BaseTrainer
 from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
                                     LassoDNATrainer, LunarTrainer,
                                     RoverTrainer)
+from trainers.utils.turbo import TurboState, get_trust_region_bounds, update_state
 
 import gpytorch
 from botorch.fit import fit_gpytorch_mll
@@ -181,6 +182,224 @@ class ExactGPTrainer(BaseTrainer):
                                   batch_size=train_x.shape[0],
                                   shuffle=False)
         return train_loader
+
+
+class TurboExactGPTrainer(ExactGPTrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.name = 'exact_gp_turbo'
+
+    def initialize_turbo_state(self, train_x, train_y):
+        self.tr_state = TurboState(dim=train_x.shape[-1],
+                                   batch_size=self.batch_size,
+                                   best_value=train_y.max().item())
+
+    def set_local_train_y_stats(self, train_y):
+        self.train_y_mean = train_y.mean()
+        self.train_y_std = train_y.std()
+        if self.train_y_std == 0:
+            self.train_y_std = 1
+
+    def restart_local_trust_region(self):
+        if self.turn_on_sobol_init:
+            local_train_x, local_train_y = self.sobol_initialize_data()
+        else:
+            local_train_x = torch.rand(
+                (self.num_initial_points, self.task.dim)).to(
+                    self.device, self.data_type)
+            if self.turn_on_simple_input_transform:
+                eval_x = local_train_x * (self.task.ub - self.task.lb
+                                          ) + self.task.lb
+            else:
+                local_train_x = local_train_x * (self.task.ub - self.task.lb
+                                                 ) + self.task.lb
+                eval_x = local_train_x
+            local_train_y = self.task(eval_x)
+
+        self.set_local_train_y_stats(local_train_y)
+        self.tr_state = TurboState(dim=local_train_x.shape[-1],
+                                   batch_size=self.batch_size,
+                                   best_value=local_train_y.max().item())
+        return local_train_x, local_train_y
+
+    def get_acq_bounds(self, model, Y: torch.Tensor, X):
+        if self.turn_on_simple_input_transform:
+            lb = torch.zeros(X.shape[-1], device=X.device, dtype=X.dtype)
+            ub = torch.ones(X.shape[-1], device=X.device, dtype=X.dtype)
+        else:
+            lb = self.task.lb.to(X.device, X.dtype)
+            ub = self.task.ub.to(X.device, X.dtype)
+
+        return get_trust_region_bounds(model=model,
+                                       X=X,
+                                       Y=Y,
+                                       length=self.tr_state.length,
+                                       lb=lb,
+                                       ub=ub)
+
+    def run_experiment(self, iteration: int):
+        logging.info(self.__dict__)
+        if self.turn_on_sobol_init:
+            local_train_x, local_train_y = self.sobol_initialize_data()
+        else:
+            local_train_x, local_train_y = self.initialize_data()
+        global_train_x = local_train_x.clone()
+        global_train_y = local_train_y.clone()
+
+        self.set_local_train_y_stats(local_train_y)
+
+        print(f'initial y max: {global_train_y.max().item()}')
+        logging.info(f'initial y max: {global_train_y.max().item()}')
+        if not self.turn_off_wandb:
+            self.tracker.log({
+                'initial y max': global_train_y.max().item(),
+                'best reward': global_train_y.max().item()
+            })
+
+        self.initialize_turbo_state(train_x=local_train_x, train_y=local_train_y)
+        reward = []
+        initial_num_calls = self.task.num_calls
+        total_budget = max(self.max_oracle_calls - initial_num_calls, 0)
+        with tqdm(total=total_budget) as pbar:
+            while self.task.num_calls < self.max_oracle_calls:
+                calls_before_iter = self.task.num_calls
+
+                if self.norm_data:
+                    model_train_y = (local_train_y -
+                                     self.train_y_mean) / self.train_y_std
+                else:
+                    model_train_y = local_train_y
+
+                if self.use_ard_kernel:
+                    ard_num_dims = local_train_x.shape[-1]
+                else:
+                    ard_num_dims = None
+
+                if self.kernel_type == 'spherical_linear':
+                    covar_module = SphericalLinearKernel(
+                        data_dims=local_train_x.shape[-1],
+                        prior=self.spherical_linear_lengthscale_prior,
+                        ard_num_dims=ard_num_dims,
+                        remove_global_ls=self.remove_global_ls)
+                    likelihood = custom_get_gaussian_likelihood_with_lognormal_prior(loc=self.ln_noise_prior_loc
+                    )
+                elif self.kernel_likelihood_prior == 'gamma':
+                    covar_module = get_matern_kernel_with_gamma_prior(
+                        ard_num_dims=ard_num_dims)
+                    likelihood = get_gaussian_likelihood_with_gamma_prior()
+                elif self.kernel_likelihood_prior == 'lognormal':
+                    covar_module = get_covar_module_with_dim_scaled_prior(
+                        ard_num_dims=ard_num_dims, use_rbf_kernel=False)
+                    likelihood = get_gaussian_likelihood_with_lognormal_prior()
+                else:
+                    if self.kernel_type == 'rbf':
+                        base_kernel = gpytorch.kernels.RBFKernel(
+                            ard_num_dims=ard_num_dims)
+                    elif self.kernel_type == 'matern_3_2':
+                        base_kernel = gpytorch.kernels.MaternKernel(
+                            1.5, ard_num_dims=ard_num_dims)
+                    else:
+                        base_kernel = gpytorch.kernels.MaternKernel(
+                            2.5, ard_num_dims=ard_num_dims)
+
+                    covar_module = gpytorch.kernels.ScaleKernel(base_kernel)
+                    likelihood = gpytorch.likelihoods.GaussianLikelihood().to(
+                        self.device)
+
+                    assert covar_module.base_kernel.ard_num_dims == ard_num_dims
+
+                self.model = SingleTaskGP(local_train_x,
+                                          standardize(model_train_y),
+                                          covar_module=covar_module,
+                                          likelihood=likelihood,
+                                          outcome_transform=None).to(self.device)
+                self.model.train()
+
+                with ExitStack() as es:
+                    es.enter_context(gpytorch.settings.cholesky_max_tries(10))
+                    es.enter_context(
+                        gpytorch.settings.max_cholesky_size(float("inf")))
+                    es.enter_context(
+                        gpytorch.settings.fast_computations(
+                            log_prob=True,
+                            covar_root_decomposition=False,
+                            solves=False))
+
+                    exact_gp_mll = ExactMarginalLogLikelihood(
+                        self.model.likelihood, self.model)
+                    fit_gpytorch_mll(exact_gp_mll)
+
+                self.model.eval()
+
+                train_rmse = -1
+                train_nll = -1
+                x_next, x_af_val, origin = self.data_acquisition_iteration(
+                    self.model, standardize(model_train_y), local_train_x)
+
+                if self.turn_on_simple_input_transform:
+                    y_next = self.task(x_next * (self.task.ub - self.task.lb) +
+                                       self.task.lb)
+                else:
+                    y_next = self.task(x_next)
+                cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=local_train_x,
+                                                                  train_y=local_train_y,
+                                                                  x_next=x_next)
+
+                x_next_sigma = torch.Tensor([0])
+                standardized_gain = torch.Tensor([0])
+
+                local_train_x = torch.cat((local_train_x, x_next), dim=-2)
+                local_train_y = torch.cat((local_train_y, y_next), dim=-2)
+                global_train_x = torch.cat((global_train_x, x_next), dim=-2)
+                global_train_y = torch.cat((global_train_y, y_next), dim=-2)
+
+                self.tr_state = update_state(state=self.tr_state, Y_next=y_next)
+
+                if self.tr_state.restart_triggered:
+                    if self.use_faithful_turbo_restart:
+                        remaining_budget = self.max_oracle_calls - self.task.num_calls
+                        if remaining_budget < self.num_initial_points:
+                            self.log_wandb_metrics(
+                                train_y=global_train_y,
+                                y_next=y_next.item(),
+                                train_rmse=train_rmse,
+                                cos_sim_incum=cos_sim_incum,
+                                train_nll=train_nll,
+                                x_af_val=x_af_val.item(),
+                                x_next_sigma=x_next_sigma.item(),
+                                standardized_gain=standardized_gain.item(),
+                                candidate_origin=origin)
+                            reward.append(global_train_y.max().item())
+                            pbar.update(self.task.num_calls - calls_before_iter)
+                            break
+
+                        local_train_x, local_train_y = self.restart_local_trust_region()
+                        global_train_x = torch.cat((global_train_x, local_train_x),
+                                                   dim=-2)
+                        global_train_y = torch.cat((global_train_y, local_train_y),
+                                                   dim=-2)
+                    else:
+                        self.tr_state = TurboState(dim=local_train_x.shape[-1],
+                                                   batch_size=self.batch_size,
+                                                   best_value=local_train_y.max().item())
+
+                self.log_wandb_metrics(train_y=global_train_y,
+                                       y_next=y_next.item(),
+                                       train_rmse=train_rmse,
+                                       cos_sim_incum=cos_sim_incum,
+                                       train_nll=train_nll,
+                                       x_af_val=x_af_val.item(),
+                                       x_next_sigma=x_next_sigma.item(),
+                                       standardized_gain=standardized_gain.item(),
+                                       candidate_origin=origin)
+
+                reward.append(global_train_y.max().item())
+                pbar.update(self.task.num_calls - calls_before_iter)
+
+        self.save_metrics(metrics=reward,
+                          iter=iteration,
+                          name=self.trainer_type)
 
 
 class GPyTorchExactGPSlidingWindowTrainer(BaseTrainer):
@@ -603,6 +822,78 @@ class PdopLogEIExactGPTrainer(ExactGPTrainer, GuacamolTrainer, LogEITrainer):
 
 
 class RanoLogEIExactGPTrainer(ExactGPTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='rano', **kwargs)
+
+
+class HartmannEIExactGPTurboTrainer(TurboExactGPTrainer, HartmannTrainer,
+                                    EITrainer):
+    pass
+
+
+class LunarEIExactGPTurboTrainer(TurboExactGPTrainer, LunarTrainer, EITrainer):
+    pass
+
+
+class RoverEIExactGPTurboTrainer(TurboExactGPTrainer, RoverTrainer, EITrainer):
+    pass
+
+
+class RoverLogEIExactGPTurboTrainer(TurboExactGPTrainer, RoverTrainer,
+                                    LogEITrainer):
+    pass
+
+
+class LassoDNALogEIExactGPTurboTrainer(TurboExactGPTrainer, LassoDNATrainer,
+                                       LogEITrainer):
+    pass
+
+
+class OsmbLogEIExactGPTurboTrainer(TurboExactGPTrainer, GuacamolTrainer,
+                                   LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='osmb', **kwargs)
+
+
+class FexoLogEIExactGPTurboTrainer(TurboExactGPTrainer, GuacamolTrainer,
+                                   LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='fexo', **kwargs)
+
+
+class Med1LogEIExactGPTurboTrainer(TurboExactGPTrainer, GuacamolTrainer,
+                                   LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='med1', **kwargs)
+
+
+class Med2LogEIExactGPTurboTrainer(TurboExactGPTrainer, GuacamolTrainer,
+                                   LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='med2', **kwargs)
+
+
+class AdipLogEIExactGPTurboTrainer(TurboExactGPTrainer, GuacamolTrainer,
+                                   LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='adip', **kwargs)
+
+
+class PdopLogEIExactGPTurboTrainer(TurboExactGPTrainer, GuacamolTrainer,
+                                   LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='pdop', **kwargs)
+
+
+class RanoLogEIExactGPTurboTrainer(TurboExactGPTrainer, GuacamolTrainer,
+                                   LogEITrainer):
 
     def __init__(self, **kwargs):
         super().__init__(molecule='rano', **kwargs)

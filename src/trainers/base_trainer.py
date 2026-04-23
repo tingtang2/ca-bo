@@ -152,12 +152,16 @@ class BaseTrainer(ABC):
 
         passed_model = self.model
 
+        covar_module = passed_model.covar_module
+        if 'sgpr' in self.name:
+            covar_module = covar_module.base_kernel
+
         if self.kernel_likelihood_prior == 'lognormal' or (
                 self.kernel_type == 'spherical_linear'
                 and not self.use_output_scale):
             outputscale = torch.tensor([1])
-            raw_lengthscale = passed_model.covar_module.raw_lengthscale
-            constraint = passed_model.covar_module.raw_lengthscale_constraint
+            raw_lengthscale = covar_module.raw_lengthscale
+            constraint = covar_module.raw_lengthscale_constraint
             lengthscale = constraint.transform(raw_lengthscale)
         elif 'sgpr' in self.name:
             raw_outputscale = passed_model.covar_module.base_kernel.raw_outputscale

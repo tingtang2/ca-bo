@@ -30,13 +30,6 @@ class SGPR(ExactGP):
                  spherical_linear_lengthscale_prior: str = 'dsp_unscaled'):
 
         self.add_likelihood = add_likelihood
-        if standardize_outputs:
-            outcome_transform = Standardize(m=1,
-                                            batch_shape=train_x.shape[:-2])
-            outcome_transform.train()
-            train_y, train_Yvar = outcome_transform(Y=train_y.unsqueeze(1),
-                                                    Yvar=None,
-                                                    X=train_x)
         if use_ard_kernel:
             ard_num_dims = inducing_points.shape[-1]
         else:
@@ -86,9 +79,8 @@ class SGPR(ExactGP):
         # need these attributes for BoTorch to work
         self._has_transformed_inputs = False  # need this for RAASP sampling
         self.num_outputs = 1
-
-        if standardize_outputs:
-            self.outcome_transform = outcome_transform
+        
+        self.outcome_transform = None
 
     def forward(self, x):
         mean_x = self.mean_module(x)
