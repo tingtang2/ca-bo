@@ -209,7 +209,87 @@ class OsmbLogEISGPRTrainer(SGPRTrainer, GuacamolTrainer, LogEITrainer):
         super().__init__(molecule='osmb', **kwargs)
 
 
+class HartmannEISGPRTrainer(SGPRTrainer, HartmannTrainer, EITrainer):
+    pass
+
+
+class LunarEISGPRTrainer(SGPRTrainer, LunarTrainer, EITrainer):
+    pass
+
+
+class RoverEISGPRTrainer(SGPRTrainer, RoverTrainer, EITrainer):
+    pass
+
+
+class RoverLogEISGPRTrainer(SGPRTrainer, RoverTrainer, LogEITrainer):
+    pass
+
+
+class LassoDNALogEISGPRTrainer(SGPRTrainer, LassoDNATrainer, LogEITrainer):
+    pass
+
+
 class FexoLogEISGPRTrainer(SGPRTrainer, GuacamolTrainer, LogEITrainer):
 
     def __init__(self, **kwargs):
         super().__init__(molecule='fexo', **kwargs)
+
+
+class Med1LogEISGPRTrainer(SGPRTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='med1', **kwargs)
+
+
+class Med2LogEISGPRTrainer(SGPRTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='med2', **kwargs)
+
+
+class PdopLogEISGPRTrainer(SGPRTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='pdop', **kwargs)
+
+
+class AdipLogEISGPRTrainer(SGPRTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='adip', **kwargs)
+
+
+class RanoLogEISGPRTrainer(SGPRTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='rano', **kwargs)
+
+
+class SigaLogEISGPRTrainer(SGPRTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='siga', **kwargs)
+
+
+class ZaleLogEISGPRTrainer(SGPRTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='zale', **kwargs)
+
+
+class ValtLogEISGPRTrainer(SGPRTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='valt', **kwargs)
+
+
+class DhopLogEISGPRTrainer(SGPRTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='dhop', **kwargs)
+
+
+class ShopLogEISGPRTrainer(SGPRTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='shop', **kwargs)
