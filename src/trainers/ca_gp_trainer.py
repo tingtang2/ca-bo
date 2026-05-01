@@ -423,6 +423,7 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
 
                     # sliding window here
                     # Set number of non-zero action entries such that num_non_zero * projection_dim = num_train_targets
+                    prev_num_non_zero = self.model.num_non_zero
                     self.model.num_non_zero = update_y.size(
                         -1) // self.model.projection_dim
 
@@ -434,8 +435,33 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
 
                     self.model.train_targets = update_y[-active_train_size:]
 
+                    # If the action width changes, rebuild the block operator.
+                    # This happens when the window grows past another multiple
+                    # of projection_dim (e.g. 128 -> 256 points for proj_dim=128).
+                    if self.model.num_non_zero != prev_num_non_zero:
+                        old_blocks = self.model.actions_op.blocks.data
+                        blocks = torch.randn(
+                            (self.model.projection_dim,
+                             self.model.num_non_zero),
+                            device=self.device,
+                            dtype=old_blocks.dtype).div(
+                                math.sqrt(self.model.num_non_zero))
+                        cols_to_copy = min(prev_num_non_zero,
+                                           self.model.num_non_zero)
+                        blocks[:, :cols_to_copy] = old_blocks[:, :cols_to_copy]
+                        non_zero_idcs = torch.arange(
+                            active_train_size, device=self.device).reshape(
+                                self.model.projection_dim, -1)
+
+                        self.model.non_zero_action_entries = torch.nn.Parameter(
+                            blocks)
+                        self.model.actions_op = operators.BlockDiagonalSparseLinearOperator(
+                            non_zero_idcs=non_zero_idcs,
+                            blocks=self.model.non_zero_action_entries,
+                            size_input_dim=active_train_size)
+
                     # add on a new action if proj_dim >= training data size, else slide window
-                    if train_x.size(0) <= proj_dim:
+                    elif train_x.size(0) <= proj_dim:
                         blocks = torch.concat(
                             (self.model.actions_op.blocks.data,
                              torch.randn((1, self.model.num_non_zero)).div(
