@@ -426,13 +426,13 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                     self.model.num_non_zero = update_y.size(
                         -1) // self.model.projection_dim
 
+                    active_train_size = (self.model.num_non_zero *
+                                         self.model.projection_dim)
                     self.model.train_inputs = tuple(
                         tri.unsqueeze(-1) if tri.ndimension() == 1 else tri
-                        for tri in (update_x[0:self.model.num_non_zero *
-                                             self.model.projection_dim], ))
+                        for tri in (update_x[-active_train_size:], ))
 
-                    self.model.train_targets = update_y[
-                        0:self.model.num_non_zero * self.model.projection_dim]
+                    self.model.train_targets = update_y[-active_train_size:]
 
                     # add on a new action if proj_dim >= training data size, else slide window
                     if train_x.size(0) <= proj_dim:
