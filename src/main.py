@@ -11,56 +11,102 @@ from set_seed import set_seed
 from torch.optim import LBFGS, Adam, AdamW
 from trainers.base_trainer import BaseTrainer
 from trainers.ca_gp_trainer import (
-    AdipLogEICaGPSlidingWindowTrainer, DhopLogEICaGPSlidingWindowTrainer,
-    FexoLogEICaGPSlidingWindowTrainer, HartmannEICaGPEULBOTrainer,
-    HartmannEICaGPTrainer, HartmannLogEICaGPTrainer,
-    LassoDNALogEICaGPSlidingWindowTrainer, LassoDNALogEICaGPTrainer,
-    LunarEICaGPEULBOTrainer, LunarEICaGPTrainer, LunarLogEICaGPEULBOTrainer,
-    LunarLogEICaGPTrainer, Med1LogEICaGPSlidingWindowTrainer,
-    Med2LogEICaGPSlidingWindowTrainer, OsmbLogEICaGPSlidingWindowTrainer,
-    OsmbLogEICaGPTrainer, PdopLogEICaGPSlidingWindowTrainer,
-    RanoLogEICaGPSlidingWindowTrainer, RoverEICaGPEULBOTrainer,
-    RoverEICaGPSlidingWindowTrainer, RoverEICaGPTrainer,
-    RoverLogEICaGPSlidingWindowTrainer, ShopLogEICaGPSlidingWindowTrainer,
-    SigaLogEICaGPSlidingWindowTrainer, ValtLogEICaGPSlidingWindowTrainer,
-    ZaleLogEICaGPSlidingWindowTrainer)
+    AdipLogEICaGPSlidingWindowTrainer, AdipLogEICaGPTurboSlidingWindowTrainer,
+    AdipLogEICaGPTurboTrainer, DhopLogEICaGPSlidingWindowTrainer,
+    FexoLogEICaGPSlidingWindowTrainer, FexoLogEICaGPTurboSlidingWindowTrainer,
+    FexoLogEICaGPTurboTrainer, HartmannEICaGPEULBOTrainer,
+    HartmannEICaGPTrainer, HartmannEICaGPTurboSlidingWindowTrainer,
+    HartmannEICaGPTurboTrainer, HartmannLogEICaGPTrainer,
+    LassoDNALogEICaGPSlidingWindowTrainer,
+    LassoDNALogEICaGPTurboSlidingWindowTrainer,
+    LassoDNALogEICaGPTurboTrainer, LassoDNALogEICaGPTrainer,
+    LunarEICaGPEULBOTrainer, LunarEICaGPTrainer,
+    LunarEICaGPTurboSlidingWindowTrainer, LunarEICaGPTurboTrainer,
+    LunarLogEICaGPEULBOTrainer, LunarLogEICaGPTrainer,
+    Med1LogEICaGPSlidingWindowTrainer, Med1LogEICaGPTurboSlidingWindowTrainer,
+    Med1LogEICaGPTurboTrainer, Med2LogEICaGPSlidingWindowTrainer,
+    Med2LogEICaGPTurboSlidingWindowTrainer, Med2LogEICaGPTurboTrainer,
+    OsmbLogEICaGPSlidingWindowTrainer, OsmbLogEICaGPTurboSlidingWindowTrainer,
+    OsmbLogEICaGPTurboTrainer, OsmbLogEICaGPTrainer,
+    PdopLogEICaGPSlidingWindowTrainer, PdopLogEICaGPTurboSlidingWindowTrainer,
+    PdopLogEICaGPTurboTrainer, RanoLogEICaGPSlidingWindowTrainer,
+    RanoLogEICaGPTurboSlidingWindowTrainer, RanoLogEICaGPTurboTrainer,
+    RoverEICaGPEULBOTrainer, RoverEICaGPSlidingWindowTrainer,
+    RoverEICaGPTurboSlidingWindowTrainer, RoverEICaGPTurboTrainer,
+    RoverEICaGPTrainer, RoverLogEICaGPSlidingWindowTrainer,
+    RoverLogEICaGPTurboSlidingWindowTrainer, RoverLogEICaGPTurboTrainer,
+    ShopLogEICaGPSlidingWindowTrainer, SigaLogEICaGPSlidingWindowTrainer,
+    ValtLogEICaGPSlidingWindowTrainer, ZaleLogEICaGPSlidingWindowTrainer)
 from trainers.exact_gp_trainer import (
     AdipLogEIExactGPSlidingWindowTrainer, AdipLogEIExactGPTrainer,
-    AdipLogEIExactGPTurboTrainer,
+    AdipLogEIExactGPTurboSlidingWindowTrainer, AdipLogEIExactGPTurboTrainer,
     FexoLogEIExactGPSlidingWindowTrainer, FexoLogEIExactGPTrainer,
-    FexoLogEIExactGPTurboTrainer,
+    FexoLogEIExactGPTurboSlidingWindowTrainer, FexoLogEIExactGPTurboTrainer,
     FexoLogEIGPyTorchExactGPSlidingWindowTrainer, HartmannEIExactGPTrainer,
-    HartmannEIExactGPTurboTrainer,
+    HartmannEIExactGPTurboSlidingWindowTrainer, HartmannEIExactGPTurboTrainer,
     LassoDNALogEIExactGPSlidingWindowTrainer, LassoDNALogEIExactGPTrainer,
-    LassoDNALogEIExactGPTurboTrainer,
-    LunarEIExactGPTrainer, Med1LogEIExactGPSlidingWindowTrainer,
-    LunarEIExactGPTurboTrainer, Med1LogEIExactGPTrainer,
-    Med1LogEIExactGPTurboTrainer, Med2LogEIExactGPSlidingWindowTrainer,
-    Med2LogEIExactGPTrainer, Med2LogEIExactGPTurboTrainer,
+    LassoDNALogEIExactGPTurboSlidingWindowTrainer,
+    LassoDNALogEIExactGPTurboTrainer, LunarEIExactGPTrainer,
+    LunarEIExactGPTurboSlidingWindowTrainer, LunarEIExactGPTurboTrainer,
+    Med1LogEIExactGPSlidingWindowTrainer, Med1LogEIExactGPTrainer,
+    Med1LogEIExactGPTurboSlidingWindowTrainer, Med1LogEIExactGPTurboTrainer,
+    Med2LogEIExactGPSlidingWindowTrainer, Med2LogEIExactGPTrainer,
+    Med2LogEIExactGPTurboSlidingWindowTrainer, Med2LogEIExactGPTurboTrainer,
     OsmbLogEIExactGPSlidingWindowTrainer, OsmbLogEIExactGPTrainer,
-    OsmbLogEIExactGPTurboTrainer, PdopLogEIExactGPSlidingWindowTrainer,
-    PdopLogEIExactGPTrainer, PdopLogEIExactGPTurboTrainer,
+    OsmbLogEIExactGPTurboSlidingWindowTrainer, OsmbLogEIExactGPTurboTrainer,
+    PdopLogEIExactGPSlidingWindowTrainer, PdopLogEIExactGPTrainer,
+    PdopLogEIExactGPTurboSlidingWindowTrainer, PdopLogEIExactGPTurboTrainer,
     RanoLogEIExactGPSlidingWindowTrainer, RanoLogEIExactGPTrainer,
-    RanoLogEIExactGPTurboTrainer, RoverEIExactGPSlidingWindowTrainer,
-    RoverEIExactGPTrainer, RoverEIExactGPTurboTrainer,
+    RanoLogEIExactGPTurboSlidingWindowTrainer, RanoLogEIExactGPTurboTrainer,
+    RoverEIExactGPSlidingWindowTrainer, RoverEIExactGPTrainer,
+    RoverEIExactGPTurboSlidingWindowTrainer, RoverEIExactGPTurboTrainer,
     RoverLogEIExactGPSlidingWindowTrainer, RoverLogEIExactGPTrainer,
+    RoverLogEIExactGPTurboSlidingWindowTrainer,
     RoverLogEIExactGPTurboTrainer)
 from trainers.sgpr_trainer import (
-    AdipLogEISGPRTrainer, DhopLogEISGPRTrainer, FexoLogEISGPRTrainer,
-    HartmannEISGPRTrainer, LassoDNALogEISGPRTrainer, LunarEISGPRTrainer,
-    Med1LogEISGPRTrainer, Med2LogEISGPRTrainer, OsmbLogEISGPRTrainer,
-    PdopLogEISGPRTrainer, RanoLogEISGPRTrainer, RoverEISGPRTrainer,
-    RoverLogEISGPRTrainer, ShopLogEISGPRTrainer, SigaLogEISGPRTrainer,
-    ValtLogEISGPRTrainer, ZaleLogEISGPRTrainer)
+    AdipLogEISGPRTrainer, AdipLogEISGPRTurboSlidingWindowTrainer,
+    AdipLogEISGPRTurboTrainer, DhopLogEISGPRTrainer, FexoLogEISGPRTrainer,
+    FexoLogEISGPRTurboSlidingWindowTrainer, FexoLogEISGPRTurboTrainer,
+    HartmannEISGPRTrainer, HartmannEISGPRTurboSlidingWindowTrainer,
+    HartmannEISGPRTurboTrainer, LassoDNALogEISGPRTrainer,
+    LassoDNALogEISGPRTurboSlidingWindowTrainer,
+    LassoDNALogEISGPRTurboTrainer, LunarEISGPRTrainer,
+    LunarEISGPRTurboSlidingWindowTrainer, LunarEISGPRTurboTrainer,
+    Med1LogEISGPRTrainer, Med1LogEISGPRTurboSlidingWindowTrainer,
+    Med1LogEISGPRTurboTrainer, Med2LogEISGPRTrainer,
+    Med2LogEISGPRTurboSlidingWindowTrainer, Med2LogEISGPRTurboTrainer,
+    OsmbLogEISGPRTrainer, OsmbLogEISGPRTurboSlidingWindowTrainer,
+    OsmbLogEISGPRTurboTrainer, PdopLogEISGPRTrainer,
+    PdopLogEISGPRTurboSlidingWindowTrainer, PdopLogEISGPRTurboTrainer,
+    RanoLogEISGPRTrainer, RanoLogEISGPRTurboSlidingWindowTrainer,
+    RanoLogEISGPRTurboTrainer, RoverEISGPRTrainer,
+    RoverEISGPRTurboSlidingWindowTrainer, RoverEISGPRTurboTrainer,
+    RoverLogEISGPRTrainer, RoverLogEISGPRTurboSlidingWindowTrainer,
+    RoverLogEISGPRTurboTrainer, ShopLogEISGPRTrainer,
+    SigaLogEISGPRTrainer, ValtLogEISGPRTrainer, ZaleLogEISGPRTrainer)
 from trainers.svgp_trainer import (
-    AdipLogEISVGPTrainer, DhopLogEISVGPTrainer, FexoLogEISVGPTrainer,
+    AdipLogEISVGPTrainer, AdipLogEISVGPTurboSlidingWindowTrainer,
+    AdipLogEISVGPTurboTrainer, DhopLogEISVGPTrainer, FexoLogEISVGPTrainer,
+    FexoLogEISVGPTurboSlidingWindowTrainer, FexoLogEISVGPTurboTrainer,
     HartmannEISVGPEULBOTrainer, HartmannEISVGPRetrainTrainer,
-    HartmannEISVGPTrainer, LassoDNALogEISVGPTrainer, LunarEISVGPEULBOTrainer,
-    LunarEISVGPTrainer, Med1LogEISVGPTrainer, Med2LogEISVGPTrainer,
-    OsmbLogEISVGPTrainer, PdopLogEISVGPTrainer, RanoLogEISVGPTrainer,
-    RoverEISVGPEULBOTrainer, RoverEISVGPTrainer, RoverLogEISVGPTrainer,
-    ShopLogEISVGPTrainer, SigaLogEISVGPTrainer, ValtLogEISVGPTrainer,
-    ZaleLogEISVGPTrainer)
+    HartmannEISVGPTrainer, HartmannEISVGPTurboSlidingWindowTrainer,
+    HartmannEISVGPTurboTrainer, LassoDNALogEISVGPTrainer,
+    LassoDNALogEISVGPTurboSlidingWindowTrainer,
+    LassoDNALogEISVGPTurboTrainer, LunarEISVGPEULBOTrainer,
+    LunarEISVGPTrainer, LunarEISVGPTurboSlidingWindowTrainer,
+    LunarEISVGPTurboTrainer, Med1LogEISVGPTrainer,
+    Med1LogEISVGPTurboSlidingWindowTrainer, Med1LogEISVGPTurboTrainer,
+    Med2LogEISVGPTrainer, Med2LogEISVGPTurboSlidingWindowTrainer,
+    Med2LogEISVGPTurboTrainer, OsmbLogEISVGPTrainer,
+    OsmbLogEISVGPTurboSlidingWindowTrainer, OsmbLogEISVGPTurboTrainer,
+    PdopLogEISVGPTrainer, PdopLogEISVGPTurboSlidingWindowTrainer,
+    PdopLogEISVGPTurboTrainer, RanoLogEISVGPTrainer,
+    RanoLogEISVGPTurboSlidingWindowTrainer, RanoLogEISVGPTurboTrainer,
+    RoverEISVGPEULBOTrainer, RoverEISVGPTrainer,
+    RoverEISVGPTurboSlidingWindowTrainer, RoverEISVGPTurboTrainer,
+    RoverLogEISVGPTrainer, RoverLogEISVGPTurboSlidingWindowTrainer,
+    RoverLogEISVGPTurboTrainer, ShopLogEISVGPTrainer,
+    SigaLogEISVGPTrainer, ValtLogEISVGPTrainer, ZaleLogEISVGPTrainer)
 
 import botorch
 import wandb
@@ -68,99 +114,231 @@ import wandb
 arg_trainer_map = {
     'hartmann_ei_exact_gp': HartmannEIExactGPTrainer,
     'hartmann_ei_exact_gp_turbo': HartmannEIExactGPTurboTrainer,
+    'hartmann_ei_exact_gp_turbo_sliding_window':
+    HartmannEIExactGPTurboSlidingWindowTrainer,
     'hartmann_ei_svgp': HartmannEISVGPTrainer,
+    'hartmann_ei_svgp_turbo': HartmannEISVGPTurboTrainer,
+    'hartmann_ei_svgp_turbo_sliding_window':
+    HartmannEISVGPTurboSlidingWindowTrainer,
     'hartmann_ei_sgpr': HartmannEISGPRTrainer,
+    'hartmann_ei_sgpr_turbo': HartmannEISGPRTurboTrainer,
+    'hartmann_ei_sgpr_turbo_sliding_window':
+    HartmannEISGPRTurboSlidingWindowTrainer,
     'hartmann_ei_svgp_eulbo': HartmannEISVGPEULBOTrainer,
     'hartmann_ei_svgp_retrain': HartmannEISVGPRetrainTrainer,
     'hartmann_ei_ca_gp': HartmannEICaGPTrainer,
+    'hartmann_ei_ca_gp_turbo': HartmannEICaGPTurboTrainer,
+    'hartmann_ei_ca_gp_turbo_sliding_window':
+    HartmannEICaGPTurboSlidingWindowTrainer,
     'hartmann_ei_ca_gp_eulbo': HartmannEICaGPEULBOTrainer,
     'hartmann_log_ei_ca_gp': HartmannLogEICaGPTrainer,
     'lunar_ei_exact_gp': LunarEIExactGPTrainer,
     'lunar_ei_exact_gp_turbo': LunarEIExactGPTurboTrainer,
+    'lunar_ei_exact_gp_turbo_sliding_window':
+    LunarEIExactGPTurboSlidingWindowTrainer,
     'lunar_ei_ca_gp': LunarEICaGPTrainer,
+    'lunar_ei_ca_gp_turbo': LunarEICaGPTurboTrainer,
+    'lunar_ei_ca_gp_turbo_sliding_window':
+    LunarEICaGPTurboSlidingWindowTrainer,
     'lunar_log_ei_ca_gp': LunarLogEICaGPTrainer,
     'lunar_ei_svgp': LunarEISVGPTrainer,
+    'lunar_ei_svgp_turbo': LunarEISVGPTurboTrainer,
+    'lunar_ei_svgp_turbo_sliding_window':
+    LunarEISVGPTurboSlidingWindowTrainer,
     'lunar_ei_sgpr': LunarEISGPRTrainer,
+    'lunar_ei_sgpr_turbo': LunarEISGPRTurboTrainer,
+    'lunar_ei_sgpr_turbo_sliding_window':
+    LunarEISGPRTurboSlidingWindowTrainer,
     'lunar_ei_svgp_eulbo': LunarEISVGPEULBOTrainer,
     'lunar_ei_ca_gp_eulbo': LunarEICaGPEULBOTrainer,
     'lunar_log_ei_ca_gp_eulbo': LunarLogEICaGPEULBOTrainer,
     'rover_ei_exact_gp': RoverEIExactGPTrainer,
     'rover_ei_exact_gp_turbo': RoverEIExactGPTurboTrainer,
+    'rover_ei_exact_gp_turbo_sliding_window':
+    RoverEIExactGPTurboSlidingWindowTrainer,
     'rover_log_ei_exact_gp': RoverLogEIExactGPTrainer,
     'rover_log_ei_exact_gp_turbo': RoverLogEIExactGPTurboTrainer,
+    'rover_log_ei_exact_gp_turbo_sliding_window':
+    RoverLogEIExactGPTurboSlidingWindowTrainer,
     'rover_ei_exact_gp_sliding_window': RoverEIExactGPSlidingWindowTrainer,
     'rover_log_ei_exact_gp_sliding_window':
     RoverLogEIExactGPSlidingWindowTrainer,
     'rover_ei_ca_gp': RoverEICaGPTrainer,
+    'rover_ei_ca_gp_turbo': RoverEICaGPTurboTrainer,
+    'rover_ei_ca_gp_turbo_sliding_window':
+    RoverEICaGPTurboSlidingWindowTrainer,
     'rover_ei_ca_gp_eulbo': RoverEICaGPEULBOTrainer,
     'rover_ei_ca_gp_sliding_window': RoverEICaGPSlidingWindowTrainer,
     'rover_log_ei_ca_gp_sliding_window': RoverLogEICaGPSlidingWindowTrainer,
+    'rover_log_ei_ca_gp_turbo': RoverLogEICaGPTurboTrainer,
+    'rover_log_ei_ca_gp_turbo_sliding_window':
+    RoverLogEICaGPTurboSlidingWindowTrainer,
     'rover_ei_svgp': RoverEISVGPTrainer,
+    'rover_ei_svgp_turbo': RoverEISVGPTurboTrainer,
+    'rover_ei_svgp_turbo_sliding_window':
+    RoverEISVGPTurboSlidingWindowTrainer,
     'rover_ei_sgpr': RoverEISGPRTrainer,
+    'rover_ei_sgpr_turbo': RoverEISGPRTurboTrainer,
+    'rover_ei_sgpr_turbo_sliding_window':
+    RoverEISGPRTurboSlidingWindowTrainer,
     'rover_log_ei_svgp': RoverLogEISVGPTrainer,
+    'rover_log_ei_svgp_turbo': RoverLogEISVGPTurboTrainer,
+    'rover_log_ei_svgp_turbo_sliding_window':
+    RoverLogEISVGPTurboSlidingWindowTrainer,
     'rover_log_ei_sgpr': RoverLogEISGPRTrainer,
+    'rover_log_ei_sgpr_turbo': RoverLogEISGPRTurboTrainer,
+    'rover_log_ei_sgpr_turbo_sliding_window':
+    RoverLogEISGPRTurboSlidingWindowTrainer,
     'rover_ei_svgp_eulbo': RoverEISVGPEULBOTrainer,
     'lasso_dna_log_ei_exact_gp': LassoDNALogEIExactGPTrainer,
     'lasso_dna_log_ei_exact_gp_turbo': LassoDNALogEIExactGPTurboTrainer,
+    'lasso_dna_log_ei_exact_gp_turbo_sliding_window':
+    LassoDNALogEIExactGPTurboSlidingWindowTrainer,
     'lasso_dna_log_ei_exact_gp_sliding_window':
     LassoDNALogEIExactGPSlidingWindowTrainer,
     'lasso_dna_log_ei_ca_gp': LassoDNALogEICaGPTrainer,
+    'lasso_dna_log_ei_ca_gp_turbo': LassoDNALogEICaGPTurboTrainer,
+    'lasso_dna_log_ei_ca_gp_turbo_sliding_window':
+    LassoDNALogEICaGPTurboSlidingWindowTrainer,
     'lasso_dna_log_ei_ca_gp_sliding_window':
     LassoDNALogEICaGPSlidingWindowTrainer,
     'lasso_dna_log_ei_svgp': LassoDNALogEISVGPTrainer,
+    'lasso_dna_log_ei_svgp_turbo': LassoDNALogEISVGPTurboTrainer,
+    'lasso_dna_log_ei_svgp_turbo_sliding_window':
+    LassoDNALogEISVGPTurboSlidingWindowTrainer,
     'lasso_dna_log_ei_sgpr': LassoDNALogEISGPRTrainer,
+    'lasso_dna_log_ei_sgpr_turbo': LassoDNALogEISGPRTurboTrainer,
+    'lasso_dna_log_ei_sgpr_turbo_sliding_window':
+    LassoDNALogEISGPRTurboSlidingWindowTrainer,
     'osmb_log_ei_exact_gp': OsmbLogEIExactGPTrainer,
     'osmb_log_ei_exact_gp_turbo': OsmbLogEIExactGPTurboTrainer,
+    'osmb_log_ei_exact_gp_turbo_sliding_window':
+    OsmbLogEIExactGPTurboSlidingWindowTrainer,
     'osmb_log_ei_exact_gp_sliding_window':
     OsmbLogEIExactGPSlidingWindowTrainer,
     'osmb_log_ei_ca_gp': OsmbLogEICaGPTrainer,
+    'osmb_log_ei_ca_gp_turbo': OsmbLogEICaGPTurboTrainer,
+    'osmb_log_ei_ca_gp_turbo_sliding_window':
+    OsmbLogEICaGPTurboSlidingWindowTrainer,
     'osmb_log_ei_ca_gp_sliding_window': OsmbLogEICaGPSlidingWindowTrainer,
     'osmb_log_ei_svgp': OsmbLogEISVGPTrainer,
+    'osmb_log_ei_svgp_turbo': OsmbLogEISVGPTurboTrainer,
+    'osmb_log_ei_svgp_turbo_sliding_window':
+    OsmbLogEISVGPTurboSlidingWindowTrainer,
     'osmb_log_ei_sgpr': OsmbLogEISGPRTrainer,
+    'osmb_log_ei_sgpr_turbo': OsmbLogEISGPRTurboTrainer,
+    'osmb_log_ei_sgpr_turbo_sliding_window':
+    OsmbLogEISGPRTurboSlidingWindowTrainer,
     'fexo_log_ei_exact_gp': FexoLogEIExactGPTrainer,
     'fexo_log_ei_exact_gp_turbo': FexoLogEIExactGPTurboTrainer,
+    'fexo_log_ei_exact_gp_turbo_sliding_window':
+    FexoLogEIExactGPTurboSlidingWindowTrainer,
     'fexo_log_ei_exact_gp_sliding_window':
     FexoLogEIExactGPSlidingWindowTrainer,
     'fexo_log_ei_gpytorch_exact_gp_sliding_window':
     FexoLogEIGPyTorchExactGPSlidingWindowTrainer,
+    'fexo_log_ei_ca_gp_turbo': FexoLogEICaGPTurboTrainer,
+    'fexo_log_ei_ca_gp_turbo_sliding_window':
+    FexoLogEICaGPTurboSlidingWindowTrainer,
     'fexo_log_ei_ca_gp_sliding_window': FexoLogEICaGPSlidingWindowTrainer,
     'fexo_log_ei_svgp': FexoLogEISVGPTrainer,
+    'fexo_log_ei_svgp_turbo': FexoLogEISVGPTurboTrainer,
+    'fexo_log_ei_svgp_turbo_sliding_window':
+    FexoLogEISVGPTurboSlidingWindowTrainer,
     'fexo_log_ei_sgpr': FexoLogEISGPRTrainer,
+    'fexo_log_ei_sgpr_turbo': FexoLogEISGPRTurboTrainer,
+    'fexo_log_ei_sgpr_turbo_sliding_window':
+    FexoLogEISGPRTurboSlidingWindowTrainer,
     'med1_log_ei_exact_gp': Med1LogEIExactGPTrainer,
     'med1_log_ei_exact_gp_turbo': Med1LogEIExactGPTurboTrainer,
+    'med1_log_ei_exact_gp_turbo_sliding_window':
+    Med1LogEIExactGPTurboSlidingWindowTrainer,
     'med1_log_ei_exact_gp_sliding_window':
     Med1LogEIExactGPSlidingWindowTrainer,
+    'med1_log_ei_ca_gp_turbo': Med1LogEICaGPTurboTrainer,
+    'med1_log_ei_ca_gp_turbo_sliding_window':
+    Med1LogEICaGPTurboSlidingWindowTrainer,
     'med1_log_ei_ca_gp_sliding_window': Med1LogEICaGPSlidingWindowTrainer,
     'med1_log_ei_svgp': Med1LogEISVGPTrainer,
+    'med1_log_ei_svgp_turbo': Med1LogEISVGPTurboTrainer,
+    'med1_log_ei_svgp_turbo_sliding_window':
+    Med1LogEISVGPTurboSlidingWindowTrainer,
     'med1_log_ei_sgpr': Med1LogEISGPRTrainer,
+    'med1_log_ei_sgpr_turbo': Med1LogEISGPRTurboTrainer,
+    'med1_log_ei_sgpr_turbo_sliding_window':
+    Med1LogEISGPRTurboSlidingWindowTrainer,
     'med2_log_ei_exact_gp': Med2LogEIExactGPTrainer,
     'med2_log_ei_exact_gp_turbo': Med2LogEIExactGPTurboTrainer,
+    'med2_log_ei_exact_gp_turbo_sliding_window':
+    Med2LogEIExactGPTurboSlidingWindowTrainer,
     'med2_log_ei_exact_gp_sliding_window':
     Med2LogEIExactGPSlidingWindowTrainer,
+    'med2_log_ei_ca_gp_turbo': Med2LogEICaGPTurboTrainer,
+    'med2_log_ei_ca_gp_turbo_sliding_window':
+    Med2LogEICaGPTurboSlidingWindowTrainer,
     'med2_log_ei_ca_gp_sliding_window': Med2LogEICaGPSlidingWindowTrainer,
     'med2_log_ei_svgp': Med2LogEISVGPTrainer,
+    'med2_log_ei_svgp_turbo': Med2LogEISVGPTurboTrainer,
+    'med2_log_ei_svgp_turbo_sliding_window':
+    Med2LogEISVGPTurboSlidingWindowTrainer,
     'med2_log_ei_sgpr': Med2LogEISGPRTrainer,
+    'med2_log_ei_sgpr_turbo': Med2LogEISGPRTurboTrainer,
+    'med2_log_ei_sgpr_turbo_sliding_window':
+    Med2LogEISGPRTurboSlidingWindowTrainer,
     'pdop_log_ei_exact_gp_sliding_window':
     PdopLogEIExactGPSlidingWindowTrainer,
     'pdop_log_ei_exact_gp': PdopLogEIExactGPTrainer,
     'pdop_log_ei_exact_gp_turbo': PdopLogEIExactGPTurboTrainer,
+    'pdop_log_ei_exact_gp_turbo_sliding_window':
+    PdopLogEIExactGPTurboSlidingWindowTrainer,
+    'pdop_log_ei_ca_gp_turbo': PdopLogEICaGPTurboTrainer,
+    'pdop_log_ei_ca_gp_turbo_sliding_window':
+    PdopLogEICaGPTurboSlidingWindowTrainer,
     'pdop_log_ei_ca_gp_sliding_window': PdopLogEICaGPSlidingWindowTrainer,
     'pdop_log_ei_svgp': PdopLogEISVGPTrainer,
+    'pdop_log_ei_svgp_turbo': PdopLogEISVGPTurboTrainer,
+    'pdop_log_ei_svgp_turbo_sliding_window':
+    PdopLogEISVGPTurboSlidingWindowTrainer,
     'pdop_log_ei_sgpr': PdopLogEISGPRTrainer,
+    'pdop_log_ei_sgpr_turbo': PdopLogEISGPRTurboTrainer,
+    'pdop_log_ei_sgpr_turbo_sliding_window':
+    PdopLogEISGPRTurboSlidingWindowTrainer,
     'adip_log_ei_exact_gp': AdipLogEIExactGPTrainer,
     'adip_log_ei_exact_gp_turbo': AdipLogEIExactGPTurboTrainer,
+    'adip_log_ei_exact_gp_turbo_sliding_window':
+    AdipLogEIExactGPTurboSlidingWindowTrainer,
     'adip_log_ei_exact_gp_sliding_window':
     AdipLogEIExactGPSlidingWindowTrainer,
+    'adip_log_ei_ca_gp_turbo': AdipLogEICaGPTurboTrainer,
+    'adip_log_ei_ca_gp_turbo_sliding_window':
+    AdipLogEICaGPTurboSlidingWindowTrainer,
     'adip_log_ei_ca_gp_sliding_window': AdipLogEICaGPSlidingWindowTrainer,
     'adip_log_ei_sgpr': AdipLogEISGPRTrainer,
+    'adip_log_ei_sgpr_turbo': AdipLogEISGPRTurboTrainer,
+    'adip_log_ei_sgpr_turbo_sliding_window':
+    AdipLogEISGPRTurboSlidingWindowTrainer,
     'adip_log_ei_svgp': AdipLogEISVGPTrainer,
+    'adip_log_ei_svgp_turbo': AdipLogEISVGPTurboTrainer,
+    'adip_log_ei_svgp_turbo_sliding_window':
+    AdipLogEISVGPTurboSlidingWindowTrainer,
     'rano_log_ei_exact_gp': RanoLogEIExactGPTrainer,
     'rano_log_ei_exact_gp_turbo': RanoLogEIExactGPTurboTrainer,
+    'rano_log_ei_exact_gp_turbo_sliding_window':
+    RanoLogEIExactGPTurboSlidingWindowTrainer,
     'rano_log_ei_exact_gp_sliding_window':
     RanoLogEIExactGPSlidingWindowTrainer,
+    'rano_log_ei_ca_gp_turbo': RanoLogEICaGPTurboTrainer,
+    'rano_log_ei_ca_gp_turbo_sliding_window':
+    RanoLogEICaGPTurboSlidingWindowTrainer,
     'rano_log_ei_ca_gp_sliding_window': RanoLogEICaGPSlidingWindowTrainer,
     'rano_log_ei_svgp': RanoLogEISVGPTrainer,
+    'rano_log_ei_svgp_turbo': RanoLogEISVGPTurboTrainer,
+    'rano_log_ei_svgp_turbo_sliding_window':
+    RanoLogEISVGPTurboSlidingWindowTrainer,
     'rano_log_ei_sgpr': RanoLogEISGPRTrainer,
+    'rano_log_ei_sgpr_turbo': RanoLogEISGPRTurboTrainer,
+    'rano_log_ei_sgpr_turbo_sliding_window':
+    RanoLogEISGPRTurboSlidingWindowTrainer,
     'siga_log_ei_ca_gp_sliding_window': SigaLogEICaGPSlidingWindowTrainer,
     'siga_log_ei_svgp': SigaLogEISVGPTrainer,
     'siga_log_ei_sgpr': SigaLogEISGPRTrainer,

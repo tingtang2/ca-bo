@@ -13,6 +13,8 @@ from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
                                     LassoDNATrainer, LunarTrainer,
                                     RoverTrainer)
 from trainers.svgp_trainer import SVGPEULBOTrainer
+from trainers.utils.turbo import update_state
+from trainers.utils.turbo_trainer_mixin import TurboTrainerMixin
 from contextlib import ExitStack
 
 import gpytorch
@@ -32,16 +34,29 @@ class CaGPTrainer(BaseTrainer):
 
         self.name = 'vanilla_ca_gp'
 
+    def _get_projection_dim(self, train_x):
+        if self.static_proj_dim != -1:
+            proj_dim = self.static_proj_dim
+        else:
+            proj_dim = int(self.proj_dim_ratio * train_x.size(0))
+        return max(1, min(proj_dim, train_x.size(0)))
+
     def run_experiment(self, iteration: int):
         # get all attribute information
         logging.info(self.__dict__)
-        train_x, train_y = self.initialize_data()
+        if self.turn_on_sobol_init:
+            train_x, train_y = self.sobol_initialize_data()
+        else:
+            train_x, train_y = self.initialize_data()
 
         # log initial y_max
         print(f'initial y max: {train_y.max().item()}')
         logging.info(f'initial y max: {train_y.max().item()}')
         if not self.turn_off_wandb:
-            self.tracker.log({'initial y max': train_y.max().item()})
+            self.tracker.log({
+                'initial y max': train_y.max().item(),
+                'best reward': train_y.max().item()
+            })
 
         self.train_y_mean = train_y.mean()
         self.train_y_std = train_y.std()
@@ -57,25 +72,35 @@ class CaGPTrainer(BaseTrainer):
             else:
                 model_train_y = train_y
 
-            if self.static_proj_dim != -1:
-                proj_dim = self.static_proj_dim
-            else:
-                proj_dim = int(self.proj_dim_ratio * train_x.size(0))
+            proj_dim = self._get_projection_dim(train_x)
+            model_targets = (standardize(model_train_y.squeeze())
+                             if self.turn_on_outcome_transform else
+                             model_train_y.squeeze())
 
             self.model = CaGP(
                 train_inputs=train_x,
-                train_targets=model_train_y.squeeze(),
+                train_targets=model_targets,
                 projection_dim=proj_dim,
                 likelihood=GaussianLikelihood().to(self.device),
                 kernel_type=self.kernel_type,
                 init_mode=self.ca_gp_init_mode,
                 kernel_likelihood_prior=self.kernel_likelihood_prior,
-                use_ard_kernel=self.use_ard_kernel).to(self.device)
+                use_ard_kernel=self.use_ard_kernel,
+                use_output_scale=self.use_output_scale,
+                remove_global_ls=self.remove_global_ls,
+                turn_off_prior=self.turn_off_prior,
+                spherical_linear_lengthscale_prior=self.
+                spherical_linear_lengthscale_prior,
+                ln_noise_prior_loc=self.ln_noise_prior_loc).to(self.device)
             # if self.debug:
             #     torch.save(train_x, f'{self.save_dir}models/train_x.pt')
             #     torch.save(model_train_y,
             #                f'{self.save_dir}models/model_train_y.pt')
             #     torch.save(train_y, f'{self.save_dir}models/train_y.pt')
+            if self.freeze_actions:
+                self.model.actions_op.blocks.data = torch.ones(
+                    (train_x.shape[0], self.model.num_non_zero))
+                self.model.actions_op.blocks.requires_grad = False
 
             action_params = [
                 p for name, p in self.model.named_parameters()
@@ -86,47 +111,78 @@ class CaGPTrainer(BaseTrainer):
                 if 'action' not in name
             ]
 
-            self.optimizer = self.optimizer_type(
-                [{
-                    'params': others
-                }, {
-                    'params': action_params,
-                    'lr': self.ca_gp_actions_learning_rate
-                }],
-                lr=self.learning_rate)
+            if self.optimizer_type == torch.optim.Adam:
+                self.optimizer = self.optimizer_type(
+                    [{
+                        'params': others
+                    }, {
+                        'params': action_params,
+                        'lr': self.ca_gp_actions_learning_rate
+                    }],
+                    lr=self.learning_rate)
+            elif self.optimizer_type == torch.optim.LBFGS:
+                self.optimizer = self.optimizer_type(
+                    self.model.parameters(),
+                    lr=self.learning_rate,
+                    line_search_fn='strong_wolfe')
+            elif self.optimizer_type == FullBatchLBFGS:
+                self.optimizer = self.optimizer_type(self.model.parameters(),
+                                                     lr=self.learning_rate,
+                                                     dtype=self.data_type)
+            else:
+                self.optimizer = None
 
-            mll = ComputationAwareELBO(self.model.likelihood, self.model)
             exact_mll = ExactMarginalLogLikelihood(self.model.likelihood,
                                                    self.model)
-
-            train_loader = self.generate_dataloaders(
-                train_x=train_x, train_y=model_train_y.squeeze())
-
-            final_loss, epochs_trained = self.train_model(train_loader, mll)
+            if self.optimizer_type == 'botorch_lbfgs':
+                self.model.train()
+                mll = ComputationAwareELBO(self.model.likelihood,
+                                           self.model,
+                                           return_elbo_terms=False)
+                fit_gpytorch_mll(mll)
+                final_loss = -1
+                epochs_trained = -1
+            else:
+                mll = ComputationAwareELBO(self.model.likelihood,
+                                           self.model,
+                                           return_elbo_terms=True)
+                train_loader = self.generate_dataloaders(train_x=train_x,
+                                                         train_y=model_targets)
+                final_loss, epochs_trained = self.train_model(
+                    train_loader, mll)
 
             # calc gradients of actions
-            total_norm = 0.0
-            for p in action_params:
-                param_norm = p.grad.detach().data.norm(2)
-                total_norm += param_norm.item()**2
-            total_norm = total_norm**0.5
+            total_norm = -1
+            if (self.optimizer_type != 'botorch_lbfgs'
+                    and len(action_params) > 0):
+                total_norm = 0.0
+                for p in action_params:
+                    if p.grad is None:
+                        continue
+                    param_norm = p.grad.detach().data.norm(2)
+                    total_norm += param_norm.item()**2
+                total_norm = total_norm**0.5
 
             self.model.eval()
 
-            train_rmse = self.eval(train_x, model_train_y)
-            train_nll = self.compute_nll(train_x, model_train_y.squeeze(),
-                                         exact_mll)
+            train_rmse = -1
+            train_nll = -1
 
-            x_next = self.data_acquisition_iteration(self.model,
-                                                     model_train_y.squeeze(),
-                                                     train_x).to(self.device)
+            x_next, x_af_val, origin = self.data_acquisition_iteration(
+                self.model, model_targets.squeeze(), train_x)
 
             cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=train_x,
                                                               train_y=train_y,
                                                               x_next=x_next)
 
             # Evaluate candidates
-            y_next = self.task(x_next)
+            if self.turn_on_input_transform:
+                y_next = self.task(x_next * self.data_original_ub)
+            elif self.turn_on_simple_input_transform:
+                y_next = self.task(x_next * (self.task.ub - self.task.lb) +
+                                   self.task.lb)
+            else:
+                y_next = self.task(x_next)
 
             # Update data
             train_x = torch.cat((train_x, x_next), dim=-2)
@@ -139,7 +195,11 @@ class CaGPTrainer(BaseTrainer):
                                    train_nll=train_nll,
                                    cos_sim_incum=cos_sim_incum,
                                    epochs_trained=epochs_trained,
-                                   action_norm=total_norm)
+                                   action_norm=total_norm,
+                                   x_af_val=x_af_val.item(),
+                                   x_next_sigma=0,
+                                   standardized_gain=0,
+                                   candidate_origin=origin)
 
             reward.append(train_y.max().item())
 
@@ -702,6 +762,231 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
             reward.append(train_y.max().item())
 
 
+class TurboCaGPTrainer(TurboTrainerMixin, CaGPTrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.name = 'ca_gp_turbo'
+
+    def _get_projection_dim(self, train_x):
+        if self.static_proj_dim != -1:
+            proj_dim = self.static_proj_dim
+        else:
+            proj_dim = int(self.proj_dim_ratio * train_x.size(0))
+        return max(1, min(proj_dim, train_x.size(0)))
+
+    def _select_local_model_data(self, local_train_x, local_train_y,
+                                 local_iteration, use_sliding_window):
+        if self.norm_data:
+            model_train_y = (local_train_y -
+                             self.train_y_mean) / self.train_y_std
+        else:
+            model_train_y = local_train_y
+
+        if use_sliding_window and local_iteration > 0:
+            update_x = local_train_x[-self.update_train_size:]
+            update_y = model_train_y.squeeze()[-self.update_train_size:]
+        else:
+            update_x = local_train_x
+            update_y = model_train_y.squeeze()
+
+        if self.turn_on_outcome_transform:
+            update_y = standardize(update_y)
+
+        return update_x, update_y
+
+    def _init_turbo_model(self, train_x, train_y):
+        proj_dim = self._get_projection_dim(train_x)
+        self.model = CaGP(
+            train_inputs=train_x,
+            train_targets=train_y,
+            projection_dim=proj_dim,
+            likelihood=GaussianLikelihood().to(self.device),
+            kernel_type=self.kernel_type,
+            init_mode=self.ca_gp_init_mode,
+            kernel_likelihood_prior=self.kernel_likelihood_prior,
+            use_ard_kernel=self.use_ard_kernel,
+            use_output_scale=self.use_output_scale,
+            remove_global_ls=self.remove_global_ls,
+            turn_off_prior=self.turn_off_prior,
+            spherical_linear_lengthscale_prior=self.
+            spherical_linear_lengthscale_prior,
+            ln_noise_prior_loc=self.ln_noise_prior_loc).to(self.device)
+
+        action_params = [
+            p for name, p in self.model.named_parameters() if 'action' in name
+        ]
+        others = [
+            p for name, p in self.model.named_parameters()
+            if 'action' not in name
+        ]
+
+        if self.optimizer_type == torch.optim.Adam:
+            self.optimizer = self.optimizer_type(
+                [{
+                    'params': others
+                }, {
+                    'params': action_params,
+                    'lr': self.ca_gp_actions_learning_rate
+                }],
+                lr=self.learning_rate)
+        elif self.optimizer_type == torch.optim.LBFGS:
+            self.optimizer = self.optimizer_type(
+                self.model.parameters(),
+                lr=self.learning_rate,
+                line_search_fn='strong_wolfe')
+        elif self.optimizer_type == FullBatchLBFGS:
+            self.optimizer = self.optimizer_type(self.model.parameters(),
+                                                 lr=self.learning_rate,
+                                                 dtype=self.data_type)
+        else:
+            self.optimizer = None
+
+    def run_turbo_experiment(self, iteration: int, use_sliding_window: bool):
+        logging.info(self.__dict__)
+        if self.turn_on_sobol_init:
+            local_train_x, local_train_y = self.sobol_initialize_data()
+        else:
+            local_train_x, local_train_y = self.initialize_data()
+        global_train_x = local_train_x.clone()
+        global_train_y = local_train_y.clone()
+
+        self.set_local_train_y_stats(local_train_y)
+
+        print(f'initial y max: {global_train_y.max().item()}')
+        logging.info(f'initial y max: {global_train_y.max().item()}')
+        if not self.turn_off_wandb:
+            self.tracker.log({
+                'initial y max': global_train_y.max().item(),
+                'best reward': global_train_y.max().item()
+            })
+
+        self.initialize_turbo_state(train_x=local_train_x, train_y=local_train_y)
+        reward = []
+        local_iteration = 0
+        initial_num_calls = self.task.num_calls
+        total_budget = max(self.max_oracle_calls - initial_num_calls, 0)
+
+        for _ in trange(total_budget):
+            if self.task.num_calls >= self.max_oracle_calls:
+                break
+
+            update_x, update_y = self._select_local_model_data(
+                local_train_x=local_train_x,
+                local_train_y=local_train_y,
+                local_iteration=local_iteration,
+                use_sliding_window=use_sliding_window)
+            self._init_turbo_model(update_x, update_y)
+
+            exact_mll = ExactMarginalLogLikelihood(self.model.likelihood,
+                                                   self.model)
+
+            if self.optimizer_type == 'botorch_lbfgs':
+                self.model.train()
+                mll = ComputationAwareELBO(self.model.likelihood,
+                                           self.model,
+                                           return_elbo_terms=False)
+                fit_gpytorch_mll(mll)
+                epochs_trained = -1
+                final_loss = -1
+            else:
+                mll = ComputationAwareELBO(self.model.likelihood,
+                                           self.model,
+                                           return_elbo_terms=True)
+                train_loader = self.generate_dataloaders(train_x=update_x,
+                                                         train_y=update_y)
+                final_loss, epochs_trained = self.train_model(
+                    train_loader, mll)
+
+            self.model.eval()
+
+            train_rmse = -1
+            train_nll = -1
+            x_next, x_af_val, origin = self.data_acquisition_iteration(
+                self.model, update_y.squeeze(), update_x)
+
+            cos_sim_incum = self.compute_cos_sim_to_incumbent(train_x=local_train_x,
+                                                              train_y=local_train_y,
+                                                              x_next=x_next)
+
+            if self.turn_on_input_transform:
+                y_next = self.task(x_next * self.data_original_ub)
+            elif self.turn_on_simple_input_transform:
+                y_next = self.task(x_next * (self.task.ub - self.task.lb) +
+                                   self.task.lb)
+            else:
+                y_next = self.task(x_next)
+
+            local_train_x = torch.cat((local_train_x, x_next), dim=-2)
+            local_train_y = torch.cat((local_train_y, y_next), dim=-2)
+            global_train_x = torch.cat((global_train_x, x_next), dim=-2)
+            global_train_y = torch.cat((global_train_y, y_next), dim=-2)
+
+            self.tr_state = update_state(state=self.tr_state, Y_next=y_next)
+            local_iteration += 1
+
+            if self.tr_state.restart_triggered:
+                if self.use_faithful_turbo_restart:
+                    remaining_budget = self.max_oracle_calls - self.task.num_calls
+                    if remaining_budget < self.num_initial_points:
+                        self.log_wandb_metrics(train_y=global_train_y,
+                                               y_next=y_next.item(),
+                                               final_loss=final_loss,
+                                               train_rmse=train_rmse,
+                                               train_nll=train_nll,
+                                               cos_sim_incum=cos_sim_incum,
+                                               epochs_trained=epochs_trained,
+                                               action_norm=-1,
+                                               x_af_val=x_af_val.item(),
+                                               x_next_sigma=0,
+                                               standardized_gain=0,
+                                               candidate_origin=origin)
+                        reward.append(global_train_y.max().item())
+                        break
+
+                    local_train_x, local_train_y = self.restart_local_trust_region()
+                    global_train_x = torch.cat((global_train_x, local_train_x),
+                                               dim=-2)
+                    global_train_y = torch.cat((global_train_y, local_train_y),
+                                               dim=-2)
+                    local_iteration = 0
+                else:
+                    self.initialize_turbo_state(train_x=local_train_x,
+                                                train_y=local_train_y)
+
+            self.log_wandb_metrics(train_y=global_train_y,
+                                   y_next=y_next.item(),
+                                   final_loss=final_loss,
+                                   train_rmse=train_rmse,
+                                   train_nll=train_nll,
+                                   cos_sim_incum=cos_sim_incum,
+                                   epochs_trained=epochs_trained,
+                                   action_norm=-1,
+                                   x_af_val=x_af_val.item(),
+                                   x_next_sigma=0,
+                                   standardized_gain=0,
+                                   candidate_origin=origin)
+
+            reward.append(global_train_y.max().item())
+
+        self.save_metrics(metrics=reward,
+                          iter=iteration,
+                          name=self.trainer_type)
+
+    def run_experiment(self, iteration: int):
+        self.run_turbo_experiment(iteration=iteration, use_sliding_window=False)
+
+
+class TurboCaGPSlidingWindowTrainer(TurboCaGPTrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.name = 'ca_gp_turbo_sliding_window'
+
+    def run_experiment(self, iteration: int):
+        self.run_turbo_experiment(iteration=iteration, use_sliding_window=True)
+
+
 class HartmannEICaGPTrainer(CaGPTrainer, HartmannTrainer, EITrainer):
     pass
 
@@ -845,3 +1130,149 @@ class ShopLogEICaGPSlidingWindowTrainer(CaGPSlidingWindowTrainer,
 
     def __init__(self, **kwargs):
         super().__init__(molecule='shop', **kwargs)
+
+
+class HartmannEICaGPTurboTrainer(TurboCaGPTrainer, HartmannTrainer,
+                                 EITrainer):
+    pass
+
+
+class LunarEICaGPTurboTrainer(TurboCaGPTrainer, LunarTrainer, EITrainer):
+    pass
+
+
+class RoverEICaGPTurboTrainer(TurboCaGPTrainer, RoverTrainer, EITrainer):
+    pass
+
+
+class RoverLogEICaGPTurboTrainer(TurboCaGPTrainer, RoverTrainer,
+                                 LogEITrainer):
+    pass
+
+
+class LassoDNALogEICaGPTurboTrainer(TurboCaGPTrainer, LassoDNATrainer,
+                                    LogEITrainer):
+    pass
+
+
+class OsmbLogEICaGPTurboTrainer(TurboCaGPTrainer, GuacamolTrainer,
+                                LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='osmb', **kwargs)
+
+
+class FexoLogEICaGPTurboTrainer(TurboCaGPTrainer, GuacamolTrainer,
+                                LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='fexo', **kwargs)
+
+
+class Med1LogEICaGPTurboTrainer(TurboCaGPTrainer, GuacamolTrainer,
+                                LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='med1', **kwargs)
+
+
+class Med2LogEICaGPTurboTrainer(TurboCaGPTrainer, GuacamolTrainer,
+                                LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='med2', **kwargs)
+
+
+class AdipLogEICaGPTurboTrainer(TurboCaGPTrainer, GuacamolTrainer,
+                                LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='adip', **kwargs)
+
+
+class PdopLogEICaGPTurboTrainer(TurboCaGPTrainer, GuacamolTrainer,
+                                LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='pdop', **kwargs)
+
+
+class RanoLogEICaGPTurboTrainer(TurboCaGPTrainer, GuacamolTrainer,
+                                LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='rano', **kwargs)
+
+
+class HartmannEICaGPTurboSlidingWindowTrainer(
+        TurboCaGPSlidingWindowTrainer, HartmannTrainer, EITrainer):
+    pass
+
+
+class LunarEICaGPTurboSlidingWindowTrainer(TurboCaGPSlidingWindowTrainer,
+                                           LunarTrainer, EITrainer):
+    pass
+
+
+class RoverEICaGPTurboSlidingWindowTrainer(TurboCaGPSlidingWindowTrainer,
+                                           RoverTrainer, EITrainer):
+    pass
+
+
+class RoverLogEICaGPTurboSlidingWindowTrainer(
+        TurboCaGPSlidingWindowTrainer, RoverTrainer, LogEITrainer):
+    pass
+
+
+class LassoDNALogEICaGPTurboSlidingWindowTrainer(
+        TurboCaGPSlidingWindowTrainer, LassoDNATrainer, LogEITrainer):
+    pass
+
+
+class OsmbLogEICaGPTurboSlidingWindowTrainer(
+        TurboCaGPSlidingWindowTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='osmb', **kwargs)
+
+
+class FexoLogEICaGPTurboSlidingWindowTrainer(
+        TurboCaGPSlidingWindowTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='fexo', **kwargs)
+
+
+class Med1LogEICaGPTurboSlidingWindowTrainer(
+        TurboCaGPSlidingWindowTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='med1', **kwargs)
+
+
+class Med2LogEICaGPTurboSlidingWindowTrainer(
+        TurboCaGPSlidingWindowTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='med2', **kwargs)
+
+
+class AdipLogEICaGPTurboSlidingWindowTrainer(
+        TurboCaGPSlidingWindowTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='adip', **kwargs)
+
+
+class PdopLogEICaGPTurboSlidingWindowTrainer(
+        TurboCaGPSlidingWindowTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='pdop', **kwargs)
+
+
+class RanoLogEICaGPTurboSlidingWindowTrainer(
+        TurboCaGPSlidingWindowTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='rano', **kwargs)

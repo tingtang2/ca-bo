@@ -15,7 +15,8 @@ from trainers.base_trainer import BaseTrainer
 from trainers.data_trainers import (GuacamolTrainer, HartmannTrainer,
                                     LassoDNATrainer, LunarTrainer,
                                     RoverTrainer)
-from trainers.utils.turbo import TurboState, get_trust_region_bounds, update_state
+from trainers.utils.turbo import update_state
+from trainers.utils.turbo_trainer_mixin import TurboTrainerMixin
 
 import gpytorch
 from botorch.fit import fit_gpytorch_mll
@@ -184,61 +185,81 @@ class ExactGPTrainer(BaseTrainer):
         return train_loader
 
 
-class TurboExactGPTrainer(ExactGPTrainer):
+class TurboExactGPTrainer(TurboTrainerMixin, ExactGPTrainer):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.name = 'exact_gp_turbo'
 
-    def initialize_turbo_state(self, train_x, train_y):
-        self.tr_state = TurboState(dim=train_x.shape[-1],
-                                   batch_size=self.batch_size,
-                                   best_value=train_y.max().item())
+    def _select_local_model_data(self, local_train_x, model_train_y,
+                                 local_iteration, use_sliding_window):
+        if use_sliding_window and local_iteration > 0:
+            return (local_train_x[-self.update_train_size:],
+                    model_train_y[-self.update_train_size:])
+        return local_train_x, model_train_y
 
-    def set_local_train_y_stats(self, train_y):
-        self.train_y_mean = train_y.mean()
-        self.train_y_std = train_y.std()
-        if self.train_y_std == 0:
-            self.train_y_std = 1
-
-    def restart_local_trust_region(self):
-        if self.turn_on_sobol_init:
-            local_train_x, local_train_y = self.sobol_initialize_data()
+    def _fit_exact_model(self, train_x, train_y):
+        if self.use_ard_kernel:
+            ard_num_dims = train_x.shape[-1]
         else:
-            local_train_x = torch.rand(
-                (self.num_initial_points, self.task.dim)).to(
-                    self.device, self.data_type)
-            if self.turn_on_simple_input_transform:
-                eval_x = local_train_x * (self.task.ub - self.task.lb
-                                          ) + self.task.lb
+            ard_num_dims = None
+
+        if self.kernel_type == 'spherical_linear':
+            covar_module = SphericalLinearKernel(
+                data_dims=train_x.shape[-1],
+                prior=self.spherical_linear_lengthscale_prior,
+                ard_num_dims=ard_num_dims,
+                remove_global_ls=self.remove_global_ls)
+            likelihood = custom_get_gaussian_likelihood_with_lognormal_prior(loc=self.ln_noise_prior_loc
+            )
+        elif self.kernel_likelihood_prior == 'gamma':
+            covar_module = get_matern_kernel_with_gamma_prior(
+                ard_num_dims=ard_num_dims)
+            likelihood = get_gaussian_likelihood_with_gamma_prior()
+        elif self.kernel_likelihood_prior == 'lognormal':
+            covar_module = get_covar_module_with_dim_scaled_prior(
+                ard_num_dims=ard_num_dims, use_rbf_kernel=False)
+            likelihood = get_gaussian_likelihood_with_lognormal_prior()
+        else:
+            if self.kernel_type == 'rbf':
+                base_kernel = gpytorch.kernels.RBFKernel(
+                    ard_num_dims=ard_num_dims)
+            elif self.kernel_type == 'matern_3_2':
+                base_kernel = gpytorch.kernels.MaternKernel(
+                    1.5, ard_num_dims=ard_num_dims)
             else:
-                local_train_x = local_train_x * (self.task.ub - self.task.lb
-                                                 ) + self.task.lb
-                eval_x = local_train_x
-            local_train_y = self.task(eval_x)
+                base_kernel = gpytorch.kernels.MaternKernel(
+                    2.5, ard_num_dims=ard_num_dims)
 
-        self.set_local_train_y_stats(local_train_y)
-        self.tr_state = TurboState(dim=local_train_x.shape[-1],
-                                   batch_size=self.batch_size,
-                                   best_value=local_train_y.max().item())
-        return local_train_x, local_train_y
+            covar_module = gpytorch.kernels.ScaleKernel(base_kernel)
+            likelihood = gpytorch.likelihoods.GaussianLikelihood().to(
+                self.device)
 
-    def get_acq_bounds(self, model, Y: torch.Tensor, X):
-        if self.turn_on_simple_input_transform:
-            lb = torch.zeros(X.shape[-1], device=X.device, dtype=X.dtype)
-            ub = torch.ones(X.shape[-1], device=X.device, dtype=X.dtype)
-        else:
-            lb = self.task.lb.to(X.device, X.dtype)
-            ub = self.task.ub.to(X.device, X.dtype)
+            assert covar_module.base_kernel.ard_num_dims == ard_num_dims
 
-        return get_trust_region_bounds(model=model,
-                                       X=X,
-                                       Y=Y,
-                                       length=self.tr_state.length,
-                                       lb=lb,
-                                       ub=ub)
+        self.model = SingleTaskGP(train_x,
+                                  standardize(train_y),
+                                  covar_module=covar_module,
+                                  likelihood=likelihood,
+                                  outcome_transform=None).to(self.device)
+        self.model.train()
 
-    def run_experiment(self, iteration: int):
+        with ExitStack() as es:
+            es.enter_context(gpytorch.settings.cholesky_max_tries(10))
+            es.enter_context(gpytorch.settings.max_cholesky_size(float("inf")))
+            es.enter_context(
+                gpytorch.settings.fast_computations(
+                    log_prob=True,
+                    covar_root_decomposition=False,
+                    solves=False))
+
+            exact_gp_mll = ExactMarginalLogLikelihood(self.model.likelihood,
+                                                      self.model)
+            fit_gpytorch_mll(exact_gp_mll)
+
+        self.model.eval()
+
+    def run_turbo_experiment(self, iteration: int, use_sliding_window: bool):
         logging.info(self.__dict__)
         if self.turn_on_sobol_init:
             local_train_x, local_train_y = self.sobol_initialize_data()
@@ -259,6 +280,7 @@ class TurboExactGPTrainer(ExactGPTrainer):
 
         self.initialize_turbo_state(train_x=local_train_x, train_y=local_train_y)
         reward = []
+        local_iteration = 0
         initial_num_calls = self.task.num_calls
         total_budget = max(self.max_oracle_calls - initial_num_calls, 0)
         with tqdm(total=total_budget) as pbar:
@@ -271,71 +293,18 @@ class TurboExactGPTrainer(ExactGPTrainer):
                 else:
                     model_train_y = local_train_y
 
-                if self.use_ard_kernel:
-                    ard_num_dims = local_train_x.shape[-1]
-                else:
-                    ard_num_dims = None
+                update_x, update_y = self._select_local_model_data(
+                    local_train_x=local_train_x,
+                    model_train_y=model_train_y,
+                    local_iteration=local_iteration,
+                    use_sliding_window=use_sliding_window)
 
-                if self.kernel_type == 'spherical_linear':
-                    covar_module = SphericalLinearKernel(
-                        data_dims=local_train_x.shape[-1],
-                        prior=self.spherical_linear_lengthscale_prior,
-                        ard_num_dims=ard_num_dims,
-                        remove_global_ls=self.remove_global_ls)
-                    likelihood = custom_get_gaussian_likelihood_with_lognormal_prior(loc=self.ln_noise_prior_loc
-                    )
-                elif self.kernel_likelihood_prior == 'gamma':
-                    covar_module = get_matern_kernel_with_gamma_prior(
-                        ard_num_dims=ard_num_dims)
-                    likelihood = get_gaussian_likelihood_with_gamma_prior()
-                elif self.kernel_likelihood_prior == 'lognormal':
-                    covar_module = get_covar_module_with_dim_scaled_prior(
-                        ard_num_dims=ard_num_dims, use_rbf_kernel=False)
-                    likelihood = get_gaussian_likelihood_with_lognormal_prior()
-                else:
-                    if self.kernel_type == 'rbf':
-                        base_kernel = gpytorch.kernels.RBFKernel(
-                            ard_num_dims=ard_num_dims)
-                    elif self.kernel_type == 'matern_3_2':
-                        base_kernel = gpytorch.kernels.MaternKernel(
-                            1.5, ard_num_dims=ard_num_dims)
-                    else:
-                        base_kernel = gpytorch.kernels.MaternKernel(
-                            2.5, ard_num_dims=ard_num_dims)
-
-                    covar_module = gpytorch.kernels.ScaleKernel(base_kernel)
-                    likelihood = gpytorch.likelihoods.GaussianLikelihood().to(
-                        self.device)
-
-                    assert covar_module.base_kernel.ard_num_dims == ard_num_dims
-
-                self.model = SingleTaskGP(local_train_x,
-                                          standardize(model_train_y),
-                                          covar_module=covar_module,
-                                          likelihood=likelihood,
-                                          outcome_transform=None).to(self.device)
-                self.model.train()
-
-                with ExitStack() as es:
-                    es.enter_context(gpytorch.settings.cholesky_max_tries(10))
-                    es.enter_context(
-                        gpytorch.settings.max_cholesky_size(float("inf")))
-                    es.enter_context(
-                        gpytorch.settings.fast_computations(
-                            log_prob=True,
-                            covar_root_decomposition=False,
-                            solves=False))
-
-                    exact_gp_mll = ExactMarginalLogLikelihood(
-                        self.model.likelihood, self.model)
-                    fit_gpytorch_mll(exact_gp_mll)
-
-                self.model.eval()
+                self._fit_exact_model(update_x, update_y)
 
                 train_rmse = -1
                 train_nll = -1
                 x_next, x_af_val, origin = self.data_acquisition_iteration(
-                    self.model, standardize(model_train_y), local_train_x)
+                    self.model, standardize(update_y), update_x)
 
                 if self.turn_on_simple_input_transform:
                     y_next = self.task(x_next * (self.task.ub - self.task.lb) +
@@ -355,6 +324,7 @@ class TurboExactGPTrainer(ExactGPTrainer):
                 global_train_y = torch.cat((global_train_y, y_next), dim=-2)
 
                 self.tr_state = update_state(state=self.tr_state, Y_next=y_next)
+                local_iteration += 1
 
                 if self.tr_state.restart_triggered:
                     if self.use_faithful_turbo_restart:
@@ -379,10 +349,10 @@ class TurboExactGPTrainer(ExactGPTrainer):
                                                    dim=-2)
                         global_train_y = torch.cat((global_train_y, local_train_y),
                                                    dim=-2)
+                        local_iteration = 0
                     else:
-                        self.tr_state = TurboState(dim=local_train_x.shape[-1],
-                                                   batch_size=self.batch_size,
-                                                   best_value=local_train_y.max().item())
+                        self.initialize_turbo_state(train_x=local_train_x,
+                                                    train_y=local_train_y)
 
                 self.log_wandb_metrics(train_y=global_train_y,
                                        y_next=y_next.item(),
@@ -400,6 +370,19 @@ class TurboExactGPTrainer(ExactGPTrainer):
         self.save_metrics(metrics=reward,
                           iter=iteration,
                           name=self.trainer_type)
+
+    def run_experiment(self, iteration: int):
+        self.run_turbo_experiment(iteration=iteration, use_sliding_window=False)
+
+
+class TurboExactGPSlidingWindowTrainer(TurboExactGPTrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.name = 'exact_gp_turbo_sliding_window'
+
+    def run_experiment(self, iteration: int):
+        self.run_turbo_experiment(iteration=iteration, use_sliding_window=True)
 
 
 class GPyTorchExactGPSlidingWindowTrainer(BaseTrainer):
@@ -894,6 +877,80 @@ class PdopLogEIExactGPTurboTrainer(TurboExactGPTrainer, GuacamolTrainer,
 
 class RanoLogEIExactGPTurboTrainer(TurboExactGPTrainer, GuacamolTrainer,
                                    LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='rano', **kwargs)
+
+
+class HartmannEIExactGPTurboSlidingWindowTrainer(
+        TurboExactGPSlidingWindowTrainer, HartmannTrainer, EITrainer):
+    pass
+
+
+class LunarEIExactGPTurboSlidingWindowTrainer(TurboExactGPSlidingWindowTrainer,
+                                              LunarTrainer, EITrainer):
+    pass
+
+
+class RoverEIExactGPTurboSlidingWindowTrainer(TurboExactGPSlidingWindowTrainer,
+                                              RoverTrainer, EITrainer):
+    pass
+
+
+class RoverLogEIExactGPTurboSlidingWindowTrainer(
+        TurboExactGPSlidingWindowTrainer, RoverTrainer, LogEITrainer):
+    pass
+
+
+class LassoDNALogEIExactGPTurboSlidingWindowTrainer(
+        TurboExactGPSlidingWindowTrainer, LassoDNATrainer, LogEITrainer):
+    pass
+
+
+class OsmbLogEIExactGPTurboSlidingWindowTrainer(
+        TurboExactGPSlidingWindowTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='osmb', **kwargs)
+
+
+class FexoLogEIExactGPTurboSlidingWindowTrainer(
+        TurboExactGPSlidingWindowTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='fexo', **kwargs)
+
+
+class Med1LogEIExactGPTurboSlidingWindowTrainer(
+        TurboExactGPSlidingWindowTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='med1', **kwargs)
+
+
+class Med2LogEIExactGPTurboSlidingWindowTrainer(
+        TurboExactGPSlidingWindowTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='med2', **kwargs)
+
+
+class AdipLogEIExactGPTurboSlidingWindowTrainer(
+        TurboExactGPSlidingWindowTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='adip', **kwargs)
+
+
+class PdopLogEIExactGPTurboSlidingWindowTrainer(
+        TurboExactGPSlidingWindowTrainer, GuacamolTrainer, LogEITrainer):
+
+    def __init__(self, **kwargs):
+        super().__init__(molecule='pdop', **kwargs)
+
+
+class RanoLogEIExactGPTurboSlidingWindowTrainer(
+        TurboExactGPSlidingWindowTrainer, GuacamolTrainer, LogEITrainer):
 
     def __init__(self, **kwargs):
         super().__init__(molecule='rano', **kwargs)
