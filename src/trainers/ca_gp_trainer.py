@@ -146,8 +146,11 @@ class CaGPTrainer(BaseTrainer):
                 mll = ComputationAwareELBO(self.model.likelihood,
                                            self.model,
                                            return_elbo_terms=True)
-                train_loader = self.generate_dataloaders(train_x=train_x,
-                                                         train_y=model_targets)
+                active_train_size = (self.model.num_non_zero *
+                                     self.model.projection_dim)
+                train_loader = self.generate_dataloaders(
+                    train_x=train_x[-active_train_size:],
+                    train_y=model_targets[-active_train_size:])
                 final_loss, epochs_trained = self.train_model(
                     train_loader, mll)
 
@@ -893,8 +896,11 @@ class TurboCaGPTrainer(TurboTrainerMixin, CaGPTrainer):
                 mll = ComputationAwareELBO(self.model.likelihood,
                                            self.model,
                                            return_elbo_terms=True)
-                train_loader = self.generate_dataloaders(train_x=update_x,
-                                                         train_y=update_y)
+                active_train_size = (self.model.num_non_zero *
+                                     self.model.projection_dim)
+                train_loader = self.generate_dataloaders(
+                    train_x=update_x[-active_train_size:],
+                    train_y=update_y[-active_train_size:])
                 final_loss, epochs_trained = self.train_model(
                     train_loader, mll)
 
