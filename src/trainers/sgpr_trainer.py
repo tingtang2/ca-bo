@@ -73,6 +73,7 @@ class SGPRTrainer(BaseTrainer):
             add_likelihood=self.add_likelihood_to_posterior,
             turn_off_prior=self.turn_off_prior,
             ln_noise_prior_loc=self.ln_noise_prior_loc,
+            remove_global_ls=self.remove_global_ls,
             spherical_linear_lengthscale_prior=self.spherical_linear_lengthscale_prior).to(
                 self.device, self.data_type)
 
@@ -246,6 +247,7 @@ class TurboSGPRTrainer(TurboTrainerMixin, SGPRTrainer):
             add_likelihood=self.add_likelihood_to_posterior,
             turn_off_prior=self.turn_off_prior,
             ln_noise_prior_loc=self.ln_noise_prior_loc,
+            remove_global_ls=self.remove_global_ls,
             spherical_linear_lengthscale_prior=self.
             spherical_linear_lengthscale_prior).to(self.device, self.data_type)
 

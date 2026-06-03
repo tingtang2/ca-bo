@@ -27,6 +27,7 @@ class SGPR(ExactGP):
                  add_likelihood: bool = False,
                  turn_off_prior: bool = False,
                  ln_noise_prior_loc: float = -4.0,
+                 remove_global_ls: bool = True,
                  spherical_linear_lengthscale_prior: str = 'dsp_unscaled'):
 
         self.add_likelihood = add_likelihood
@@ -42,6 +43,7 @@ class SGPR(ExactGP):
                 ard_num_dims=ard_num_dims,
                 prior=spherical_linear_lengthscale_prior,
                 enable_constraint_transform=True,
+                remove_global_ls=remove_global_ls,
                 turn_off_prior=turn_off_prior)
             if turn_off_prior:
                 selected_likelihood = gpytorch.likelihoods.GaussianLikelihood()
