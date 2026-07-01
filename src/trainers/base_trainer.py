@@ -54,6 +54,8 @@ class BaseTrainer(ABC):
         # wandb tracking
         self.tracker = tracker
         self.initial_train_x = None
+        self.surrogate_train_bbox_volume = None
+        self.surrogate_train_bbox_log_volume = None
 
         # extra configs in form of kwargs
         for key, item in kwargs.items():
@@ -158,6 +160,41 @@ class BaseTrainer(ABC):
                 initial_train_x, initial_train_x).evaluate_kernel()
             covar_initial_lazy = covar_initial_lazy.add_jitter(jitter)
             return covar_initial_lazy.logdet().item()
+
+    def _record_surrogate_train_side_lengths(self, side_lengths):
+        side_lengths = side_lengths.detach().to(dtype=torch.float64)
+        positive_side_lengths = side_lengths[side_lengths > 0]
+        if positive_side_lengths.numel() != side_lengths.numel():
+            log_volume = torch.tensor(float('-inf'),
+                                      device=side_lengths.device,
+                                      dtype=side_lengths.dtype)
+        else:
+            log_volume = positive_side_lengths.log().sum()
+
+        self.surrogate_train_bbox_volume = side_lengths.prod().item()
+        self.surrogate_train_bbox_log_volume = log_volume.item()
+
+    def record_surrogate_train_bbox_volume(self, train_x):
+        side_lengths = train_x.detach().amax(dim=-2) - train_x.detach().amin(
+            dim=-2)
+        self._record_surrogate_train_side_lengths(side_lengths)
+
+    def record_surrogate_train_bounds_volume(self, lb, ub):
+        self._record_surrogate_train_side_lengths((ub - lb).detach())
+
+    def calc_surrogate_train_bbox_volume_metrics(self):
+        if self.surrogate_train_bbox_volume is None:
+            if hasattr(self.model, 'train_inputs') and self.model.train_inputs:
+                self.record_surrogate_train_bbox_volume(
+                    self.model.train_inputs[0])
+            else:
+                return float('nan'), float('nan')
+
+        volume = self.surrogate_train_bbox_volume
+        log_volume = self.surrogate_train_bbox_log_volume
+        self.surrogate_train_bbox_volume = None
+        self.surrogate_train_bbox_log_volume = None
+        return volume, log_volume
 
     def calc_cond_num_SKS(self):
         # reconstitute S^T K^hat S matrix from cholesky factor
@@ -372,6 +409,11 @@ class BaseTrainer(ABC):
 
         log_dict['log det K(X_init, X_init)'] = (
             self.calc_log_det_kernel_initial_train_x())
+        surrogate_train_volume, surrogate_train_log_volume = (
+            self.calc_surrogate_train_bbox_volume_metrics())
+        log_dict['surrogate train bbox volume'] = surrogate_train_volume
+        log_dict['surrogate train bbox log volume'] = (
+            surrogate_train_log_volume)
 
         if not self.turn_off_wandb:
             self.tracker.log(log_dict)

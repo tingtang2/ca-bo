@@ -43,9 +43,11 @@ class TurboTrainerMixin:
             lb = self.task.lb.to(X.device, X.dtype)
             ub = self.task.ub.to(X.device, X.dtype)
 
-        return get_trust_region_bounds(model=model,
-                                       X=X,
-                                       Y=Y,
-                                       length=self.tr_state.length,
-                                       lb=lb,
-                                       ub=ub)
+        tr_lb, tr_ub = get_trust_region_bounds(model=model,
+                                               X=X,
+                                               Y=Y,
+                                               length=self.tr_state.length,
+                                               lb=lb,
+                                               ub=ub)
+        self.record_surrogate_train_bounds_volume(tr_lb, tr_ub)
+        return tr_lb, tr_ub
