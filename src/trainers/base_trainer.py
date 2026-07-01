@@ -53,6 +53,7 @@ class BaseTrainer(ABC):
 
         # wandb tracking
         self.tracker = tracker
+        self.initial_train_x = None
 
         # extra configs in form of kwargs
         for key, item in kwargs.items():
@@ -117,6 +118,46 @@ class BaseTrainer(ABC):
         covar_ips_lazy = self.model.covar_module(ips, ips)
 
         return covar_ips_lazy.logdet().item()
+
+    def record_initial_train_x(self, train_x):
+        if (self.initial_train_x is not None
+                and getattr(self.task, 'num_calls', 0) > self.num_initial_points):
+            return train_x
+        self.initial_train_x = train_x.detach().clone()
+        return train_x
+
+    def _get_kernel_for_logdet(self):
+        if 'sgpr' in self.name:
+            return self.model.covar_module.base_kernel
+        return self.model.covar_module
+
+    def calc_log_det_kernel_initial_train_x(self):
+        if self.initial_train_x is None:
+            if hasattr(self.model, 'train_inputs') and self.model.train_inputs:
+                self.record_initial_train_x(
+                    self.model.train_inputs[0][:self.num_initial_points])
+            else:
+                return float('nan')
+
+        self.model.eval()
+        covar_module = self._get_kernel_for_logdet()
+        initial_train_x = self.initial_train_x.to(device=self.device)
+        if hasattr(self, 'data_type'):
+            initial_train_x = initial_train_x.to(dtype=self.data_type)
+        jitter = 1e-6 if initial_train_x.dtype == torch.float32 else 1e-8
+
+        with torch.no_grad(), gpytorch.settings.cholesky_max_tries(10), \
+                gpytorch.settings.max_cholesky_size(float("inf")), \
+                gpytorch.settings.fast_computations(
+                    log_prob=False,
+                    covar_root_decomposition=False,
+                    solves=False):
+            if hasattr(self.model, 'transform_inputs'):
+                initial_train_x = self.model.transform_inputs(initial_train_x)
+            covar_initial_lazy = covar_module(
+                initial_train_x, initial_train_x).evaluate_kernel()
+            covar_initial_lazy = covar_initial_lazy.add_jitter(jitter)
+            return covar_initial_lazy.logdet().item()
 
     def calc_cond_num_SKS(self):
         # reconstitute S^T K^hat S matrix from cholesky factor
@@ -329,6 +370,9 @@ class BaseTrainer(ABC):
                 candidate_origin
             }
 
+        log_dict['log det K(X_init, X_init)'] = (
+            self.calc_log_det_kernel_initial_train_x())
+
         if not self.turn_off_wandb:
             self.tracker.log(log_dict)
 
@@ -525,4 +569,5 @@ class BaseTrainer(ABC):
         init_train_y = self.task(sobol_draws * (self.task.ub - self.task.lb) +
                                  self.task.lb)
 
+        self.record_initial_train_x(init_train_x)
         return init_train_x, init_train_y

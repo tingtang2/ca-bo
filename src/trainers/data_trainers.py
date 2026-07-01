@@ -22,6 +22,7 @@ class HartmannTrainer(BaseTrainer):
             self.device) * (self.task.ub - self.task.lb) + self.task.lb
         init_train_y = self.task(init_train_x.to(self.device))
 
+        self.record_initial_train_x(init_train_x)
         return init_train_x, init_train_y
 
     def reinitialize_task(self):
@@ -41,6 +42,7 @@ class LunarTrainer(BaseTrainer):
             self.device) * (self.task.ub - self.task.lb) + self.task.lb
         init_train_y = self.task(init_train_x.to(self.device))
 
+        self.record_initial_train_x(init_train_x)
         return init_train_x, init_train_y
 
     def reinitialize_task(self):
@@ -59,6 +61,7 @@ class RoverTrainer(BaseTrainer):
             self.device) * (self.task.ub - self.task.lb) + self.task.lb
         init_train_y = self.task(init_train_x.to(self.device))
 
+        self.record_initial_train_x(init_train_x)
         return init_train_x, init_train_y
 
     def reinitialize_task(self):
@@ -77,6 +80,7 @@ class LassoDNATrainer(BaseTrainer):
             self.device) * (self.task.ub - self.task.lb) + self.task.lb
         init_train_y = self.task(init_train_x.to(self.device))
 
+        self.record_initial_train_x(init_train_x)
         return init_train_x, init_train_y
 
     def reinitialize_task(self):
@@ -125,7 +129,9 @@ class GuacamolTrainer(BaseTrainer):
             self.task.ub = 1
             self.task.lb = -1
 
-        return init_train_x.to(self.device), init_train_y.to(self.device)
+        init_train_x = init_train_x.to(self.device)
+        self.record_initial_train_x(init_train_x)
+        return init_train_x, init_train_y.to(self.device)
 
     def reinitialize_task(self):
         self.task = GuacamolObjective(
