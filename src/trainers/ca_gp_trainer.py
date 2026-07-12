@@ -31,6 +31,8 @@ class CaGPTrainer(BaseTrainer):
         super().__init__(**kwargs)
 
         self.train_batch_size = 32
+        self.use_first_training_subset = getattr(
+            self, 'use_first_training_subset', False)
 
         self.name = 'vanilla_ca_gp'
 
@@ -40,6 +42,15 @@ class CaGPTrainer(BaseTrainer):
         else:
             proj_dim = int(self.proj_dim_ratio * train_x.size(0))
         return max(1, min(proj_dim, train_x.size(0)))
+
+    def _get_active_train_slice(self, active_train_size):
+        if self.use_first_training_subset:
+            return slice(0, active_train_size)
+        return slice(-active_train_size, None)
+
+    def _get_active_train_data(self, train_x, train_y, active_train_size):
+        train_data_slice = self._get_active_train_slice(active_train_size)
+        return train_x[train_data_slice], train_y[train_data_slice]
 
     def run_experiment(self, iteration: int):
         # get all attribute information
@@ -91,7 +102,9 @@ class CaGPTrainer(BaseTrainer):
                 turn_off_prior=self.turn_off_prior,
                 spherical_linear_lengthscale_prior=self.
                 spherical_linear_lengthscale_prior,
-                ln_noise_prior_loc=self.ln_noise_prior_loc).to(self.device)
+                ln_noise_prior_loc=self.ln_noise_prior_loc,
+                use_first_training_subset=self.
+                use_first_training_subset).to(self.device)
             # if self.debug:
             #     torch.save(train_x, f'{self.save_dir}models/train_x.pt')
             #     torch.save(model_train_y,
@@ -148,9 +161,11 @@ class CaGPTrainer(BaseTrainer):
                                            return_elbo_terms=True)
                 active_train_size = (self.model.num_non_zero *
                                      self.model.projection_dim)
+                active_train_x, active_train_y = self._get_active_train_data(
+                    train_x, model_targets, active_train_size)
                 train_loader = self.generate_dataloaders(
-                    train_x=train_x[-active_train_size:],
-                    train_y=model_targets[-active_train_size:])
+                    train_x=active_train_x,
+                    train_y=active_train_y)
                 final_loss, epochs_trained = self.train_model(
                     train_loader, mll)
 
@@ -225,6 +240,17 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
 
         self.early_stopping_threshold = 3
         self.train_batch_size = 32
+        self.use_first_training_subset = getattr(
+            self, 'use_first_training_subset', False)
+
+    def _get_active_train_slice(self, active_train_size):
+        if self.use_first_training_subset:
+            return slice(0, active_train_size)
+        return slice(-active_train_size, None)
+
+    def _get_active_train_data(self, train_x, train_y, active_train_size):
+        train_data_slice = self._get_active_train_slice(active_train_size)
+        return train_x[train_data_slice], train_y[train_data_slice]
 
     def run_experiment(self, iteration: int):
         # get all attribute information
@@ -267,7 +293,9 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
                 kernel_type=self.kernel_type,
                 init_mode=self.ca_gp_init_mode,
                 kernel_likelihood_prior=self.kernel_likelihood_prior,
-                use_ard_kernel=self.use_ard_kernel).to(self.device)
+                use_ard_kernel=self.use_ard_kernel,
+                use_first_training_subset=self.
+                use_first_training_subset).to(self.device)
 
             self.optimizer = self.optimizer_type(
                 [{
@@ -278,8 +306,13 @@ class CaGPEULBOTrainer(SVGPEULBOTrainer):
             exact_mll = ExactMarginalLogLikelihood(self.model.likelihood,
                                                    self.model)
 
+            active_train_size = (self.model.num_non_zero *
+                                 self.model.projection_dim)
+            active_train_x, active_train_y = self._get_active_train_data(
+                train_x, model_train_y.squeeze(), active_train_size)
             train_loader = self.generate_dataloaders(
-                train_x=train_x, train_y=model_train_y.squeeze())
+                train_x=active_train_x,
+                train_y=active_train_y)
 
             final_loss, epochs_trained = self.train_model(train_loader, mll)
             self.model.eval()
@@ -436,7 +469,9 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
             remove_global_ls=self.remove_global_ls,
             turn_off_prior=self.turn_off_prior,
             spherical_linear_lengthscale_prior=self.spherical_linear_lengthscale_prior,
-            ln_noise_prior_loc=self.ln_noise_prior_loc).to(self.device)
+            ln_noise_prior_loc=self.ln_noise_prior_loc,
+            use_first_training_subset=self.use_first_training_subset).to(
+                self.device)
         # if self.debug:
         #     torch.save(train_x, f'{self.save_dir}models/train_x.pt')
         #     torch.save(model_train_y,
@@ -478,8 +513,9 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                         remove_global_ls=self.remove_global_ls,
                         turn_off_prior=self.turn_off_prior,
                         spherical_linear_lengthscale_prior=self.spherical_linear_lengthscale_prior,
-                        ln_noise_prior_loc=self.ln_noise_prior_loc).to(
-                            self.device)
+                        ln_noise_prior_loc=self.ln_noise_prior_loc,
+                        use_first_training_subset=self.
+                        use_first_training_subset).to(self.device)
                 else:
                     # set projection dim to min of training data size and requested dim size
                     self.model.projection_dim = min(update_y.size(0), proj_dim)
@@ -492,11 +528,13 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
 
                     active_train_size = (self.model.num_non_zero *
                                          self.model.projection_dim)
+                    active_update_x, active_update_y = self._get_active_train_data(
+                        update_x, update_y, active_train_size)
                     self.model.train_inputs = tuple(
                         tri.unsqueeze(-1) if tri.ndimension() == 1 else tri
-                        for tri in (update_x[-active_train_size:], ))
+                        for tri in (active_update_x, ))
 
-                    self.model.train_targets = update_y[-active_train_size:]
+                    self.model.train_targets = active_update_y
 
                     # If the action width changes, rebuild the block operator.
                     # This happens when the window grows past another multiple
@@ -562,8 +600,9 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                                 remove_global_ls=self.remove_global_ls,
                                 turn_off_prior=self.turn_off_prior,
                                 spherical_linear_lengthscale_prior=self.spherical_linear_lengthscale_prior,
-                                ln_noise_prior_loc=self.ln_noise_prior_loc).to(
-                                    self.device)
+                                ln_noise_prior_loc=self.ln_noise_prior_loc,
+                                use_first_training_subset=self.
+                                use_first_training_subset).to(self.device)
                         elif self.model.num_non_zero == 1 or not self.roll_actions:
                             if self.non_zero_action_init:
                                 new_action = 2 * torch.rand((1, 1)) - 1
@@ -695,11 +734,13 @@ class CaGPSlidingWindowTrainer(CaGPTrainer):
                 mll = ComputationAwareELBO(self.model.likelihood,
                                            self.model,
                                            return_elbo_terms=True)
+                active_train_size = (self.model.num_non_zero *
+                                     self.model.projection_dim)
+                active_update_x, active_update_y = self._get_active_train_data(
+                    update_x, update_y, active_train_size)
                 train_loader = self.generate_dataloaders(
-                    train_x=update_x[-self.model.num_non_zero *
-                                     self.model.projection_dim:],
-                    train_y=update_y[-self.model.num_non_zero *
-                                     self.model.projection_dim:])
+                    train_x=active_update_x,
+                    train_y=active_update_y)
 
                 # torch.autograd.set_detect_anomaly(True)
                 # for n, p in self.model.covar_module.named_parameters():
@@ -814,7 +855,9 @@ class TurboCaGPTrainer(TurboTrainerMixin, CaGPTrainer):
             turn_off_prior=self.turn_off_prior,
             spherical_linear_lengthscale_prior=self.
             spherical_linear_lengthscale_prior,
-            ln_noise_prior_loc=self.ln_noise_prior_loc).to(self.device)
+            ln_noise_prior_loc=self.ln_noise_prior_loc,
+            use_first_training_subset=self.
+            use_first_training_subset).to(self.device)
 
         action_params = [
             p for name, p in self.model.named_parameters() if 'action' in name
@@ -898,9 +941,11 @@ class TurboCaGPTrainer(TurboTrainerMixin, CaGPTrainer):
                                            return_elbo_terms=True)
                 active_train_size = (self.model.num_non_zero *
                                      self.model.projection_dim)
+                active_update_x, active_update_y = self._get_active_train_data(
+                    update_x, update_y, active_train_size)
                 train_loader = self.generate_dataloaders(
-                    train_x=update_x[-active_train_size:],
-                    train_y=update_y[-active_train_size:])
+                    train_x=active_update_x,
+                    train_y=active_update_y)
                 final_loss, epochs_trained = self.train_model(
                     train_loader, mll)
 

@@ -499,6 +499,12 @@ def main() -> int:
     parser.add_argument('--ca_gp_init_mode',
                         default='random',
                         help='init mode for ca gp')
+    parser.add_argument(
+        '--use_first_training_subset',
+        action='store_true',
+        help=
+        'for CaGP, use the first num_non_zero * projection_dim training points instead of the last'
+    )
     parser.add_argument('--norm_data',
                         action='store_true',
                         help='normalize ys')

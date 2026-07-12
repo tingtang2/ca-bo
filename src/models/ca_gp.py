@@ -30,7 +30,8 @@ class CaGP(ComputationAwareGP):
                  remove_global_ls: bool = True,
                  turn_off_prior: bool = False,
                  spherical_linear_lengthscale_prior: str = 'dsp_unscaled',
-                 ln_noise_prior_loc: float = -4.0):
+                 ln_noise_prior_loc: float = -4.0,
+                 use_first_training_subset: bool = False):
 
         if use_ard_kernel:
             ard_num_dims = train_inputs.shape[-1]
@@ -101,7 +102,8 @@ class CaGP(ComputationAwareGP):
                                    covar_module=covar_module,
                                    likelihood=likelihood,
                                    projection_dim=projection_dim,
-                                   initialization=init_mode)
+                                   initialization=init_mode,
+                                   use_first_training_subset=use_first_training_subset)
 
         # need these attributes for BoTorch to work
         self._has_transformed_inputs = False  # need this for RAASP sampling
