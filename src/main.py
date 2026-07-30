@@ -549,6 +549,9 @@ def main() -> int:
     parser.add_argument('--use_analytic_acq_func',
                         action='store_true',
                         help='use analytic acquisition function instead of MC')
+    parser.add_argument('--turn_off_extra_metrics',
+                        action='store_true',
+                        help='turn off extra metrics for speed timings')
     parser.add_argument('--enable_raasp',
                         action='store_true',
                         help='enable RAASP sampling in AF optimization')

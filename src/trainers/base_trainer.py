@@ -407,13 +407,14 @@ class BaseTrainer(ABC):
                 candidate_origin
             }
 
-        log_dict['log det K(X_init, X_init)'] = (
-            self.calc_log_det_kernel_initial_train_x())
-        surrogate_train_volume, surrogate_train_log_volume = (
-            self.calc_surrogate_train_bbox_volume_metrics())
-        log_dict['surrogate train bbox volume'] = surrogate_train_volume
-        log_dict['surrogate train bbox log volume'] = (
-            surrogate_train_log_volume)
+        if not self.turn_off_extra_metrics:
+            log_dict['log det K(X_init, X_init)'] = (
+                self.calc_log_det_kernel_initial_train_x())
+            surrogate_train_volume, surrogate_train_log_volume = (
+                self.calc_surrogate_train_bbox_volume_metrics())
+            log_dict['surrogate train bbox volume'] = surrogate_train_volume
+            log_dict['surrogate train bbox log volume'] = (
+                surrogate_train_log_volume)
 
         if not self.turn_off_wandb:
             self.tracker.log(log_dict)
