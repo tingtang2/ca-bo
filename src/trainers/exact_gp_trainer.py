@@ -175,6 +175,7 @@ class ExactGPTrainer(BaseTrainer):
         self.save_metrics(metrics=reward,
                           iter=iteration,
                           name=self.trainer_type)
+        self.save_model(name=self.name)
 
     # just for debugging purposes
     def generate_dataloaders(self, train_x, train_y):
