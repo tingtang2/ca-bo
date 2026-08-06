@@ -133,6 +133,14 @@ class BaseTrainer(ABC):
             return self.model.covar_module.base_kernel
         return self.model.covar_module
 
+    def _get_spherical_linear_kernel(self):
+        """Return the underlying spherical-linear kernel, if present."""
+        kernel = self._get_kernel_for_logdet()
+        while not hasattr(kernel, 'raw_coeffs') and hasattr(kernel,
+                                                             'base_kernel'):
+            kernel = kernel.base_kernel
+        return kernel if hasattr(kernel, 'raw_coeffs') else None
+
     def calc_log_det_kernel_initial_train_x(self):
         if self.initial_train_x is None:
             if hasattr(self.model, 'train_inputs') and self.model.train_inputs:
@@ -415,6 +423,14 @@ class BaseTrainer(ABC):
             log_dict['surrogate train bbox volume'] = surrogate_train_volume
             log_dict['surrogate train bbox log volume'] = (
                 surrogate_train_log_volume)
+            if self.kernel_type == 'spherical_linear':
+                spherical_linear_kernel = self._get_spherical_linear_kernel()
+                if spherical_linear_kernel is not None:
+                    coeffs = spherical_linear_kernel.coeffs.detach()
+                    log_dict['spherical linear constant coefficient'] = (
+                        coeffs[0].item())
+                    log_dict['spherical linear linear coefficient'] = (
+                        coeffs[1].item())
 
         if not self.turn_off_wandb:
             self.tracker.log(log_dict)
